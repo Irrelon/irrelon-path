@@ -1,0 +1,32 @@
+{
+  "name": "irrelon-path",
+  "version": "1.0.0",
+  "description": "A powerful JSON path processor. Allows you to drill into JSON objects with a simple dot-delimited path format e.g. \"obj.name\".",
+  "main": "./js/builds/all",
+  "scripts": {
+    "test": "echo \"No tests specified, all tests exist inside the parent project ForerunnerDB (http://github.com/irrelon/ForerunnerDB) for now\" && exit 1"
+  },
+  "keywords": [
+    "path",
+    "json",
+    "node",
+    "browser"
+  ],
+  "author": "Rob Evans - Irrelon Software Limited",
+  "license": "MIT",
+  "devDependencies": {
+    "aliasify": "^2.0.0",
+    "browserify-derequire": "^0.9.4",
+    "derequire": "^2.0.3",
+    "grunt": "^1.0.1",
+    "grunt-browserify": "^5.0.0",
+    "grunt-cli": "^1.2.0",
+    "grunt-contrib-uglify": "^2.0.0",
+    "grunt-umd": "^2.3.5",
+    "stringify": "^5.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/irrelon/irrelon-path.git"
+  }
+}
