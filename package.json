@@ -1,8 +1,8 @@
 {
   "name": "irrelon-path",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A powerful JSON path processor. Allows you to drill into JSON objects with a simple dot-delimited path format e.g. \"obj.name\".",
-  "main": "./js/builds/all",
+  "main": "./builds/all",
   "scripts": {
     "test": "echo \"No tests specified, all tests exist inside the parent project ForerunnerDB (http://github.com/irrelon/ForerunnerDB) for now\" && exit 1"
   },
