@@ -1,10 +1,11 @@
 {
   "name": "irrelon-path",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A powerful JSON path processor. Allows you to drill into JSON objects with a simple dot-delimited path format e.g. \"obj.name\".",
   "main": "./builds/all",
   "scripts": {
-    "test": "echo \"No tests specified, all tests exist inside the parent project ForerunnerDB (http://github.com/irrelon/ForerunnerDB) for now\" && exit 1"
+    "test": "echo \"No tests specified, all tests exist inside the parent project ForerunnerDB (http://github.com/irrelon/ForerunnerDB) for now\" && exit 1",
+    "build": "webpack --mode production"
   },
   "keywords": [
     "path",
@@ -15,15 +16,12 @@
   "author": "Rob Evans - Irrelon Software Limited",
   "license": "MIT",
   "devDependencies": {
-    "aliasify": "^2.0.0",
-    "browserify-derequire": "^0.9.4",
-    "derequire": "^2.0.3",
-    "grunt": "^1.0.1",
-    "grunt-browserify": "^5.0.0",
-    "grunt-cli": "^1.2.0",
-    "grunt-contrib-uglify": "^2.0.0",
-    "grunt-umd": "^2.3.5",
-    "stringify": "^5.1.0"
+    "@babel/core": "^7.2.2",
+    "@babel/plugin-proposal-object-rest-spread": "^7.2.0",
+    "@babel/preset-env": "^7.2.3",
+    "babel-loader": "^8.0.5",
+    "webpack": "^4.28.1",
+    "webpack-cli": "^3.2.1"
   },
   "repository": {
     "type": "git",
