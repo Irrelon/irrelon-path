@@ -57,7 +57,8 @@ You can use the static function on the constructor via Path.escape, or you can u
 console.log(pathSolver.get(obj, `users.${pathSolver.escape('test@test.com')}.name`); // Will console log "My Test User"
 ```
 
-## Behaviour
+
+## Behaviour
 If data or an object to traverse does not exist inside the base object, the path solver will return undefined and will
 NOT throw an error:
 
