@@ -1,6 +1,12 @@
 # Irrelon Path
 A powerful JSON path processor. Allows you to drill into JSON objects with a simple dot-delimited path format e.g. "obj.name"
 
+## What Can It Do?
+Irrelon Path is a JavaScript object manipulation library that uses
+dot notation to denote object key / value field locations within 
+the object structure. It allows you to easily access, modify or
+remove data from an object at locations specified via a path string.
+
 ## Install
 
 ```bash
