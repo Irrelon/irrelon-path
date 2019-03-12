@@ -2,7 +2,7 @@ const path = require("path");
 const webpack_rules = [];
 
 const webpackOption = {
-	entry: "./builds/all.js",
+	entry: "./src/Path.js",
 	output: {
 		path: path.resolve(__dirname, 'js', "dist"),
 		filename: "Path.js",

@@ -1,11 +1,23 @@
 # Irrelon Path
-A powerful JSON path processor. Allows you to drill into JSON objects with a simple dot-delimited path format e.g. "obj.name"
+A powerful JSON path processor. Allows you to drill into JSON objects
+with a simple dot-delimited path format e.g. "obj.name"
 
 ## What Can It Do?
 Irrelon Path is a JavaScript object manipulation library that uses
 dot notation to denote object key / value field locations within 
 the object structure. It allows you to easily access, modify or
 remove data from an object at locations specified via a path string.
+
+## New in Version 2
+Version 1.x exported a class that you could instantiate. Version 2.x
+exports an object with all available functions. You can require version
+2.x either all at once (all functions) or you can destructure to require
+only the functions you need. This change is primarily to support tree
+shaking, as well as move to a more functional programming style, albeit
+not pure functional style :)
+
+Version 2.x is a breaking change from version 1.x and you will need to
+migrate your code to work with the new version.
 
 ## Install
 
@@ -15,8 +27,10 @@ npm i irrelon-path
 
 ## Usage
 ```js
-const Path = require('irrelon-path');
-const pathSolver = new Path();
+const pathSolver = require("irrelon-path");
+
+// You can also require only what you need from the library
+// e.g. const {get} = require("irrelon-path");
 
 ...
 
@@ -30,7 +44,7 @@ const obj = {
 };
 
 // Grab data from the object via the path solver
-console.log(pathSolver.get(obj, 'users.test1.name'); // Will console log "My Test User"
+console.log(pathSolver.get(obj, 'users.test1.name')); // Will console log "My Test User"
 ```
 
 ## Escaping Fields with Periods
@@ -54,15 +68,8 @@ with a sub-field "com".
 To avoid this, escape the path key with a period:
 
 ```js
-console.log(pathSolver.get(obj, `users.${Path.escape('test@test.com')}.name`); // Will console log "My Test User"
+console.log(pathSolver.get(obj, `users.${pathSolver.escape('test@test.com')}.name`)); // Will console log "My Test User"
 ```
-
-You can use the static function on the constructor via Path.escape, or you can use escape() from the class instance:
-
-```js
-console.log(pathSolver.get(obj, `users.${pathSolver.escape('test@test.com')}.name`); // Will console log "My Test User"
-```
-
 
 ## Behaviour
 If data or an object to traverse does not exist inside the base object, the path solver will return undefined and will
@@ -73,5 +80,5 @@ const obj = {
   "foo": null
 };
 
-console.log(pathSolver.get(obj, "foo.bar.one"); // Logs undefined
+console.log(pathSolver.get(obj, "foo.bar.one")); // Logs undefined
 ```
