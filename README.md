@@ -17,7 +17,24 @@ shaking, as well as move to a more functional programming style, albeit
 not pure functional style :)
 
 Version 2.x is a breaking change from version 1.x and you will need to
-migrate your code to work with the new version.
+migrate your code to work with the new version. Migration is fairly simple
+and instead of using an instance of the 1.x class, you simply require the
+parts of the library you need e.g.
+
+#### Version 1.x Style Code (Don't Do This)
+```js
+const Path = require("irrelon-path");
+const pathSolver = new Path();
+const a = {hello: {foo: true}};
+const b = pathSolver.get(a, "hello.foo"); // b === true
+```
+
+#### Version 2.x Style Code (Please Use This)
+```js
+const {get} = require("irrelon-path");
+const a = {hello: {foo: true}};
+const b = get(a, "hello.foo"); // b === true
+```
 
 ## Install
 
