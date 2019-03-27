@@ -1,11 +1,13 @@
 {
   "name": "irrelon-path",
-  "version": "2.0.0",
-  "description": "A powerful JSON path processor. Allows you to drill into JSON objects with a simple dot-delimited path format e.g. \"obj.name\".",
+	"version": "2.0.1",
+	"description": "A powerful JSON path processor. Allows you to drill into and manipulate JSON objects with a simple dot-delimited path format e.g. \"obj.name\".",
   "main": "./dist/Path.js",
   "scripts": {
     "test": "NODE_ENV=test mocha ./tests/**/**.test.js",
-    "build": "npm test && rimraf dist && babel ./src/*.js --out-dir dist && rm ./dist/*.test.js"
+	  "build": "npm test && rimraf dist && babel ./src/*.js --out-dir dist",
+	  "eslint": "eslint ./src/**.js ./tests/**.js ./dist/Path.js",
+	  "eslint-fix": "eslint --fix ./src/**.js ./tests/**.js"
   },
   "keywords": [
     "path",
@@ -24,6 +26,7 @@
     "@babel/preset-env": "^7.3.1",
     "@babel/preset-react": "^7.0.0",
     "@babel/register": "^7.0.0",
+	  "eslint-config-irrelon": "^1.0.2",
     "mocha": "^6.0.2",
     "mocha-expect": "^1.0.2",
     "rimraf": "^2.6.2"
