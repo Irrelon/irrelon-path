@@ -107,7 +107,7 @@ const get = (obj, path, defaultVal = undefined, options = {}) => {
 	};
 	
 	// No object data, return undefined
-	if (obj === undefined) {
+	if (obj === undefined || obj === null) {
 		return defaultVal;
 	}
 	
@@ -168,7 +168,7 @@ const set = (obj, path, val, options = {}) => {
 	};
 	
 	// No object data
-	if (obj === undefined) {
+	if (obj === undefined || obj === null) {
 		return;
 	}
 	
@@ -234,7 +234,7 @@ const set = (obj, path, val, options = {}) => {
  * the array at the path specified having the newly pushed value.
  */
 const push = (obj, path, val) => {
-	if (obj === undefined || path === undefined) {
+	if (obj === undefined || obj === null || path === undefined) {
 		return obj;
 	}
 	

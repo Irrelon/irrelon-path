@@ -1,9 +1,8 @@
 {
 	"name": "irrelon-path",
-	"version": "2.0.2",
+	"version": "2.0.3",
 	"description": "A powerful JSON path processor. Allows you to drill into and manipulate JSON objects with a simple dot-delimited path format e.g. \"obj.name\".",
 	"main": "./src/Path.js",
-	"browser": "./dist/Path.js",
 	"scripts": {
 		"test": "NODE_ENV=test mocha ./tests/**/**.test.js",
 		"build": "npm test && rimraf dist && babel ./src/*.js --out-dir dist",

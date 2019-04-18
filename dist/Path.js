@@ -125,7 +125,7 @@ var get = function get (obj, path) {
 		"transformWrite": returnWhatWasGiven
 	}, options); // No object data, return undefined
 	
-	if (obj === undefined) {
+	if (obj === undefined || obj === null) {
 		return defaultVal;
 	} // No path string, return the base obj
 	
@@ -183,7 +183,7 @@ var set = function set (obj, path, val) {
 		"transformWrite": returnWhatWasGiven
 	}, options); // No object data
 	
-	if (obj === undefined) {
+	if (obj === undefined || obj === null) {
 		return;
 	} // No path string
 	
@@ -249,7 +249,7 @@ var set = function set (obj, path, val) {
 
 
 var push = function push (obj, path, val) {
-	if (obj === undefined || path === undefined) {
+	if (obj === undefined || obj === null || path === undefined) {
 		return obj;
 	} // Clean the path
 	
