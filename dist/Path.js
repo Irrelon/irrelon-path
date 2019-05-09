@@ -157,6 +157,12 @@ var get = function get (obj, path) {
 		objPart = objPart[options.transformKey(pathPart)];
 		
 		if (!objPart || (0, _typeof2.default)(objPart) !== "object") {
+			if (i !== pathParts.length - 1) {
+				// The path terminated in the object before we reached
+				// the end node we wanted so make sure we return undefined
+				objPart = undefined;
+			}
+			
 			break;
 		}
 	}
