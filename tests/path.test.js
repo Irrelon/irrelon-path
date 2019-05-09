@@ -102,6 +102,17 @@ describe("Path", () => {
 			const result = get(obj, "arr.3.nonExistent", "defaultVal");
 			assert.strictEqual(result, "defaultVal", "The value was retrieved correctly");
 		});
+		
+		it("Will return undefined when the full path is non-existent", () => {
+			const obj = {
+				"obj": {
+					"val": null
+				}
+			};
+			debugger;
+			const result = get(obj, "obj.val.roo.foo.moo");
+			assert.strictEqual(result, undefined, "The value was retrieved correctly");
+		});
 	});
 	
 	describe("set()", () => {

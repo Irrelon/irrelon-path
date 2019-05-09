@@ -132,7 +132,6 @@ const get = (obj, path, defaultVal = undefined, options = {}) => {
 		return obj;
 	}
 	
-	
 	const pathParts = split(internalPath);
 	objPart = obj;
 	
@@ -141,6 +140,11 @@ const get = (obj, path, defaultVal = undefined, options = {}) => {
 		objPart = objPart[options.transformKey(pathPart)];
 		
 		if (!objPart || typeof(objPart) !== "object") {
+			if (i !== pathParts.length - 1) {
+				// The path terminated in the object before we reached
+				// the end node we wanted so make sure we return undefined
+				objPart = undefined;
+			}
 			break;
 		}
 	}
