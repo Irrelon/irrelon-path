@@ -36,6 +36,10 @@ const numberToWildcard = (key) => {
  * @returns {*} The cleaned string.
  */
 const clean = (str) => {
+	if (!str) {
+		return str;
+	}
+	
 	if (str.substr(0, 1) === ".") {
 		str = str.substr(1, str.length - 1);
 	}
