@@ -1,5 +1,5 @@
 # Irrelon Path
-A powerful JSON path processor. Allows you to drill into JSON objects
+A powerful JSON path processor with no dependencies. Allows you to drill into JSON objects
 with a simple dot-delimited path format e.g. "obj.name"
 
 ## What Can It Do?
