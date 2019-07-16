@@ -143,7 +143,7 @@ describe("Path", () => {
 			assert.strictEqual(obj.arr[0], "foo", "The value was set correctly");
 		});
 		
-		it("Can set a value on the passed object with where the leaf node is an object", () => {
+		it("Can set a value on the passed object where the leaf node is an object", () => {
 			const obj = {
 				"foo": {
 					"bar": {
@@ -157,6 +157,16 @@ describe("Path", () => {
 			set(obj, "foo.bar.ram", {copy: true});
 			
 			assert.strictEqual(obj.foo.bar.ram.copy, true, "The value was set correctly");
+		});
+		
+		it("Can set a value on the passed object with a single path key", () => {
+			const obj = {
+				"foo": true
+			};
+			
+			set(obj, "foo", false);
+			
+			assert.strictEqual(obj.foo, false, "The value was set correctly");
 		});
 	});
 });
