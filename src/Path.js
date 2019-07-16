@@ -205,32 +205,29 @@ const set = (obj, path, val, options = {}) => {
 	const pathParts = split(internalPath);
 	objPart = obj;
 	
-	for (let i = 0; i < pathParts.length; i++) {
+	for (let i = 0; i < pathParts.length - 1; i++) {
 		const pathPart = pathParts[i];
 		const transformedPathPart = options.transformKey(pathPart);
 		const tmpPart = objPart[transformedPathPart];
 		
 		if ((!tmpPart || typeof(objPart) !== "object")) {
-			if (i !== pathParts.length - 1) {
-				// Create an object or array on the path
-				if (String(parseInt(pathPart, 10)) === pathPart) {
-					// This is an array index
-					objPart[transformedPathPart] = [];
-				} else {
-					objPart[transformedPathPart] = {};
-				}
-				
-				objPart = objPart[transformedPathPart];
+			// Create an object or array on the path
+			if (String(parseInt(pathPart, 10)) === pathPart) {
+				// This is an array index
+				objPart[transformedPathPart] = [];
+			} else {
+				objPart[transformedPathPart] = {};
 			}
+			
+			objPart = objPart[transformedPathPart];
 		} else {
 			objPart = tmpPart;
 		}
-		
-		if (i === pathParts.length - 1) {
-			// Set value
-			objPart[transformedPathPart] = val;
-		}
 	}
+	
+	// Set value
+	const transformedPathPart = options.transformKey(pathParts[pathParts.length - 1]);
+	objPart[transformedPathPart] = val;
 };
 
 /**

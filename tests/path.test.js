@@ -109,7 +109,7 @@ describe("Path", () => {
 					"val": null
 				}
 			};
-			debugger;
+			
 			const result = get(obj, "obj.val.roo.foo.moo");
 			assert.strictEqual(result, undefined, "The value was retrieved correctly");
 		});
@@ -141,6 +141,22 @@ describe("Path", () => {
 			set(obj, "arr.0", "foo");
 			
 			assert.strictEqual(obj.arr[0], "foo", "The value was set correctly");
+		});
+		
+		it("Can set a value on the passed object with where the leaf node is an object", () => {
+			const obj = {
+				"foo": {
+					"bar": {
+						"ram": {
+							original: true
+						}
+					}
+				}
+			};
+			
+			set(obj, "foo.bar.ram", {copy: true});
+			
+			assert.strictEqual(obj.foo.bar.ram.copy, true, "The value was set correctly");
 		});
 	});
 });
