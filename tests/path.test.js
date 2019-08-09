@@ -3,7 +3,10 @@ const {
 	get,
 	set,
 	furthest,
-	values
+	values,
+	flatten,
+	flattenValues,
+	countLeafNodes
 } = require("../src/Path");
 
 describe("Path", () => {
@@ -22,6 +25,145 @@ describe("Path", () => {
 			assert.strictEqual(typeof result["obj.0.other"], "object", "The value was retrieved correctly");
 			assert.strictEqual(typeof result["obj.0.other.val"], "undefined", "The value was retrieved correctly");
 			assert.strictEqual(typeof result["obj.0.other.val.another"], "undefined", "The value was retrieved correctly");
+		});
+		
+		it("Will handle infinite recursive structures", () => {
+			const obj = {
+				"obj": [{
+					"other": {}
+				}]
+			};
+			
+			// Create an infinite recursion
+			obj.obj[0].other.obj = obj;
+			
+			const result = values(obj, "obj.0.other.obj.0.other");
+			
+			assert.strictEqual(result.obj instanceof Array, true, "The value was retrieved correctly");
+			assert.strictEqual(typeof result["obj.0"], "object", "The value was retrieved correctly");
+			assert.strictEqual(typeof result["obj.0.other"], "object", "The value was retrieved correctly");
+			assert.strictEqual(typeof result["obj.0.other.val"], "undefined", "The value was retrieved correctly");
+			assert.strictEqual(typeof result["obj.0.other.val.another"], "undefined", "The value was retrieved correctly");
+		});
+	});
+	
+	describe("countLeafNodes()", () => {
+		it("Will count leaf nodes of an object", () => {
+			const obj = {
+				"obj": [{
+					"other": {
+						moo: "foo"
+					}
+				}]
+			};
+			
+			const result = countLeafNodes(obj);
+			
+			assert.strictEqual(result, 1, "The test value is correct");
+		});
+		
+		it("Will count leaf nodes of an object with infinite recursive structure", () => {
+			const obj = {
+				"obj": [{
+					"other": {
+						moo: "foo"
+					}
+				}]
+			};
+			
+			// Create an infinite recursion
+			obj.obj[0].other.obj = obj;
+			
+			const result = countLeafNodes(obj);
+			
+			assert.strictEqual(result, 2, "The test value is correct");
+		});
+	});
+	
+	describe("flatten()", () => {
+		it("Will flatten an object structure to array of keys", () => {
+			const obj = {
+				"obj": [{
+					"other": {
+						moo: "foo"
+					}
+				}]
+			};
+			
+			const result = flatten(obj);
+			
+			assert.ok(result instanceof Array, "The test type is correct");
+			assert.strictEqual(result.length, 4, "The array length is correct");
+			assert.ok(result.indexOf("obj") > -1, "The test type is correct");
+			assert.ok(result.indexOf("obj.0") > -1, "The test type is correct");
+			assert.ok(result.indexOf("obj.0.other") > -1, "The test type is correct");
+			assert.ok(result.indexOf("obj.0.other.moo") > -1, "The test type is correct");
+		});
+		
+		it("Will handle an infinite recursive structure", () => {
+			const obj = {
+				"obj": [{
+					"other": {
+						moo: "foo"
+					}
+				}]
+			};
+			
+			// Create an infinite recursion
+			obj.obj[0].other.obj = obj;
+			
+			const result = flatten(obj);
+			
+			assert.ok(result instanceof Array, "The test type is correct");
+			assert.strictEqual(result.length, 5, "The array length is correct");
+			assert.ok(result.indexOf("obj") > -1, "The test type is correct");
+			assert.ok(result.indexOf("obj.0") > -1, "The test type is correct");
+			assert.ok(result.indexOf("obj.0.other") > -1, "The test type is correct");
+			assert.ok(result.indexOf("obj.0.other.moo") > -1, "The test type is correct");
+			assert.ok(result.indexOf("obj.0.other.obj") > -1, "The test type is correct");
+		});
+	});
+	
+	describe("flattenValues()", () => {
+		it("Will flatten an object structure to keys and values", () => {
+			const obj = {
+				"obj": [{
+					"other": {
+						moo: "foo"
+					}
+				}]
+			};
+			
+			const result = flattenValues(obj);
+			
+			assert.strictEqual(typeof result, "object", "The test type is correct");
+			assert.strictEqual(result["obj"] instanceof Array, true, "The test type is correct");
+			assert.strictEqual(typeof result["obj.0.other"], "object", "The test type is correct");
+			assert.strictEqual(typeof result["obj.0.other.moo"], "string", "The test type is correct");
+			assert.strictEqual(result["obj.0.other.moo"], "foo", "The test value is correct");
+		});
+		
+		it("Will handle an infinite recursive structure", () => {
+			const obj = {
+				"obj": [{
+					"other": {
+						moo: "foo"
+					}
+				}]
+			};
+			
+			// Create an infinite recursion
+			obj.obj[0].other.obj = obj;
+			
+			const result = flattenValues(obj);
+			
+			assert.strictEqual(typeof result, "object", "The test type is correct");
+			assert.strictEqual(result["obj"] instanceof Array, true, "The test type is correct");
+			assert.strictEqual(typeof result["obj.0.other"], "object", "The test type is correct");
+			assert.strictEqual(typeof result["obj.0.other.moo"], "string", "The test type is correct");
+			assert.strictEqual(result["obj.0.other.moo"], "foo", "The test value is correct");
+			assert.strictEqual(typeof result["obj.0.other.obj"], "object", "The test value is correct");
+			assert.strictEqual(typeof result["obj.0.other.obj.0"], "undefined", "The test value is correct");
 		});
 	});
 	

@@ -372,14 +372,14 @@ const values = (obj, path, options = {}) => {
  * Takes an object and finds all paths, then returns the paths as an
  * array of strings.
  * @param {Object} obj The object to scan.
- * @param {Array=} finalObj An object used to collect the path keys.
+ * @param {Array=} finalArr An object used to collect the path keys.
  * (Do not pass this in directly - use undefined).
  * @param {String=} parentPath The path of the parent object. (Do not
  * pass this in directly - use undefined).
  * @param {Object=} options An options object.
  * @returns {Array<String>} An array containing path strings.
  */
-const flatten = (obj, finalObj = [], parentPath = "", options = {}) => {
+const flatten = (obj, finalArr = [], parentPath = "", options = {}, objCache = []) => {
 	options = {
 		"transformRead": returnWhatWasGiven,
 		"transformKey": returnWhatWasGiven,
@@ -388,6 +388,14 @@ const flatten = (obj, finalObj = [], parentPath = "", options = {}) => {
 	};
 	
 	const transformedObj = options.transformRead(obj);
+	
+	// Check that we haven't visited this object before (avoid infinite recursion)
+	if (objCache.indexOf(transformedObj) > -1) {
+		return finalArr;
+	}
+	
+	// Add object to cache to make sure we don't traverse it twice
+	objCache.push(transformedObj);
 	
 	const currentPath = (i) => {
 		const tKey = options.transformKey(i);
@@ -401,14 +409,14 @@ const flatten = (obj, finalObj = [], parentPath = "", options = {}) => {
 			}
 			
 			if (typeof transformedObj[i] === "object") {
-				flatten(transformedObj[i], finalObj, currentPath(i), options);
+				flatten(transformedObj[i], finalArr, currentPath(i), options, objCache);
 			}
 			
-			finalObj.push(currentPath(i));
+			finalArr.push(currentPath(i));
 		}
 	}
 	
-	return finalObj;
+	return finalArr;
 };
 
 /**
@@ -422,7 +430,7 @@ const flatten = (obj, finalObj = [], parentPath = "", options = {}) => {
  * @param {Object=} options An options object.
  * @returns {Object} An object containing path keys and their values.
  */
-const flattenValues = (obj, finalObj = {}, parentPath = "", options = {}) => {
+const flattenValues = (obj, finalObj = {}, parentPath = "", options = {}, objCache = []) => {
 	options = {
 		"transformRead": returnWhatWasGiven,
 		"transformKey": returnWhatWasGiven,
@@ -432,6 +440,14 @@ const flattenValues = (obj, finalObj = {}, parentPath = "", options = {}) => {
 	
 	const transformedObj = options.transformRead(obj);
 	
+	// Check that we haven't visited this object before (avoid infinite recursion)
+	if (objCache.indexOf(transformedObj) > -1) {
+		return finalObj;
+	}
+	
+	// Add object to cache to make sure we don't traverse it twice
+	objCache.push(transformedObj);
+	
 	const currentPath = (i) => {
 		const tKey = options.transformKey(i);
 		return parentPath ? parentPath + "." + tKey : tKey;
@@ -440,7 +456,7 @@ const flattenValues = (obj, finalObj = {}, parentPath = "", options = {}) => {
 	for (const i in transformedObj) {
 		if (transformedObj.hasOwnProperty(i)) {
 			if (typeof transformedObj[i] === "object") {
-				flattenValues(transformedObj[i], finalObj, currentPath(i), options);
+				flattenValues(transformedObj[i], finalObj, currentPath(i), options, objCache);
 			}
 			
 			finalObj[currentPath(i)] = options.transformWrite(transformedObj[i]);
@@ -505,16 +521,19 @@ const up = (path) => {
  * @param {Object} obj The object to count key leaf nodes for.
  * @returns {Number} The number of keys.
  */
-const countLeafNodes = (obj) => {
+const countLeafNodes = (obj, objCache = []) => {
 	let totalKeys = 0;
+	
+	// Add object to cache to make sure we don't traverse it twice
+	objCache.push(obj);
 	
 	for (const i in obj) {
 		if (obj.hasOwnProperty(i)) {
 			if (obj[i] !== undefined) {
-				if (typeof obj[i] !== "object") {
+				if (typeof obj[i] !== "object" || objCache.indexOf(obj[i]) > -1) {
 					totalKeys++;
 				} else {
-					totalKeys += countLeafNodes(obj[i]);
+					totalKeys += countLeafNodes(obj[i], objCache);
 				}
 			}
 		}
@@ -525,7 +544,7 @@ const countLeafNodes = (obj) => {
 
 /**
  * Tests if the passed object has the paths that are specified and that
- * a value exists in those paths.
+ * a value exists in those paths. MAY NOT BE INFINITE RECURSION SAFE.
  * @param {Object} testKeys The object describing the paths to test for.
  * @param {Object} testObj The object to test paths against.
  * @returns {Boolean} True if the object paths exist.
@@ -557,6 +576,7 @@ const hasMatchingPathsInObject = function (testKeys, testObj) {
 /**
  * Tests if the passed object has the paths that are specified and that
  * a value exists in those paths and if so returns the number matched.
+ * MAY NOT BE INFINITE RECURSION SAFE.
  * @param {Object} testKeys The object describing the paths to test for.
  * @param {Object} testObj The object to test paths against.
  * @returns {Object<matchedKeys<Number>, matchedKeyCount<Number>, totalKeyCount<Number>>} Stats on the matched keys.
