@@ -619,6 +619,149 @@ const countMatchingPathsInObject = (testKeys, testObj) => {
 	};
 };
 
+/**
+ * Returns the type from the item passed. Similar to JavaScript's
+ * built-in typeof except it will distinguish between arrays, nulls
+ * and objects as well.
+ * @param {*} item The item to get the type of.
+ * @returns {string|"undefined"|"object"|"boolean"|"number"|"string"|"function"|"symbol"|"null"|"array"}
+ */
+const type = (item) => {
+	if (item === null) {
+		return 'null';
+	}
+	if (Array.isArray(item)) {
+		return 'array';
+	}
+	
+	return typeof item;
+};
+
+/**
+ * Scans an object for all keys that are either objects or arrays
+ * and returns an array of those keys only.
+ * @param {Object} obj The object to scan.
+ * @returns {[string]} An array of string keys.
+ * @private
+ */
+const _iterableKeys = (obj) => {
+	return Object.entries(obj).reduce((arr, [key, val]) => {
+		const valType = type(val);
+		if (valType === "object" || valType === "array") {
+			arr.push(key);
+		}
+		
+		return arr;
+	}, []);
+};
+
+/**
+ * Finds the first item that matches the structure of `query`
+ * and returns the path to it.
+ * @param {*} source The source to test.
+ * @param {*} query The query to match.
+ * @param {String=""} parentPath The aggregated path to the current
+ * structure in source. Do not pass a value for this.
+ */
+const findOnePath = (source, query, parentPath = "") => {
+	const sourceType = type(source);
+	const queryType = type(query);
+	
+	// Early exits
+	if (source === query) {
+		return {match: true, path: parentPath};
+	}
+	if (source === undefined && query !== undefined) {
+		return {match: false};
+	}
+	
+	if (sourceType === "array") {
+		// Loop source and compare each item with query
+		for (let i = 0; i < source.length; i++) {
+			const result = findOnePath(source[i], query, join(parentPath, String(i)));
+			
+			if (result.match) {
+				return result;
+			}
+		}
+		
+		return {match: false};
+	}
+	
+	if (sourceType === "object" && queryType === "object") {
+		const keys = Object.keys(query);
+		
+		let result = {
+			match: false
+		};
+		
+		for (let i = 0; i < keys.length; i++) {
+			const key = keys[i];
+			result = findOnePath(source[key], query[key], join(parentPath, key));
+			
+			if (result.match) {
+				return {match: true, path: parentPath};
+			}
+		}
+		
+		// If we don't have a match, check if we should drill down
+		if (!result.match) {
+			const subSearch = _iterableKeys(source);
+			
+			// Drill down into each sub-object to see if we have a match
+			for (let i = 0; i < subSearch.length; i++) {
+				const key = subSearch[i];
+				const subSearchResult = findOnePath(source[key], query, join(parentPath, key));
+				
+				if (subSearchResult.match) {
+					return subSearchResult;
+				}
+			}
+		}
+		
+		// All keys in the query matched the source, return our current path
+		return {match: false};
+	}
+	
+	if (sourceType === "object" && (queryType === "string" || queryType === "number" || queryType === "null")) {
+		const keys = Object.keys(source);
+		let result = {
+			match: false
+		};
+		
+		for (let i = 0; i < keys.length; i++) {
+			const key = keys[i];
+			
+			result = findOnePath(source[key], query, join(parentPath, key));
+			
+			// If we find a single non-matching key, return false
+			if (result.match) {
+				return result;
+			}
+		}
+		
+		// If we don't have a match, check if we should drill down
+		if (!result.match) {
+			const subSearch = _iterableKeys(source);
+			
+			// Drill down into each sub-object to see if we have a match
+			for (let i = 0; i < subSearch.length; i++) {
+				const key = subSearch[i];
+				const subSearchResult = findOnePath(source[key], query, join(parentPath, key));
+				
+				if (subSearchResult.match) {
+					return subSearchResult;
+				}
+			}
+		}
+		
+		// All keys in the query matched the source, return our current path
+		return result;
+	}
+	
+	return {match: false};
+};
+
 module.exports = {
 	wildcardToZero,
 	numberToWildcard,
@@ -637,5 +780,6 @@ module.exports = {
 	up,
 	countLeafNodes,
 	hasMatchingPathsInObject,
-	countMatchingPathsInObject
+	countMatchingPathsInObject,
+	findOnePath
 };

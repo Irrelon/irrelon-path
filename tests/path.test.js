@@ -6,7 +6,8 @@ const {
 	values,
 	flatten,
 	flattenValues,
-	countLeafNodes
+	countLeafNodes,
+	findOnePath
 } = require("../src/Path");
 
 describe("Path", () => {
@@ -309,6 +310,138 @@ describe("Path", () => {
 			set(obj, "foo", false);
 			
 			assert.strictEqual(obj.foo, false, "The value was set correctly");
+		});
+	});
+	
+	describe("findOnePath()", () => {
+		describe("Positive tests", () => {
+			it("Will return the correct path for a root string", () => {
+				const result = findOnePath("Bookshop1", "Bookshop1");
+				
+				assert.strictEqual(result.path, "");
+			});
+			
+			it("Will return the correct path for an object nested string", () => {
+				const result = findOnePath([{"_id": "Bookshop1"}], "Bookshop1");
+				
+				assert.strictEqual(result.path, "0._id");
+			});
+			
+			it("Will return the correct path for a nested equal object", () => {
+				const result = findOnePath({"profile": {"_id": "Bookshop1"}}, {"profile": {"_id": "Bookshop1"}});
+				
+				assert.strictEqual(result.path, "");
+			});
+			
+			it("Will return the correct path for an array nested string", () => {
+				const result = findOnePath([{"_id": "Bookshop1"}], {"_id": "Bookshop1"});
+				
+				assert.strictEqual(result.path, "0");
+			});
+			
+			it("Will return the correct path for a single-level nested string", () => {
+				const result = findOnePath({"profile": {"_id": "Bookshop1"}}, {"_id": "Bookshop1"});
+				
+				assert.strictEqual(result.path, "profile");
+			});
+			
+			it("Will return the correct path for a complex nested string", () => {
+				const testObj = {
+					"items": [{
+						"_id": 1,
+						"title": "A night to remember",
+						"stockedBy": ["Bookshop1", "Bookshop4"]
+					}, {
+						"_id": 2,
+						"title": "Dream a little dream",
+						"stockedBy": ["Bookshop1", "Bookshop2"]
+					}]
+				};
+				
+				const result = findOnePath(testObj, "Bookshop1");
+				
+				assert.strictEqual(result.path, "items.0.stockedBy.0");
+			});
+			
+			it("Will return the correct path for a complex nested object", () => {
+				const testObj = {
+					"items": [{
+						"_id": 1,
+						"title": "A night to remember",
+						"stockedBy": ["Bookshop1", "Bookshop4"]
+					}, {
+						"_id": 2,
+						"title": "Dream a little dream",
+						"stockedBy": ["Bookshop1", "Bookshop2"]
+					}]
+				};
+				
+				const result = findOnePath(testObj, {_id: 2});
+				
+				assert.strictEqual(result.path, "items.1");
+			});
+		});
+		
+		describe("Negative tests", () => {
+			it("Will return the correct path for a root string", () => {
+				const result = findOnePath("Bookshop1", "Bookshop2");
+				
+				assert.strictEqual(result.match, false);
+			});
+			
+			it("Will return the correct path for non-matching a nested equal object", () => {
+				const result = findOnePath({"profile": {"_id": "Bookshop1"}}, {"profile": {"_id": "Bookshop2"}});
+				
+				assert.strictEqual(result.match, false);
+			});
+			
+			it("Will return the correct path for an array nested string", () => {
+				const result = findOnePath([{"_id": "Bookshop1"}], {"_id": "Bookshop2"});
+				
+				assert.strictEqual(result.match, false);
+			});
+			
+			it("Will return the correct path for a single-level nested string", () => {
+				const result = findOnePath({"profile": {"_id": "Bookshop1"}}, {"_id": "Bookshop2"});
+				
+				assert.strictEqual(result.match, false);
+			});
+			
+			it("Will return the correct path for a complex nested string", () => {
+				const testObj = {
+					"items": [{
+						"_id": 1,
+						"title": "A night to remember",
+						"stockedBy": ["Bookshop1", "Bookshop4"]
+					}, {
+						"_id": 2,
+						"title": "Dream a little dream",
+						"stockedBy": ["Bookshop1", "Bookshop2"]
+					}]
+				};
+				
+				const result = findOnePath(testObj, "Bookshop3");
+				
+				assert.strictEqual(result.match, false);
+			});
+			
+			it("Will return the correct path for a complex nested object", () => {
+				const testObj = {
+					"items": [{
+						"_id": 1,
+						"title": "A night to remember",
+						"stockedBy": ["Bookshop1", "Bookshop4"]
+					}, {
+						"_id": 2,
+						"title": "Dream a little dream",
+						"stockedBy": ["Bookshop1", "Bookshop2"]
+					}]
+				};
+				
+				const result = findOnePath(testObj, {_id: 3});
+				
+				assert.strictEqual(result.match, false);
+			});
 		});
 	});
 });
