@@ -2,6 +2,8 @@
 
 var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
 
+var _slicedToArray2 = _interopRequireDefault(require("@babel/runtime/helpers/slicedToArray"));
+
 var _toConsumableArray2 = _interopRequireDefault(require("@babel/runtime/helpers/toConsumableArray"));
 
 var _typeof2 = _interopRequireDefault(require("@babel/runtime/helpers/typeof"));
@@ -53,6 +55,10 @@ var numberToWildcard = function numberToWildcard (key) {
 
 
 var clean = function clean (str) {
+	if (!str) {
+		return str;
+	}
+	
 	if (str.substr(0, 1) === ".") {
 		str = str.substr(1, str.length - 1);
 	}
@@ -217,32 +223,31 @@ var set = function set (obj, path, val) {
 	var pathParts = split(internalPath);
 	objPart = obj;
 	
-	for (var i = 0; i < pathParts.length; i++) {
+	for (var i = 0; i < pathParts.length - 1; i++) {
 		var pathPart = pathParts[i];
-		var transformedPathPart = options.transformKey(pathPart);
-		var tmpPart = objPart[transformedPathPart];
+		
+		var _transformedPathPart = options.transformKey(pathPart);
+		
+		var tmpPart = objPart[_transformedPathPart];
 		
 		if (!tmpPart || (0, _typeof2.default)(objPart) !== "object") {
-			if (i !== pathParts.length - 1) {
-				// Create an object or array on the path
-				if (String(parseInt(pathPart, 10)) === pathPart) {
-					// This is an array index
-					objPart[transformedPathPart] = [];
-				} else {
-					objPart[transformedPathPart] = {};
-				}
-				
-				objPart = objPart[transformedPathPart];
+			// Create an object or array on the path
+			if (String(parseInt(pathPart, 10)) === pathPart) {
+				// This is an array index
+				objPart[_transformedPathPart] = [];
+			} else {
+				objPart[_transformedPathPart] = {};
 			}
+			
+			objPart = objPart[_transformedPathPart];
 		} else {
 			objPart = tmpPart;
 		}
-		
-		if (i === pathParts.length - 1) {
-			// Set value
-			objPart[transformedPathPart] = val;
-		}
-	}
+	} // Set value
+	
+	
+	var transformedPathPart = options.transformKey(pathParts[pathParts.length - 1]);
+	objPart[transformedPathPart] = val;
 };
 /**
  * Push a value to an array on an object for the specified path.
@@ -381,7 +386,7 @@ var values = function values (obj, path) {
  * Takes an object and finds all paths, then returns the paths as an
  * array of strings.
  * @param {Object} obj The object to scan.
- * @param {Array=} finalObj An object used to collect the path keys.
+ * @param {Array=} finalArr An object used to collect the path keys.
  * (Do not pass this in directly - use undefined).
  * @param {String=} parentPath The path of the parent object. (Do not
  * pass this in directly - use undefined).
@@ -391,15 +396,23 @@ var values = function values (obj, path) {
 
 
 var flatten = function flatten (obj) {
-	var finalObj = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
+	var finalArr = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
 	var parentPath = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : "";
 	var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+	var objCache = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : [];
 	options = (0, _objectSpread2.default)({
 		"transformRead": returnWhatWasGiven,
 		"transformKey": returnWhatWasGiven,
 		"transformWrite": returnWhatWasGiven
 	}, options);
-	var transformedObj = options.transformRead(obj);
+	var transformedObj = options.transformRead(obj); // Check that we haven't visited this object before (avoid infinite recursion)
+	
+	if (objCache.indexOf(transformedObj) > -1) {
+		return finalArr;
+	} // Add object to cache to make sure we don't traverse it twice
+	
+	
+	objCache.push(transformedObj);
 	
 	var currentPath = function currentPath (i) {
 		var tKey = options.transformKey(i);
@@ -413,14 +426,14 @@ var flatten = function flatten (obj) {
 			}
 			
 			if ((0, _typeof2.default)(transformedObj[i]) === "object") {
-				flatten(transformedObj[i], finalObj, currentPath(i), options);
+				flatten(transformedObj[i], finalArr, currentPath(i), options, objCache);
 			}
 			
-			finalObj.push(currentPath(i));
+			finalArr.push(currentPath(i));
 		}
 	}
 	
-	return finalObj;
+	return finalArr;
 };
 /**
  * Takes an object and finds all paths, then returns the paths as keys
@@ -439,12 +452,20 @@ var flattenValues = function flattenValues (obj) {
 	var finalObj = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 	var parentPath = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : "";
 	var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+	var objCache = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : [];
 	options = (0, _objectSpread2.default)({
 		"transformRead": returnWhatWasGiven,
 		"transformKey": returnWhatWasGiven,
 		"transformWrite": returnWhatWasGiven
 	}, options);
-	var transformedObj = options.transformRead(obj);
+	var transformedObj = options.transformRead(obj); // Check that we haven't visited this object before (avoid infinite recursion)
+	
+	if (objCache.indexOf(transformedObj) > -1) {
+		return finalObj;
+	} // Add object to cache to make sure we don't traverse it twice
+	
+	
+	objCache.push(transformedObj);
 	
 	var currentPath = function currentPath (i) {
 		var tKey = options.transformKey(i);
@@ -454,7 +475,7 @@ var flattenValues = function flattenValues (obj) {
 	for (var i in transformedObj) {
 		if (transformedObj.hasOwnProperty(i)) {
 			if ((0, _typeof2.default)(transformedObj[i]) === "object") {
-				flattenValues(transformedObj[i], finalObj, currentPath(i), options);
+				flattenValues(transformedObj[i], finalObj, currentPath(i), options, objCache);
 			}
 			
 			finalObj[currentPath(i)] = options.transformWrite(transformedObj[i]);
@@ -530,15 +551,18 @@ var up = function up (path) {
 
 
 var countLeafNodes = function countLeafNodes (obj) {
-	var totalKeys = 0;
+	var objCache = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
+	var totalKeys = 0; // Add object to cache to make sure we don't traverse it twice
+	
+	objCache.push(obj);
 	
 	for (var i in obj) {
 		if (obj.hasOwnProperty(i)) {
 			if (obj[i] !== undefined) {
-				if ((0, _typeof2.default)(obj[i]) !== "object") {
+				if ((0, _typeof2.default)(obj[i]) !== "object" || objCache.indexOf(obj[i]) > -1) {
 					totalKeys++;
 				} else {
-					totalKeys += countLeafNodes(obj[i]);
+					totalKeys += countLeafNodes(obj[i], objCache);
 				}
 			}
 		}
@@ -548,7 +572,7 @@ var countLeafNodes = function countLeafNodes (obj) {
 };
 /**
  * Tests if the passed object has the paths that are specified and that
- * a value exists in those paths.
+ * a value exists in those paths. MAY NOT BE INFINITE RECURSION SAFE.
  * @param {Object} testKeys The object describing the paths to test for.
  * @param {Object} testObj The object to test paths against.
  * @returns {Boolean} True if the object paths exist.
@@ -580,6 +604,7 @@ var hasMatchingPathsInObject = function hasMatchingPathsInObject (testKeys, test
 /**
  * Tests if the passed object has the paths that are specified and that
  * a value exists in those paths and if so returns the number matched.
+ * MAY NOT BE INFINITE RECURSION SAFE.
  * @param {Object} testKeys The object describing the paths to test for.
  * @param {Object} testObj The object to test paths against.
  * @returns {Object<matchedKeys<Number>, matchedKeyCount<Number>, totalKeyCount<Number>>} Stats on the matched keys.
@@ -620,6 +645,172 @@ var countMatchingPathsInObject = function countMatchingPathsInObject (testKeys, 
 		totalKeyCount: totalKeyCount
 	};
 };
+/**
+ * Returns the type from the item passed. Similar to JavaScript's
+ * built-in typeof except it will distinguish between arrays, nulls
+ * and objects as well.
+ * @param {*} item The item to get the type of.
+ * @returns {string|"undefined"|"object"|"boolean"|"number"|"string"|"function"|"symbol"|"null"|"array"}
+ */
+
+
+var type = function type (item) {
+	if (item === null) {
+		return 'null';
+	}
+	
+	if (Array.isArray(item)) {
+		return 'array';
+	}
+	
+	return (0, _typeof2.default)(item);
+};
+/**
+ * Scans an object for all keys that are either objects or arrays
+ * and returns an array of those keys only.
+ * @param {Object} obj The object to scan.
+ * @returns {[string]} An array of string keys.
+ * @private
+ */
+
+
+var _iterableKeys = function _iterableKeys (obj) {
+	return Object.entries(obj).reduce(function (arr, _ref) {
+		var _ref2 = (0, _slicedToArray2.default)(_ref, 2),
+			key = _ref2[0],
+			val = _ref2[1];
+		
+		var valType = type(val);
+		
+		if (valType === "object" || valType === "array") {
+			arr.push(key);
+		}
+		
+		return arr;
+	}, []);
+};
+/**
+ * Finds the first item that matches the structure of `query`
+ * and returns the path to it.
+ * @param {*} source The source to test.
+ * @param {*} query The query to match.
+ * @param {String=""} parentPath The aggregated path to the current
+ * structure in source. Do not pass a value for this.
+ */
+
+
+var findOnePath = function findOnePath (source, query) {
+	var parentPath = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : "";
+	var sourceType = type(source);
+	var queryType = type(query); // Early exits
+	
+	if (source === query) {
+		return {
+			match: true,
+			path: parentPath
+		};
+	}
+	
+	if (source === undefined && query !== undefined) {
+		return {
+			match: false
+		};
+	}
+	
+	if (sourceType === "array") {
+		// Loop source and compare each item with query
+		for (var i = 0; i < source.length; i++) {
+			var result = findOnePath(source[i], query, join(parentPath, String(i)));
+			
+			if (result.match) {
+				return result;
+			}
+		}
+		
+		return {
+			match: false
+		};
+	}
+	
+	if (sourceType === "object" && queryType === "object") {
+		var keys = Object.keys(query);
+		var _result = {
+			match: false
+		};
+		
+		for (var _i = 0; _i < keys.length; _i++) {
+			var key = keys[_i];
+			_result = findOnePath(source[key], query[key], join(parentPath, key));
+			
+			if (_result.match) {
+				return {
+					match: true,
+					path: parentPath
+				};
+			}
+		} // If we don't have a match, check if we should drill down
+		
+		
+		if (!_result.match) {
+			var subSearch = _iterableKeys(source); // Drill down into each sub-object to see if we have a match
+			
+			
+			for (var _i2 = 0; _i2 < subSearch.length; _i2++) {
+				var _key3 = subSearch[_i2];
+				var subSearchResult = findOnePath(source[_key3], query, join(parentPath, _key3));
+				
+				if (subSearchResult.match) {
+					return subSearchResult;
+				}
+			}
+		} // All keys in the query matched the source, return our current path
+		
+		
+		return {
+			match: false
+		};
+	}
+	
+	if (sourceType === "object" && (queryType === "string" || queryType === "number" || queryType === "null")) {
+		var _keys = Object.keys(source);
+		
+		var _result2 = {
+			match: false
+		};
+		
+		for (var _i3 = 0; _i3 < _keys.length; _i3++) {
+			var _key4 = _keys[_i3];
+			_result2 = findOnePath(source[_key4], query, join(parentPath, _key4)); // If we find a single non-matching key, return false
+			
+			if (_result2.match) {
+				return _result2;
+			}
+		} // If we don't have a match, check if we should drill down
+		
+		
+		if (!_result2.match) {
+			var _subSearch = _iterableKeys(source); // Drill down into each sub-object to see if we have a match
+			
+			
+			for (var _i4 = 0; _i4 < _subSearch.length; _i4++) {
+				var _key5 = _subSearch[_i4];
+				
+				var _subSearchResult = findOnePath(source[_key5], query, join(parentPath, _key5));
+				
+				if (_subSearchResult.match) {
+					return _subSearchResult;
+				}
+			}
+		} // All keys in the query matched the source, return our current path
+		
+		
+		return _result2;
+	}
+	
+	return {
+		match: false
+	};
+};
 
 module.exports = {
 	wildcardToZero: wildcardToZero,
@@ -639,5 +830,6 @@ module.exports = {
 	up: up,
 	countLeafNodes: countLeafNodes,
 	hasMatchingPathsInObject: hasMatchingPathsInObject,
-	countMatchingPathsInObject: countMatchingPathsInObject
+	countMatchingPathsInObject: countMatchingPathsInObject,
+	findOnePath: findOnePath
 };
