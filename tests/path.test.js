@@ -2,6 +2,7 @@ const {describe, it, assert} = require("mocha-expect");
 const {
 	get,
 	set,
+	setImmutable,
 	furthest,
 	values,
 	flatten,
@@ -259,7 +260,7 @@ describe("Path", () => {
 	});
 	
 	describe("set()", () => {
-		it("Can set a value on the passed object at the correct path", () => {
+		it("Can set a value on the passed object at the correct path with auto-created objects", () => {
 			const obj = {};
 			
 			set(obj, "foo.bar.thing", "foo");
@@ -310,6 +311,51 @@ describe("Path", () => {
 			set(obj, "foo", false);
 			
 			assert.strictEqual(obj.foo, false, "The value was set correctly");
+		});
+	});
+	
+	describe("setImmutable()", () => {
+		it("Can de-reference all objects which contain a change (useful for state management systems)", () => {
+			const obj = {
+				"shouldNotChange1": {},
+				"shouldNotChange2": {},
+				"shouldChange1": {
+					"shouldChange2": {
+						"shouldNotChange3": {},
+						"shouldChange3": {
+							"value": false
+						}
+					}
+				}
+			};
+			
+			const shouldNotChange1 = obj.shouldNotChange1;
+			const shouldNotChange2 = obj.shouldNotChange2;
+			const shouldNotChange3 = obj.shouldChange1.shouldChange2.shouldNotChange3;
+			
+			const shouldChange1 = obj.shouldChange1;
+			const shouldChange2 = obj.shouldChange1.shouldChange2;
+			const shouldChange3 = obj.shouldChange1.shouldChange2.shouldChange3;
+			
+			const newObj = setImmutable(obj, "shouldChange1.shouldChange2.shouldChange3.value", true);
+			
+			assert.notStrictEqual(newObj, obj, "Root object is not the same");
+			
+			assert.strictEqual(obj.shouldChange1.shouldChange2.shouldChange3.value, false, "The value of the original object was not changed");
+			assert.strictEqual(obj.shouldNotChange1, shouldNotChange1, "Value did not change");
+			assert.strictEqual(obj.shouldNotChange2, shouldNotChange2, "Value did not change");
+			assert.strictEqual(obj.shouldChange1.shouldChange2.shouldNotChange3, shouldNotChange3, "Value did not change");
+			assert.strictEqual(obj.shouldChange1, shouldChange1, "Value did not change");
+			assert.strictEqual(obj.shouldChange1.shouldChange2, shouldChange2, "Value did not change");
+			assert.strictEqual(obj.shouldChange1.shouldChange2.shouldChange3, shouldChange3, "Value did not change");
+			
+			assert.strictEqual(newObj.shouldChange1.shouldChange2.shouldChange3.value, true, "The value of the new object was changed");
+			assert.strictEqual(newObj.shouldNotChange1, shouldNotChange1, "Value did not change");
+			assert.strictEqual(newObj.shouldNotChange2, shouldNotChange2, "Value did not change");
+			assert.strictEqual(newObj.shouldChange1.shouldChange2.shouldNotChange3, shouldNotChange3, "Value did not change");
+			assert.notStrictEqual(newObj.shouldChange1, shouldChange1, "Value did not change");
+			assert.notStrictEqual(newObj.shouldChange1.shouldChange2, shouldChange2, "Value did not change");
+			assert.notStrictEqual(newObj.shouldChange1.shouldChange2.shouldChange3, shouldChange3, "Value did not change");
 		});
 	});
 	

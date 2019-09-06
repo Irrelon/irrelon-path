@@ -6,9 +6,11 @@ var _slicedToArray2 = _interopRequireDefault(require("@babel/runtime/helpers/sli
 
 var _toConsumableArray2 = _interopRequireDefault(require("@babel/runtime/helpers/toConsumableArray"));
 
+var _defineProperty2 = _interopRequireDefault(require("@babel/runtime/helpers/defineProperty"));
+
 var _typeof2 = _interopRequireDefault(require("@babel/runtime/helpers/typeof"));
 
-var _objectSpread2 = _interopRequireDefault(require("@babel/runtime/helpers/objectSpread"));
+var _objectSpread4 = _interopRequireDefault(require("@babel/runtime/helpers/objectSpread"));
 
 var _this = void 0;
 
@@ -125,7 +127,7 @@ var get = function get (obj, path) {
 	var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
 	var internalPath = path,
 		objPart;
-	options = (0, _objectSpread2.default)({
+	options = (0, _objectSpread4.default)({
 		"transformRead": returnWhatWasGiven,
 		"transformKey": returnWhatWasGiven,
 		"transformWrite": returnWhatWasGiven
@@ -189,7 +191,7 @@ var set = function set (obj, path, val) {
 	var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
 	var internalPath = path,
 		objPart;
-	options = (0, _objectSpread2.default)({
+	options = (0, _objectSpread4.default)({
 		"transformRead": returnWhatWasGiven,
 		"transformKey": returnWhatWasGiven,
 		"transformWrite": returnWhatWasGiven
@@ -232,7 +234,7 @@ var set = function set (obj, path, val) {
 		
 		if (!tmpPart || (0, _typeof2.default)(objPart) !== "object") {
 			// Create an object or array on the path
-			if (String(parseInt(pathPart, 10)) === pathPart) {
+			if (String(parseInt(_transformedPathPart, 10)) === _transformedPathPart) {
 				// This is an array index
 				objPart[_transformedPathPart] = [];
 			} else {
@@ -248,6 +250,63 @@ var set = function set (obj, path, val) {
 	
 	var transformedPathPart = options.transformKey(pathParts[pathParts.length - 1]);
 	objPart[transformedPathPart] = val;
+};
+
+var setImmutable = function setImmutable (obj, path, val) {
+	var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+	var internalPath = path,
+		objPart;
+	options = (0, _objectSpread4.default)({
+		"transformRead": returnWhatWasGiven,
+		"transformKey": returnWhatWasGiven,
+		"transformWrite": returnWhatWasGiven
+	}, options); // No object data
+	
+	if (obj === undefined || obj === null) {
+		return obj;
+	} // No path string
+	
+	
+	if (!internalPath) {
+		return obj;
+	}
+	
+	internalPath = clean(internalPath); // Path is not a string, throw error
+	
+	if (typeof internalPath !== "string") {
+		throw new Error("Path argument must be a string");
+	}
+	
+	if ((0, _typeof2.default)(obj) !== "object") {
+		return obj;
+	}
+	
+	var newObj = (0, _objectSpread4.default)({}, obj); // Path has no dot-notation, set key/value
+	
+	if (internalPath.indexOf(".") === -1) {
+		return (0, _objectSpread4.default)({}, newObj, (0, _defineProperty2.default)({}, options.transformKey(internalPath), val));
+	}
+	
+	var pathParts = split(internalPath);
+	var pathPart = pathParts.shift();
+	var transformedPathPart = options.transformKey(pathPart);
+	var childPart = newObj[transformedPathPart];
+	
+	if (!childPart) {
+		// Create an object or array on the path
+		if (String(parseInt(transformedPathPart, 10)) === transformedPathPart) {
+			// This is an array index
+			newObj[transformedPathPart] = [];
+		} else {
+			newObj[transformedPathPart] = {};
+		}
+		
+		objPart = newObj[transformedPathPart];
+	} else {
+		objPart = childPart;
+	}
+	
+	return (0, _objectSpread4.default)({}, newObj, (0, _defineProperty2.default)({}, transformedPathPart, setImmutable(objPart, pathParts.join('.'), val, options)));
 };
 /**
  * Push a value to an array on an object for the specified path.
@@ -301,7 +360,7 @@ var furthest = function furthest (obj, path) {
 	var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
 	var internalPath = path,
 		objPart;
-	options = (0, _objectSpread2.default)({
+	options = (0, _objectSpread4.default)({
 		"transformRead": returnWhatWasGiven,
 		"transformKey": wildcardToZero,
 		// Any path that has a wildcard will essentially check the first array item to continue down the tree
@@ -367,7 +426,7 @@ var values = function values (obj, path) {
 	var pathParts = split(internalPath);
 	var currentPath = [];
 	var valueData = {};
-	options = (0, _objectSpread2.default)({
+	options = (0, _objectSpread4.default)({
 		"transformRead": returnWhatWasGiven,
 		"transformKey": returnWhatWasGiven,
 		"transformWrite": returnWhatWasGiven
@@ -400,7 +459,7 @@ var flatten = function flatten (obj) {
 	var parentPath = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : "";
 	var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
 	var objCache = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : [];
-	options = (0, _objectSpread2.default)({
+	options = (0, _objectSpread4.default)({
 		"transformRead": returnWhatWasGiven,
 		"transformKey": returnWhatWasGiven,
 		"transformWrite": returnWhatWasGiven
@@ -453,7 +512,7 @@ var flattenValues = function flattenValues (obj) {
 	var parentPath = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : "";
 	var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
 	var objCache = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : [];
-	options = (0, _objectSpread2.default)({
+	options = (0, _objectSpread4.default)({
 		"transformRead": returnWhatWasGiven,
 		"transformKey": returnWhatWasGiven,
 		"transformWrite": returnWhatWasGiven
@@ -820,6 +879,7 @@ module.exports = {
 	escape: escape,
 	get: get,
 	set: set,
+	setImmutable: setImmutable,
 	push: push,
 	furthest: furthest,
 	values: values,

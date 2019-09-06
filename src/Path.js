@@ -212,7 +212,7 @@ const set = (obj, path, val, options = {}) => {
 		
 		if ((!tmpPart || typeof(objPart) !== "object")) {
 			// Create an object or array on the path
-			if (String(parseInt(pathPart, 10)) === pathPart) {
+			if (String(parseInt(transformedPathPart, 10)) === transformedPathPart) {
 				// This is an array index
 				objPart[transformedPathPart] = [];
 			} else {
@@ -228,6 +228,75 @@ const set = (obj, path, val, options = {}) => {
 	// Set value
 	const transformedPathPart = options.transformKey(pathParts[pathParts.length - 1]);
 	objPart[transformedPathPart] = val;
+};
+
+const setImmutable = (obj, path, val, options = {}) => {
+	let internalPath = path,
+		objPart;
+	
+	options = {
+		"transformRead": returnWhatWasGiven,
+		"transformKey": returnWhatWasGiven,
+		"transformWrite": returnWhatWasGiven,
+		...options
+	};
+	
+	// No object data
+	if (obj === undefined || obj === null) {
+		return obj;
+	}
+	
+	// No path string
+	if (!internalPath) {
+		return obj;
+	}
+	
+	internalPath = clean(internalPath);
+	
+	// Path is not a string, throw error
+	if (typeof internalPath !== "string") {
+		throw new Error("Path argument must be a string");
+	}
+	
+	if (typeof obj !== "object") {
+		return obj;
+	}
+	
+	const newObj = {
+		...obj
+	};
+	
+	// Path has no dot-notation, set key/value
+	if (internalPath.indexOf(".") === -1) {
+		return {
+			...newObj,
+			[options.transformKey(internalPath)]: val
+		};
+	}
+	
+	const pathParts = split(internalPath);
+	const pathPart = pathParts.shift();
+	const transformedPathPart = options.transformKey(pathPart);
+	let childPart = newObj[transformedPathPart];
+	
+	if (!childPart) {
+		// Create an object or array on the path
+		if (String(parseInt(transformedPathPart, 10)) === transformedPathPart) {
+			// This is an array index
+			newObj[transformedPathPart] = [];
+		} else {
+			newObj[transformedPathPart] = {};
+		}
+		
+		objPart = newObj[transformedPathPart];
+	} else {
+		objPart = childPart;
+	}
+	
+	return {
+		...newObj,
+		[transformedPathPart]: setImmutable(objPart, pathParts.join('.'), val, options)
+	};
 };
 
 /**
@@ -770,6 +839,7 @@ module.exports = {
 	escape,
 	get,
 	set,
+	setImmutable,
 	push,
 	furthest,
 	values,
