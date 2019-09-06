@@ -230,6 +230,30 @@ const set = (obj, path, val, options = {}) => {
 	objPart[transformedPathPart] = val;
 };
 
+const _newInstance = (item, key = undefined, val = undefined) => {
+	const objType = type(item);
+	
+	let newObj;
+	
+	if (objType === "object") {
+		newObj = {
+			...item
+		};
+	}
+	
+	if (objType === "array") {
+		newObj = [
+			...item
+		];
+	}
+	
+	if (key !== undefined) {
+		newObj[key] = val;
+	}
+	
+	return newObj;
+};
+
 const setImmutable = (obj, path, val, options = {}) => {
 	let internalPath = path,
 		objPart;
@@ -262,18 +286,12 @@ const setImmutable = (obj, path, val, options = {}) => {
 		return obj;
 	}
 	
-	const newObj = {
-		...obj
-	};
-	
 	// Path has no dot-notation, set key/value
 	if (internalPath.indexOf(".") === -1) {
-		return {
-			...newObj,
-			[options.transformKey(internalPath)]: val
-		};
+		return _newInstance(obj, options.transformKey(internalPath), val);
 	}
 	
+	const newObj = _newInstance(obj);
 	const pathParts = split(internalPath);
 	const pathPart = pathParts.shift();
 	const transformedPathPart = options.transformKey(pathPart);
@@ -293,10 +311,7 @@ const setImmutable = (obj, path, val, options = {}) => {
 		objPart = childPart;
 	}
 	
-	return {
-		...newObj,
-		[transformedPathPart]: setImmutable(objPart, pathParts.join('.'), val, options)
-	};
+	return _newInstance(newObj, transformedPathPart, setImmutable(objPart, pathParts.join('.'), val, options));
 };
 
 /**
@@ -851,5 +866,6 @@ module.exports = {
 	countLeafNodes,
 	hasMatchingPathsInObject,
 	countMatchingPathsInObject,
-	findOnePath
+	findOnePath,
+	type
 };

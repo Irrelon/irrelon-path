@@ -8,7 +8,8 @@ const {
 	flatten,
 	flattenValues,
 	countLeafNodes,
-	findOnePath
+	findOnePath,
+	type
 } = require("../src/Path");
 
 describe("Path", () => {
@@ -356,6 +357,23 @@ describe("Path", () => {
 			assert.notStrictEqual(newObj.shouldChange1, shouldChange1, "Value did not change");
 			assert.notStrictEqual(newObj.shouldChange1.shouldChange2, shouldChange2, "Value did not change");
 			assert.notStrictEqual(newObj.shouldChange1.shouldChange2.shouldChange3, shouldChange3, "Value did not change");
+		});
+		
+		it("Can update a value in an object within a nested array", () => {
+			const obj = {
+				"foo": [{
+					"value": false
+				}]
+			};
+			
+			const foo = obj.foo;
+			const fooType = type(obj.foo);
+			
+			const newObj = setImmutable(obj, "foo.0.value", true);
+			const newFooType = type(newObj.foo);
+			
+			assert.notStrictEqual(newObj, obj, "Root object is not the same");
+			assert.strictEqual(fooType, newFooType, "Array type has not changed");
 		});
 	});
 	
