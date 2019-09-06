@@ -540,7 +540,7 @@ const flattenValues = (obj, finalObj = {}, parentPath = "", options = {}, objCac
  * Ignores blank or undefined path parts and also ensures
  * that each part is escaped so passing "foo.bar" will
  * result in an escaped version.
- * @param {Array} args The arguments passed to the function,
+ * @param {...String} args The arguments passed to the function,
  * spread using ES6 spread.
  * @returns {string} A final path string.
  */
