@@ -591,11 +591,16 @@ const joinEscaped = (...args) => {
  * leaf from the path. E.g. "foo.bar.thing" becomes
  * "foo.bar".
  * @param {String} path The path to operate on.
+ * @param {Number=} levels The number of levels to
+ * move up.
  * @returns {String} The new path string.
  */
-const up = (path) => {
+const up = (path, levels = 1) => {
 	const parts = split(path);
-	parts.pop();
+	
+	for (let i = 0; i < levels; i++) {
+		parts.pop();
+	}
 	
 	return parts.join(".");
 };

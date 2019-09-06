@@ -613,13 +613,20 @@ var joinEscaped = function joinEscaped () {
  * leaf from the path. E.g. "foo.bar.thing" becomes
  * "foo.bar".
  * @param {String} path The path to operate on.
+ * @param {Number=} levels The number of levels to
+ * move up.
  * @returns {String} The new path string.
  */
 
 
 var up = function up (path) {
+	var levels = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 1;
 	var parts = split(path);
-	parts.pop();
+	
+	for (var i = 0; i < levels; i++) {
+		parts.pop();
+	}
+	
 	return parts.join(".");
 };
 /**
