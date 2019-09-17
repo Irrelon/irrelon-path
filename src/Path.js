@@ -157,7 +157,9 @@ const get = (obj, path, defaultVal = undefined, options = {}) => {
 };
 
 /**
- * Sets a single value on the passed object and given path.
+ * Sets a single value on the passed object and given path. This
+ * will directly modify the "obj" object. If you need immutable
+ * updates, use setImmutable() instead.
  * @param {Object} obj The object to inspect.
  * @param {String} path The path to set data on.
  * @param {*} val The value to assign to the obj at the path.
@@ -230,6 +232,17 @@ const set = (obj, path, val, options = {}) => {
 	objPart[transformedPathPart] = val;
 };
 
+/**
+ * Creates a new instance of "item" that is dereferenced. Useful
+ * when you want to return a new version of "item" with the same
+ * data for immutable data structures.
+ * @param {Object|Array} item The item to mimic.
+ * @param {String} key The key to set data in.
+ * @param {*} val The data to set in the key.
+ * @returns {*} A new dereferenced version of "item" with the "key"
+ * containing the "val" data.
+ * @private
+ */
 const _newInstance = (item, key = undefined, val = undefined) => {
 	const objType = type(item);
 	
@@ -254,6 +267,20 @@ const _newInstance = (item, key = undefined, val = undefined) => {
 	return newObj;
 };
 
+/**
+ * Sets a single value on the passed object and given path in an
+ * immutable way. Will not change or modify the existing "obj".
+ *
+ * Keep in mind that references to objects that were not modified
+ * by the operation remain the same. This allows systems like React
+ * to appropriately act on changes to specific data rather than
+ * re-rendering an entire DOM tree when one sub-object changes.
+ * @param {Object} obj The object to inspect.
+ * @param {String} path The path to set data on.
+ * @param {*} val The value to assign to the obj at the path.
+ * @param {Object=} options The options object.
+ * @returns {*} The new object with the modified data.
+ */
 const setImmutable = (obj, path, val, options = {}) => {
 	let internalPath = path,
 		objPart;
@@ -595,6 +622,7 @@ const joinEscaped = (...args) => {
  * move up.
  * @returns {String} The new path string.
  */
+// TODO: Rename to pop and add shift() as well
 const up = (path, levels = 1) => {
 	const parts = split(path);
 	
