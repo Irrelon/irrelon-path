@@ -94,7 +94,7 @@ console.log(result); // Logs: My Default Value
 ```
 
 ## Methods
-### get (obj, path, defaultValue)
+### get (`obj`, `path`, `defaultValue`)
 
 |Param|Type|Required|Default|
 |---|---|---|---|
@@ -119,7 +119,7 @@ console.log(result1); // Logs: null
 console.log(result2); // Logs: My Default Value
 ```
 
-### set (obj, path, value)
+### set (`obj`, `path`, `value`)
 
 |Param|Type|Required|Default|
 |---|---|---|---|
@@ -133,7 +133,7 @@ Sets a `value` in the `obj` at the given `path`.
 by making each non-existent path part a new object.
 
 ```js
-const {set} = require("@irrelon/path");
+const {set, get} = require("@irrelon/path");
 
 const obj = {
   "foo": null
@@ -149,7 +149,138 @@ console.log(result1); // Logs: undefined
 console.log(result2); // Logs: hello
 ```
 
-## New in Version 2
+### setImmutable (`obj`, `path`, `value`)
+
+|Param|Type|Required|Default|
+|---|---|---|---|
+|obj|Object or Array|true|none|
+|path|String|true|none|
+|value|Any|true|none|
+
+Sets a `value` in the `obj` at the given `path` in an immutable way
+and returns a new object. This will not change or modify the existing
+`obj`.
+
+Keep in mind that references to objects that were not modified
+by the operation remain the same. This allows systems like React
+to appropriately act on changes to specific data rather than
+re-rendering an entire DOM tree when one sub-object changes.
+
+> If the given path doesn't exist in the target object it will be created
+by making each non-existent path part a new object.
+
+```js
+const {setImmutable, get} = require("@irrelon/path");
+
+const obj = {
+  "foo": {
+  	"bar": "goodbye",
+  	"subBar": {
+  		"somethingElse": true
+  	}
+  },
+  "otherObj": {
+  	"enabled": true
+  }
+};
+
+const result1 = get(obj, "foo.bar"); // Currently: goodbye
+
+const newObj = setImmutable(obj, "foo.bar", "hello");
+
+// Original object remains unmodified (will still be "goodbye");
+const result2 = get(obj, "foo.bar");
+
+// New object has new value of "hello"
+const result3 = get(newObj, "foo.bar");
+
+console.log(result1); // Logs: goodbye
+console.log(result2); // Logs: goodbye
+console.log(result3); // Logs: hello
+
+// Objects that did not have any modifications remain the same
+// and still share a reference in memory
+console.log(obj.otherObj === newObj.otherObj); // Logs: true
+
+// Objects that did have modifications will not be the same
+console.log(obj.foo === newObj.foo); // Logs: false
+
+// Child objects of modified parents will still have references
+// to the original since the child object wasn't modified directly
+console.log(obj.foo.subBar === newObj.foo.subBar); // Logs: true
+```
+
+### clean (`str`)
+Removes leading period (.) from string and returns new string.
+
+### countLeafNodes (`obj`)
+Counts the total number of key leaf nodes in the passed `obj`.
+Leaf nodes are values in the object tree that cannot contain
+other key/values (so are not objects or arrays).
+
+```js
+const {countLeafNodes} = require("@irrelon/path");
+
+const obj = {
+  "foo": {
+  	"bar": "goodbye",
+  	"subBar": {
+  		"somethingElse": true
+  	}
+  },
+  "otherObj": {
+  	"enabled": true
+  }
+};
+
+const result = countLeafNodes(obj);
+
+console.log(result); // Logs: 3 (foo.bar, foo.subBar.somthingElse, otherObj.enabled)
+```
+
+### findOnePath (`source`, `query`)
+Finds the first item that matches the structure of `query`
+and returns the path to it
+
+```js
+const {findOnePath} = require("@irrelon/path");
+
+const myDataArray = [{
+  "profile": {
+  	"id": 1,
+  	"name": "Ron Swanson"
+  }
+}, {
+ "profile": {
+	"id": 2,
+	"name": "April Ludgate"
+ }
+}];
+
+// Find the object that has a key "profile"
+// with a object that has a key "_id" that 
+// has a value 1, and return the path to it
+const result1 = findOnePath(myDataArray, {
+	profile: {
+		_id: 1
+	}
+});
+
+console.log(result1); // Logs: "0"
+
+// Find the object that has a key "_id" that 
+// has a value 1, and return the path to it
+const result2 = findOnePath(myDataArray, {
+	_id: 1
+});
+
+console.log(result2); // Logs: "0.profile"
+```
+
+> See the unit tests for findOnePath() for many more examples
+ of usage.
+
+## Version 2.x Breaking Changes
 Version 1.x exported a class that you could instantiate. Version 2.x
 exports an object with all available functions. You can require version
 2.x either all at once (all functions) or you can destructure to require
@@ -164,6 +295,7 @@ parts of the library you need e.g.
 
 #### Version 1.x Style Code (Don't Do This)
 ```js
+// DON'T DO THIS !!!!!!!!!!!
 const Path = require("irrelon-path");
 const pathSolver = new Path();
 const a = {hello: {foo: true}};
@@ -172,6 +304,7 @@ const b = pathSolver.get(a, "hello.foo"); // b === true
 
 #### Version 2.x Style Code (Please Use This)
 ```js
+// DO THIS :)
 const {get} = require("@irrelon/path");
 const a = {hello: {foo: true}};
 const b = get(a, "hello.foo"); // b === true

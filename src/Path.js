@@ -31,7 +31,7 @@ const numberToWildcard = (key) => {
 };
 
 /**
- * Removes leading period (.) from string and returns it.
+ * Removes leading period (.) from string and returns new string.
  * @param {String} str The string to clean.
  * @returns {*} The cleaned string.
  */
@@ -636,6 +636,8 @@ const up = (path, levels = 1) => {
 /**
  * Counts the total number of key leaf nodes in the passed object.
  * @param {Object} obj The object to count key leaf nodes for.
+ * @param {Array=} objCache Do not use. Internal array to track
+ * visited leafs.
  * @returns {Number} The number of keys.
  */
 const countLeafNodes = (obj, objCache = []) => {
@@ -777,8 +779,8 @@ const _iterableKeys = (obj) => {
  * and returns the path to it.
  * @param {*} source The source to test.
  * @param {*} query The query to match.
- * @param {String=""} parentPath The aggregated path to the current
- * structure in source. Do not pass a value for this.
+ * @param {String=""} parentPath Do not use. The aggregated
+ * path to the current structure in source.
  */
 const findOnePath = (source, query, parentPath = "") => {
 	const sourceType = type(source);
