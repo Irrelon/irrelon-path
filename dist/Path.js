@@ -48,7 +48,7 @@ var numberToWildcard = function numberToWildcard (key) {
 	return key;
 };
 /**
- * Removes leading period (.) from string and returns it.
+ * Removes leading period (.) from string and returns new string.
  * @param {String} str The string to clean.
  * @returns {*} The cleaned string.
  */
@@ -176,7 +176,9 @@ var get = function get (obj, path) {
 	return objPart !== undefined ? objPart : defaultVal;
 };
 /**
- * Sets a single value on the passed object and given path.
+ * Sets a single value on the passed object and given path. This
+ * will directly modify the "obj" object. If you need immutable
+ * updates, use setImmutable() instead.
  * @param {Object} obj The object to inspect.
  * @param {String} path The path to set data on.
  * @param {*} val The value to assign to the obj at the path.
@@ -249,6 +251,18 @@ var set = function set (obj, path, val) {
 	var transformedPathPart = options.transformKey(pathParts[pathParts.length - 1]);
 	objPart[transformedPathPart] = val;
 };
+/**
+ * Creates a new instance of "item" that is dereferenced. Useful
+ * when you want to return a new version of "item" with the same
+ * data for immutable data structures.
+ * @param {Object|Array} item The item to mimic.
+ * @param {String} key The key to set data in.
+ * @param {*} val The data to set in the key.
+ * @returns {*} A new dereferenced version of "item" with the "key"
+ * containing the "val" data.
+ * @private
+ */
+
 
 var _newInstance = function _newInstance (item) {
 	var key = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : undefined;
@@ -270,6 +284,21 @@ var _newInstance = function _newInstance (item) {
 	
 	return newObj;
 };
+/**
+ * Sets a single value on the passed object and given path in an
+ * immutable way. Will not change or modify the existing "obj".
+ *
+ * Keep in mind that references to objects that were not modified
+ * by the operation remain the same. This allows systems like React
+ * to appropriately act on changes to specific data rather than
+ * re-rendering an entire DOM tree when one sub-object changes.
+ * @param {Object} obj The object to inspect.
+ * @param {String} path The path to set data on.
+ * @param {*} val The value to assign to the obj at the path.
+ * @param {Object=} options The options object.
+ * @returns {*} The new object with the modified data.
+ */
+
 
 var setImmutable = function setImmutable (obj, path, val) {
 	var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
@@ -617,6 +646,7 @@ var joinEscaped = function joinEscaped () {
  * move up.
  * @returns {String} The new path string.
  */
+// TODO: Rename to pop and add shift() as well
 
 
 var up = function up (path) {
@@ -632,6 +662,8 @@ var up = function up (path) {
 /**
  * Counts the total number of key leaf nodes in the passed object.
  * @param {Object} obj The object to count key leaf nodes for.
+ * @param {Array=} objCache Do not use. Internal array to track
+ * visited leafs.
  * @returns {Number} The number of keys.
  */
 
@@ -780,8 +812,8 @@ var _iterableKeys = function _iterableKeys (obj) {
  * and returns the path to it.
  * @param {*} source The source to test.
  * @param {*} query The query to match.
- * @param {String=""} parentPath The aggregated path to the current
- * structure in source. Do not pass a value for this.
+ * @param {String=""} parentPath Do not use. The aggregated
+ * path to the current structure in source.
  */
 
 
