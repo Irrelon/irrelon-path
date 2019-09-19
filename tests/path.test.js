@@ -8,8 +8,10 @@ const {
 	flatten,
 	flattenValues,
 	countLeafNodes,
+	findPath,
 	findOnePath,
-	type
+	type,
+	match
 } = require("../src/Path");
 
 describe("Path", () => {
@@ -374,6 +376,194 @@ describe("Path", () => {
 			
 			assert.notStrictEqual(newObj, obj, "Root object is not the same");
 			assert.strictEqual(fooType, newFooType, "Array type has not changed");
+		});
+	});
+	
+	describe("match()", () => {
+		describe("Positive tests", () => {
+			it("Will return true for matching string", () => {
+				const result = match("Bookshop1", "Bookshop1");
+				
+				assert.strictEqual(result, true);
+			});
+			
+			it("Will return true for matching two objects with a matching query", () => {
+				const result = match({"profile": {"_id": "Bookshop1"}}, {"profile": {"_id": "Bookshop1"}});
+				
+				assert.strictEqual(result, true);
+			});
+			
+			it("Will return true for matching two objects with a matching query and extended source", () => {
+				const result = match({test: "Bookshop1", foo: true}, {test: "Bookshop1"});
+				
+				assert.strictEqual(result, true);
+			});
+			
+			it("Will match multiple keys and values", () => {
+				const result = match({test: "Bookshop1", foo: true}, {test: "Bookshop1", foo: true});
+				
+				assert.strictEqual(result, true);
+			});
+		});
+		
+		describe("Negative tests", () => {
+			it("Will return false for non-matching string", () => {
+				const result = match("Bookshop1", "Bookshop2");
+				
+				assert.strictEqual(result, false);
+			});
+			
+			it("Will return false for matching two objects with a matching query", () => {
+				const result = match({test: "Bookshop1"}, {test: "Bookshop2"});
+				
+				assert.strictEqual(result, false);
+			});
+			
+			it("Will return false for matching two objects with a matching query and extended source", () => {
+				const result = match({test: "Bookshop1", foo: true}, {test: "Bookshop2"});
+				
+				assert.strictEqual(result, false);
+			});
+			
+			it("Will match multiple keys and values", () => {
+				const result = match({test: "Bookshop1", foo: true}, {test: "Bookshop1", foo: false});
+				
+				assert.strictEqual(result, false);
+			});
+		});
+	});
+	
+	describe("findPath()", () => {
+		describe("Positive tests", () => {
+			it("Will return the correct path for a root string", () => {
+				const result = findPath("Bookshop1", "Bookshop1");
+				
+				assert.deepEqual(result.path, [""]);
+			});
+			
+			it("Will return the correct path for an object nested string", () => {
+				const result = findPath([{"_id": "Bookshop1"}], "Bookshop1");
+				
+				assert.deepEqual(result.path, ["0._id"]);
+			});
+			
+			it("Will return the correct path for a nested equal object", () => {
+				const result = findPath({"profile": {"_id": "Bookshop1"}}, {"profile": {"_id": "Bookshop1"}});
+				
+				assert.deepEqual(result.path, [""]);
+			});
+			
+			it("Will return the correct path for an array nested string", () => {
+				const result = findPath([{"_id": "Bookshop1"}], {"_id": "Bookshop1"});
+				
+				assert.deepEqual(result.path, ["0"]);
+			});
+			
+			it("Will return the correct path for a single-level nested string", () => {
+				const result = findPath({"profile": {"_id": "Bookshop1"}}, {"_id": "Bookshop1"});
+				
+				assert.deepEqual(result.path, ["profile"]);
+			});
+			
+			it("Will return the correct path for a complex nested string", () => {
+				const testObj = {
+					"items": [{
+						"_id": 1,
+						"title": "A night to remember",
+						"stockedBy": ["Bookshop1", "Bookshop4"],
+						"show": true
+					}, {
+						"_id": 2,
+						"title": "Dream a little dream",
+						"stockedBy": ["Bookshop1", "Bookshop2"],
+						"show": true
+					}]
+				};
+				
+				const result = findPath(testObj, {"show": true});
+				
+				assert.deepEqual(result.path, ["items.0", "items.1"]);
+			});
+			
+			it("Will return the correct path for a complex nested object", () => {
+				const testObj = {
+					"items": [{
+						"_id": 1,
+						"title": "A night to remember",
+						"stockedBy": ["Bookshop1", "Bookshop4"]
+					}, {
+						"_id": 2,
+						"title": "Dream a little dream",
+						"stockedBy": ["Bookshop1", "Bookshop2"]
+					}]
+				};
+				
+				const result = findPath(testObj, {_id: 2});
+				
+				assert.deepEqual(result.path, ["items.1"]);
+			});
+		});
+		
+		describe("Negative tests", () => {
+			it("Will return the correct path for a root string", () => {
+				const result = findPath("Bookshop1", "Bookshop2");
+				
+				assert.strictEqual(result.match, false);
+			});
+			
+			it("Will return the correct path for non-matching a nested equal object", () => {
+				const result = findPath({"profile": {"_id": "Bookshop1"}}, {"profile": {"_id": "Bookshop2"}});
+				
+				assert.strictEqual(result.match, false);
+			});
+			
+			it("Will return the correct path for an array nested string", () => {
+				const result = findPath([{"_id": "Bookshop1"}], {"_id": "Bookshop2"});
+				
+				assert.strictEqual(result.match, false);
+			});
+			
+			it("Will return the correct path for a single-level nested string", () => {
+				const result = findPath({"profile": {"_id": "Bookshop1"}}, {"_id": "Bookshop2"});
+				
+				assert.strictEqual(result.match, false);
+			});
+			
+			it("Will return the correct path for a complex nested string", () => {
+				const testObj = {
+					"items": [{
+						"_id": 1,
+						"title": "A night to remember",
+						"stockedBy": ["Bookshop1", "Bookshop4"]
+					}, {
+						"_id": 2,
+						"title": "Dream a little dream",
+						"stockedBy": ["Bookshop1", "Bookshop2"]
+					}]
+				};
+				
+				const result = findPath(testObj, "Bookshop3");
+				
+				assert.strictEqual(result.match, false);
+			});
+			
+			it("Will return the correct path for a complex nested object", () => {
+				const testObj = {
+					"items": [{
+						"_id": 1,
+						"title": "A night to remember",
+						"stockedBy": ["Bookshop1", "Bookshop4"]
+					}, {
+						"_id": 2,
+						"title": "Dream a little dream",
+						"stockedBy": ["Bookshop1", "Bookshop2"]
+					}]
+				};
+				
+				const result = findPath(testObj, {_id: 3});
+				
+				assert.strictEqual(result.match, false);
+			});
 		});
 	});
 	

@@ -775,12 +775,81 @@ const _iterableKeys = (obj) => {
 };
 
 /**
+ * Determines if the query data exists anywhere inside the source
+ * data. Will recurse into arrays and objects to find query.
+ * @param {*} source The source data to check.
+ * @param {*} query The query data to find.
+ * @returns {Boolean} True if query was matched, false if not.
+ */
+const match = (source, query) => {
+	const sourceType = typeof source;
+	const queryType = typeof query;
+	
+	if (sourceType !== queryType) {
+		return false;
+	}
+	
+	if (sourceType !== "object") {
+		// Simple test
+		return source === query;
+	}
+	
+	// The source is an object-like (array or object) structure
+	const entries = Object.entries(query);
+	
+	const foundNonMatch = entries.find(([key, val]) => {
+		// Recurse if type is array or object
+		if (typeof val === "object") {
+			return !match(source[key], val);
+		}
+		
+		return source[key] !== val;
+	});
+	
+	return !foundNonMatch;
+};
+
+/**
+ * Finds all items that matches the structure of `query` and
+ * returns the path to them as an array of strings.
+ * @param {*} source The source to test.
+ * @param {*} query The query to match.
+ * @param {String=""} parentPath Do not use. The aggregated
+ * path to the current structure in source.
+ * @returns {Object} Contains match<Boolean> and path<Array>.
+ */
+const findPath = (source, query, parentPath = "") => {
+	const resultArr = [];
+	const sourceType = typeof source;
+	
+	if (match(source, query)) {
+		resultArr.push(parentPath);
+	}
+	
+	if (sourceType === "object") {
+		const entries = Object.entries(source);
+		
+		entries.forEach(([key, val]) => {
+			// Recurse down object to find more instances
+			const result = findPath(val, query, join(parentPath, key));
+			
+			if (result.match) {
+				resultArr.push(...result.path);
+			}
+		});
+	}
+	
+	return {match: resultArr.length > 0, path: resultArr};
+};
+
+/**
  * Finds the first item that matches the structure of `query`
  * and returns the path to it.
  * @param {*} source The source to test.
  * @param {*} query The query to match.
  * @param {String=""} parentPath Do not use. The aggregated
  * path to the current structure in source.
+ * @returns {Object} Contains match<Boolean> and path<String>.
  */
 const findOnePath = (source, query, parentPath = "") => {
 	const sourceType = type(source);
@@ -902,5 +971,7 @@ module.exports = {
 	hasMatchingPathsInObject,
 	countMatchingPathsInObject,
 	findOnePath,
-	type
+	findPath,
+	type,
+	match
 };

@@ -808,12 +808,92 @@ var _iterableKeys = function _iterableKeys (obj) {
 	}, []);
 };
 /**
+ * Determines if the query data exists anywhere inside the source
+ * data. Will recurse into arrays and objects to find query.
+ * @param {*} source The source data to check.
+ * @param {*} query The query data to find.
+ * @returns {Boolean} True if query was matched, false if not.
+ */
+
+
+var match = function match (source, query) {
+	var sourceType = (0, _typeof2.default)(source);
+	var queryType = (0, _typeof2.default)(query);
+	
+	if (sourceType !== queryType) {
+		return false;
+	}
+	
+	if (sourceType !== "object") {
+		// Simple test
+		return source === query;
+	} // The source is an object-like (array or object) structure
+	
+	
+	var entries = Object.entries(query);
+	var foundNonMatch = entries.find(function (_ref3) {
+		var _ref4 = (0, _slicedToArray2.default)(_ref3, 2),
+			key = _ref4[0],
+			val = _ref4[1];
+		
+		// Recurse if type is array or object
+		if ((0, _typeof2.default)(val) === "object") {
+			return !match(source[key], val);
+		}
+		
+		return source[key] !== val;
+	});
+	return !foundNonMatch;
+};
+/**
+ * Finds all items that matches the structure of `query` and
+ * returns the path to them as an array of strings.
+ * @param {*} source The source to test.
+ * @param {*} query The query to match.
+ * @param {String=""} parentPath Do not use. The aggregated
+ * path to the current structure in source.
+ * @returns {Object} Contains match<Boolean> and path<Array>.
+ */
+
+
+var findPath = function findPath (source, query) {
+	var parentPath = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : "";
+	var resultArr = [];
+	var sourceType = (0, _typeof2.default)(source);
+	
+	if (match(source, query)) {
+		resultArr.push(parentPath);
+	}
+	
+	if (sourceType === "object") {
+		var entries = Object.entries(source);
+		entries.forEach(function (_ref5) {
+			var _ref6 = (0, _slicedToArray2.default)(_ref5, 2),
+				key = _ref6[0],
+				val = _ref6[1];
+			
+			// Recurse down object to find more instances
+			var result = findPath(val, query, join(parentPath, key));
+			
+			if (result.match) {
+				resultArr.push.apply(resultArr, (0, _toConsumableArray2.default)(result.path));
+			}
+		});
+	}
+	
+	return {
+		match: resultArr.length > 0,
+		path: resultArr
+	};
+};
+/**
  * Finds the first item that matches the structure of `query`
  * and returns the path to it.
  * @param {*} source The source to test.
  * @param {*} query The query to match.
  * @param {String=""} parentPath Do not use. The aggregated
  * path to the current structure in source.
+ * @returns {Object} Contains match<Boolean> and path<String>.
  */
 
 
@@ -951,5 +1031,7 @@ module.exports = {
 	hasMatchingPathsInObject: hasMatchingPathsInObject,
 	countMatchingPathsInObject: countMatchingPathsInObject,
 	findOnePath: findOnePath,
-	type: type
+	findPath: findPath,
+	type: type,
+	match: match
 };
