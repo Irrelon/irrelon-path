@@ -950,6 +950,53 @@ const findOnePath = (source, query, parentPath = "") => {
 	return {match: false};
 };
 
+/**
+ * A boolean check to see if the values at the given path or paths
+ * are the same in both given objects.
+ * @param {*} obj1 The first object to check values in.
+ * @param {*} obj2 The second object to check values in.
+ * @param {Array<String>|String}path A path or array of paths to check
+ * values in. If this is an array, all values at the paths in the array
+ * must be the same for the function to provide a true result.
+ * @param {Boolean} strict If true, values must be strict-equal.
+ * Defaults to false.
+ * @returns {Boolean} True if path values match, false if not.
+ */
+const isEqual = (obj1, obj2, path, strict = false) => {
+	if (path instanceof Array) {
+		// We were given an array of paths, check each path
+		return path.findIndex((individualPath) => {
+			// Here we find any path that has a *non-equal* result which
+			// returns true and then returns the index as a positive integer
+			// that is not -1. If -1 is returned then no non-equal matches
+			// were found
+			return isNotEqual(obj1, obj2, individualPath, strict);
+		}) === -1;
+	}
+	
+	const val1 = get(obj1, path);
+	const val2 = get(obj2, path);
+	
+	return (strict && val1 === val2) || (!strict && val1 == val2);
+};
+
+/**
+ * A boolean check to see if the values at the given path or paths
+ * are different in both given objects.
+ * @param {*} obj1 The first object to check values in.
+ * @param {*} obj2 The second object to check values in.
+ * @param {Array<String>|String}path A path or array of paths to
+ * check values in. If this is an array, all values at the paths
+ * in the array must be different for the function to provide a
+ * true result.
+ * @param {Boolean} strict If true, values must be strict-not-equal.
+ * Defaults to false.
+ * @returns {Boolean} True if path values differ, false if not.
+ */
+const isNotEqual = (obj1, obj2, path, strict = false) => {
+	return !isEqual(obj1, obj2, path, strict);
+};
+
 module.exports = {
 	wildcardToZero,
 	numberToWildcard,
@@ -973,5 +1020,7 @@ module.exports = {
 	findOnePath,
 	findPath,
 	type,
-	match
+	match,
+	isEqual,
+	isNotEqual
 };
