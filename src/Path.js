@@ -133,7 +133,7 @@ const get = (obj, path, defaultVal = undefined, options = {}) => {
 	}
 	
 	if (typeof obj !== "object") {
-		return obj;
+		return undefined;
 	}
 	
 	const pathParts = split(internalPath);
