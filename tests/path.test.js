@@ -11,7 +11,8 @@ const {
 	findPath,
 	findOnePath,
 	type,
-	match
+	match,
+	isNotEqual
 } = require("../src/Path");
 
 describe("Path", () => {
@@ -696,6 +697,62 @@ describe("Path", () => {
 				
 				assert.strictEqual(result.match, false);
 			});
+		});
+	});
+	
+	describe("isNotEqual()", () => {
+		it("Will return the correct result for a root string", () => {
+			const result = isNotEqual("Bookshop1", "Bookshop1", "");
+			
+			assert.strictEqual(result, false);
+		});
+		
+		it("Will return the correct result for an object nested string", () => {
+			const result = isNotEqual([{"_id": "Bookshop1"}], "Bookshop1", "0._id");
+			
+			assert.strictEqual(result, true);
+		});
+		
+		it("Will return the correct result for a nested equal object", () => {
+			const result = isNotEqual({"profile": {"_id": "Bookshop1"}}, {"profile": {"_id": "Bookshop1"}}, "profile._id");
+			
+			assert.strictEqual(result, false);
+		});
+		
+		it("Will return the correct result for an array nested string", () => {
+			const result = isNotEqual([{"_id": "Bookshop1"}], [{"_id": "Bookshop1"}], "0._id");
+			
+			assert.strictEqual(result, false);
+		});
+		
+		it("Will return the correct result for a single-level nested string", () => {
+			const result = isNotEqual({"profile": {"_id": "Bookshop1"}}, {"_id": "Bookshop1"}, "profile._id");
+			
+			assert.strictEqual(result, true);
+		});
+		
+		it("Will return the correct result for a complex nested string", () => {
+			const testObj1 = {
+				"items": [{
+					"_id": 1,
+					"title": "A night to remember",
+					"author": "Foobar",
+					"stockedBy": ["Bookshop1", "Bookshop4"]
+				}]
+			};
+			
+			const testObj2 = {
+				"items": [{
+					"_id": 2,
+					"title": "Dream a little dream",
+					"author": "Foobar",
+					"stockedBy": ["Bookshop1", "Bookshop2"]
+				}]
+			};
+			
+			const result = isNotEqual(testObj1, testObj2, ["items.0.author", "items.0.stockedBy.0"]);
+			
+			assert.strictEqual(result, false);
 		});
 	});
 });

@@ -279,6 +279,15 @@ console.log(result2); // Logs: "0.profile"
 
 > See the unit tests for findOnePath() for many more examples
  of usage.
+ 
+## Version 3.x Breaking Changes
+There was a bug in the get() function that would return an incorrect value
+when a non-object was passed to get data from and a path was passed e.g.
+```js
+get("foo-im-not-an-object", "some.path.to.get.data.from"); // Version 2.x returned "foo-im-not-an-object"
+```
+
+In version 3.x, this call will return `undefined` as expected.
 
 ## Version 2.x Breaking Changes
 Version 1.x exported a class that you could instantiate. Version 2.x
