@@ -1040,6 +1040,52 @@ var findOnePath = function findOnePath (source, query) {
 		match: false
 	};
 };
+
+var diff = function diff (obj1, obj2) {
+	var path = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : "";
+	var strict = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
+	var parentPath = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : "";
+	var paths = [];
+	
+	if (path instanceof Array) {
+		// We were given an array of paths, check each path
+		return path.reduce(function (arr, individualPath) {
+			// Here we find any path that has a *non-equal* result which
+			// returns true and then returns the index as a positive integer
+			// that is not -1. If -1 is returned then no non-equal matches
+			// were found
+			var result = diff(obj1, obj2, individualPath, strict, parentPath);
+			
+			if (result && result.length) {
+				arr.push.apply(arr, (0, _toConsumableArray2.default)(result));
+			}
+			
+			return arr;
+		}, []);
+	}
+	
+	var currentPath = join(parentPath, path);
+	var val1 = get(obj1, path);
+	var val2 = get(obj2, path);
+	
+	if ((0, _typeof2.default)(val1) === "object") {
+		return Object.keys(val1).reduce(function (arr, key) {
+			var result = diff(val1, val2, key, strict, currentPath);
+			
+			if (result && result.length) {
+				arr.push.apply(arr, (0, _toConsumableArray2.default)(result));
+			}
+			
+			return arr;
+		}, []);
+	}
+	
+	if (strict && val1 !== val2 || !strict && val1 != val2) {
+		paths.push(currentPath);
+	}
+	
+	return paths;
+};
 /**
  * A boolean check to see if the values at the given path or paths
  * are the same in both given objects.
@@ -1133,5 +1179,6 @@ module.exports = {
 	match: match,
 	isEqual: isEqual,
 	isNotEqual: isNotEqual,
-	leafNodes: leafNodes
+	leafNodes: leafNodes,
+	diff: diff
 };

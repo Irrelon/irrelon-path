@@ -979,6 +979,47 @@ const findOnePath = (source, query, parentPath = "") => {
 	return {match: false};
 };
 
+const diff = (obj1, obj2, path = "", strict = false, parentPath = "") => {
+	const paths = [];
+	
+	if (path instanceof Array) {
+		// We were given an array of paths, check each path
+		return path.reduce((arr, individualPath) => {
+			// Here we find any path that has a *non-equal* result which
+			// returns true and then returns the index as a positive integer
+			// that is not -1. If -1 is returned then no non-equal matches
+			// were found
+			const result = diff(obj1, obj2, individualPath, strict, parentPath);
+			if (result && result.length) {
+				arr.push(...result);
+			}
+			
+			return arr;
+		}, []);
+	}
+	
+	const currentPath = join(parentPath, path);
+	const val1 = get(obj1, path);
+	const val2 = get(obj2, path);
+	
+	if (typeof val1 === "object") {
+		return Object.keys(val1).reduce((arr, key) => {
+			const result = diff(val1, val2, key, strict, currentPath);
+			if (result && result.length) {
+				arr.push(...result);
+			}
+			
+			return arr;
+		}, []);
+	}
+	
+	if ((strict && val1 !== val2) || (!strict && val1 != val2)) {
+		paths.push(currentPath);
+	}
+	
+	return paths;
+};
+
 /**
  * A boolean check to see if the values at the given path or paths
  * are the same in both given objects.
@@ -1064,5 +1105,6 @@ module.exports = {
 	match,
 	isEqual,
 	isNotEqual,
-	leafNodes
+	leafNodes,
+	diff
 };
