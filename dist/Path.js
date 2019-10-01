@@ -125,6 +125,13 @@ var get = function get (obj, path) {
 	var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
 	var internalPath = path,
 		objPart;
+	
+	if (path instanceof Array) {
+		return path.map(function (individualPath) {
+			get(obj, individualPath, defaultVal, options);
+		});
+	}
+	
 	options = (0, _objectSpread2.default)({
 		"transformRead": returnWhatWasGiven,
 		"transformKey": returnWhatWasGiven,
@@ -688,6 +695,30 @@ var countLeafNodes = function countLeafNodes (obj) {
 	
 	return totalKeys;
 };
+
+var leafNodes = function leafNodes (obj) {
+	var parentPath = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : "";
+	var objCache = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
+	var paths = []; // Add object to cache to make sure we don't traverse it twice
+	
+	objCache.push(obj);
+	
+	for (var i in obj) {
+		if (obj.hasOwnProperty(i)) {
+			if (obj[i] !== undefined) {
+				var currentPath = join(parentPath, i);
+				
+				if ((0, _typeof2.default)(obj[i]) !== "object" || objCache.indexOf(obj[i]) > -1) {
+					paths.push(currentPath);
+				} else {
+					paths.push.apply(paths, (0, _toConsumableArray2.default)(leafNodes(obj[i], currentPath, objCache)));
+				}
+			}
+		}
+	}
+	
+	return paths;
+};
 /**
  * Tests if the passed object has the paths that are specified and that
  * a value exists in those paths. MAY NOT BE INFINITE RECURSION SAFE.
@@ -1017,6 +1048,8 @@ var findOnePath = function findOnePath (source, query) {
  * @param {Array<String>|String}path A path or array of paths to check
  * values in. If this is an array, all values at the paths in the array
  * must be the same for the function to provide a true result.
+ * @param {Boolean} deep If true will traverse all objects and arrays
+ * to check for equality. Defaults to false.
  * @param {Boolean} strict If true, values must be strict-equal.
  * Defaults to false.
  * @returns {Boolean} True if path values match, false if not.
@@ -1024,7 +1057,8 @@ var findOnePath = function findOnePath (source, query) {
 
 
 var isEqual = function isEqual (obj1, obj2, path) {
-	var strict = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
+	var deep = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
+	var strict = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : false;
 	
 	if (path instanceof Array) {
 		// We were given an array of paths, check each path
@@ -1033,12 +1067,21 @@ var isEqual = function isEqual (obj1, obj2, path) {
 			// returns true and then returns the index as a positive integer
 			// that is not -1. If -1 is returned then no non-equal matches
 			// were found
-			return isNotEqual(obj1, obj2, individualPath, strict);
+			return isNotEqual(obj1, obj2, individualPath, deep, strict);
 		}) === -1;
 	}
 	
 	var val1 = get(obj1, path);
 	var val2 = get(obj2, path);
+	
+	if (deep) {
+		if ((0, _typeof2.default)(val1) === "object") {
+			return Object.keys(val1).findIndex(function (key) {
+				return isNotEqual(val1, val2, key, deep, strict);
+			}) === -1;
+		}
+	}
+	
 	return strict && val1 === val2 || !strict && val1 == val2;
 };
 /**
@@ -1050,6 +1093,8 @@ var isEqual = function isEqual (obj1, obj2, path) {
  * check values in. If this is an array, all values at the paths
  * in the array must be different for the function to provide a
  * true result.
+ * @param {Boolean} deep If true will traverse all objects and arrays
+ * to check for inequality. Defaults to false.
  * @param {Boolean} strict If true, values must be strict-not-equal.
  * Defaults to false.
  * @returns {Boolean} True if path values differ, false if not.
@@ -1057,8 +1102,9 @@ var isEqual = function isEqual (obj1, obj2, path) {
 
 
 var isNotEqual = function isNotEqual (obj1, obj2, path) {
-	var strict = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
-	return !isEqual(obj1, obj2, path, strict);
+	var deep = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
+	var strict = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : false;
+	return !isEqual(obj1, obj2, path, deep, strict);
 };
 
 module.exports = {
@@ -1086,5 +1132,6 @@ module.exports = {
 	type: type,
 	match: match,
 	isEqual: isEqual,
-	isNotEqual: isNotEqual
+	isNotEqual: isNotEqual,
+	leafNodes: leafNodes
 };

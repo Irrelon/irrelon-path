@@ -12,7 +12,8 @@ const {
 	findOnePath,
 	type,
 	match,
-	isNotEqual
+	isNotEqual,
+	leafNodes
 } = require("../src/Path");
 
 describe("Path", () => {
@@ -753,6 +754,109 @@ describe("Path", () => {
 			const result = isNotEqual(testObj1, testObj2, ["items.0.author", "items.0.stockedBy.0"]);
 			
 			assert.strictEqual(result, false);
+		});
+		
+		it("Will return the correct result when checking deep equality with positive outcome", () => {
+			const testObj1 = {
+				"items": [{
+					"_id": 2,
+					"title": "Dream a little dream",
+					"author": "Foobar",
+					"stockedBy": ["Bookshop1", "Bookshop2", {
+						"arr": [{
+							"id": 1
+						}, {
+							"id": 2
+						}]
+					}]
+				}]
+			};
+			
+			const testObj2 = {
+				"items": [{
+					"_id": 2,
+					"title": "Dream a little dream",
+					"author": "Foobar",
+					"stockedBy": ["Bookshop1", "Bookshop2", {
+						"arr": [{
+							"id": 1
+						}, {
+							"id": 2
+						}]
+					}]
+				}]
+			};
+			
+			const testObj3 = {
+				"items": [{
+					"_id": 2,
+					"title": "Dream a little dream",
+					"author": "Foobar",
+					"stockedBy": ["Bookshop1", "Bookshop2", {
+						"arr": [{
+							"id": 1
+						}, {
+							"id": 3
+						}]
+					}]
+				}]
+			};
+			
+			const result1 = isNotEqual(testObj1, testObj2, ["items"], true);
+			const result2 = isNotEqual(testObj1, testObj3, ["items"], true);
+			
+			assert.strictEqual(result1, false);
+			assert.strictEqual(result2, true);
+		});
+	});
+	
+	describe("leafNodes()", () => {
+		it("Will return an array of paths for all leafs in an array structure", () => {
+			const structure = [{
+				"arr": [{
+					"id": 1
+				}, {
+					"id": 2
+				}, {
+					"id": 3
+				}],
+				"name": "An array",
+				"type": 42
+			}];
+			
+			const result = leafNodes(structure);
+			
+			assert.strictEqual(result instanceof Array, true, "The result is an array");
+			assert.strictEqual(result[0], "0.arr.0.id", "The result value is correct");
+			assert.strictEqual(result[1], "0.arr.1.id", "The result value is correct");
+			assert.strictEqual(result[2], "0.arr.2.id", "The result value is correct");
+			assert.strictEqual(result[3], "0.name", "The result value is correct");
+			assert.strictEqual(result[4], "0.type", "The result value is correct");
+		});
+		
+		it("Will return an array of paths for all leafs in an object structure", () => {
+			const structure = {
+				"rootArray": [{
+					"arr": [{
+						"id": 1
+					}, {
+						"id": 2
+					}, {
+						"id": 3
+					}],
+					"name": "An array",
+					"type": 42
+				}]
+			};
+			
+			const result = leafNodes(structure);
+			
+			assert.strictEqual(result instanceof Array, true, "The result is an array");
+			assert.strictEqual(result[0], "rootArray.0.arr.0.id", "The result value is correct");
+			assert.strictEqual(result[1], "rootArray.0.arr.1.id", "The result value is correct");
+			assert.strictEqual(result[2], "rootArray.0.arr.2.id", "The result value is correct");
+			assert.strictEqual(result[3], "rootArray.0.name", "The result value is correct");
+			assert.strictEqual(result[4], "rootArray.0.type", "The result value is correct");
 		});
 	});
 });

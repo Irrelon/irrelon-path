@@ -103,6 +103,12 @@ const get = (obj, path, defaultVal = undefined, options = {}) => {
 	let internalPath = path,
 		objPart;
 	
+	if (path instanceof Array) {
+		return path.map((individualPath) => {
+			get(obj, individualPath, defaultVal, options);
+		});
+	}
+	
 	options = {
 		"transformRead": returnWhatWasGiven,
 		"transformKey": returnWhatWasGiven,
@@ -661,6 +667,29 @@ const countLeafNodes = (obj, objCache = []) => {
 	return totalKeys;
 };
 
+const leafNodes = (obj, parentPath = "", objCache = []) => {
+	const paths = [];
+	
+	// Add object to cache to make sure we don't traverse it twice
+	objCache.push(obj);
+	
+	for (const i in obj) {
+		if (obj.hasOwnProperty(i)) {
+			if (obj[i] !== undefined) {
+				const currentPath = join(parentPath, i);
+				
+				if (typeof obj[i] !== "object" || objCache.indexOf(obj[i]) > -1) {
+					paths.push(currentPath);
+				} else {
+					paths.push(...leafNodes(obj[i], currentPath, objCache));
+				}
+			}
+		}
+	}
+	
+	return paths;
+};
+
 /**
  * Tests if the passed object has the paths that are specified and that
  * a value exists in those paths. MAY NOT BE INFINITE RECURSION SAFE.
@@ -958,11 +987,13 @@ const findOnePath = (source, query, parentPath = "") => {
  * @param {Array<String>|String}path A path or array of paths to check
  * values in. If this is an array, all values at the paths in the array
  * must be the same for the function to provide a true result.
+ * @param {Boolean} deep If true will traverse all objects and arrays
+ * to check for equality. Defaults to false.
  * @param {Boolean} strict If true, values must be strict-equal.
  * Defaults to false.
  * @returns {Boolean} True if path values match, false if not.
  */
-const isEqual = (obj1, obj2, path, strict = false) => {
+const isEqual = (obj1, obj2, path, deep = false, strict = false) => {
 	if (path instanceof Array) {
 		// We were given an array of paths, check each path
 		return path.findIndex((individualPath) => {
@@ -970,12 +1001,20 @@ const isEqual = (obj1, obj2, path, strict = false) => {
 			// returns true and then returns the index as a positive integer
 			// that is not -1. If -1 is returned then no non-equal matches
 			// were found
-			return isNotEqual(obj1, obj2, individualPath, strict);
+			return isNotEqual(obj1, obj2, individualPath, deep, strict);
 		}) === -1;
 	}
 	
 	const val1 = get(obj1, path);
 	const val2 = get(obj2, path);
+	
+	if (deep) {
+		if (typeof val1 === "object") {
+			return Object.keys(val1).findIndex((key) => {
+				return isNotEqual(val1, val2, key, deep, strict);
+			}) === -1;
+		}
+	}
 	
 	return (strict && val1 === val2) || (!strict && val1 == val2);
 };
@@ -989,12 +1028,14 @@ const isEqual = (obj1, obj2, path, strict = false) => {
  * check values in. If this is an array, all values at the paths
  * in the array must be different for the function to provide a
  * true result.
+ * @param {Boolean} deep If true will traverse all objects and arrays
+ * to check for inequality. Defaults to false.
  * @param {Boolean} strict If true, values must be strict-not-equal.
  * Defaults to false.
  * @returns {Boolean} True if path values differ, false if not.
  */
-const isNotEqual = (obj1, obj2, path, strict = false) => {
-	return !isEqual(obj1, obj2, path, strict);
+const isNotEqual = (obj1, obj2, path, deep = false, strict = false) => {
+	return !isEqual(obj1, obj2, path, deep, strict);
 };
 
 module.exports = {
@@ -1022,5 +1063,6 @@ module.exports = {
 	type,
 	match,
 	isEqual,
-	isNotEqual
+	isNotEqual,
+	leafNodes
 };
