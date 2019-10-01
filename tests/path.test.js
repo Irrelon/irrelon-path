@@ -862,7 +862,7 @@ describe("Path", () => {
 	});
 	
 	describe("diff()", () => {
-		it("Will return an array of paths for all leafs in a structure that differ from the other structure", () => {
+		it("Will return an array of paths for all leafs in an array structure that differ from the other structure", () => {
 			const obj1 = [{
 				"arr": [{
 					"id": 1
@@ -905,11 +905,12 @@ describe("Path", () => {
 			assert.strictEqual(result1 instanceof Array, true, "The result is an array");
 			assert.strictEqual(result1.length, 0, "The result value is correct");
 			assert.strictEqual(result2 instanceof Array, true, "The result is an array");
+			assert.strictEqual(result2.length, 2, "The result value is correct");
 			assert.strictEqual(result2[0], "0.arr.1.id", "The result value is correct");
 			assert.strictEqual(result2[1], "0.type", "The result value is correct");
 		});
 		
-		it("Will return an array of paths for all leafs in an object structure", () => {
+		it("Will return an array of paths for all leafs in an object structure that differ from the other structure", () => {
 			const obj1 = {
 				"rootArray": [{
 					"arr": [{
@@ -958,8 +959,62 @@ describe("Path", () => {
 			assert.strictEqual(result1 instanceof Array, true, "The result is an array");
 			assert.strictEqual(result1.length, 0, "The result value is correct");
 			assert.strictEqual(result2 instanceof Array, true, "The result is an array");
+			assert.strictEqual(result2.length, 2, "The result value is correct");
 			assert.strictEqual(result2[0], "rootArray.0.arr.1.id", "The result value is correct");
 			assert.strictEqual(result2[1], "rootArray.0.type", "The result value is correct");
+		});
+		
+		it("Will return an array of paths for all leafs in an object structure under a specific path that differ from the other structure", () => {
+			const obj1 = {
+				"rootArray": [{
+					"arr": [{
+						"id": 1
+					}, {
+						"id": 2
+					}, {
+						"id": 3
+					}],
+					"name": "An array",
+					"type": 42
+				}]
+			};
+			
+			const obj2 = {
+				"rootArray": [{
+					"arr": [{
+						"id": 1
+					}, {
+						"id": 2
+					}, {
+						"id": 3
+					}],
+					"name": "An array",
+					"type": 42
+				}]
+			};
+			
+			const obj3 = {
+				"rootArray": [{
+					"arr": [{
+						"id": 1
+					}, {
+						"id": 4
+					}, {
+						"id": 3
+					}],
+					"name": "An array",
+					"type": 43
+				}]
+			};
+			
+			const result1 = diff(obj1, obj2, "rootArray.0.arr");
+			const result2 = diff(obj1, obj3, "rootArray.0.arr");
+			
+			assert.strictEqual(result1 instanceof Array, true, "The result is an array");
+			assert.strictEqual(result1.length, 0, "The result value is correct");
+			assert.strictEqual(result2 instanceof Array, true, "The result is an array");
+			assert.strictEqual(result2.length, 1, "The result value is correct");
+			assert.strictEqual(result2[0], "rootArray.0.arr.1.id", "The result value is correct");
 		});
 	});
 });
