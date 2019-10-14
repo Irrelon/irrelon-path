@@ -129,6 +129,21 @@ var pop = function pop (path) {
 	return part || "";
 };
 /**
+ * Adds a leaf to the end of the path. E.g.
+ * pushing "goo" to path "foo.bar.thing" returns
+ * "foo.bar.thing.goo".
+ * @param {String} path The path to operate on.
+ * @param {String} val The string value to push
+ * to the end of the path.
+ * @returns {String} The new path string.
+ */
+
+
+var push = function push (path) {
+	var val = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : "";
+	return "".concat(path, ".").concat(val);
+};
+/**
  * Returns the first leaf from the path. E.g.
  * "foo.bar.thing" returns "foo".
  * @param {String} path The path to operate on.
@@ -1295,9 +1310,9 @@ var setImmutable = function setImmutable (obj, path, val) {
  */
 
 
-var pushImmutable = function pushImmutable (obj, path, val) {
+var pushValImmutable = function pushValImmutable (obj, path, val) {
 	var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
-	return push(obj, path, val, (0, _objectSpread2.default)({}, options, {
+	return pushVal(obj, path, val, (0, _objectSpread2.default)({}, options, {
 		immutable: true
 	}));
 };
@@ -1329,6 +1344,7 @@ module.exports = {
 	setImmutable: setImmutable,
 	unSet: unSet,
 	unSetImmutable: unSetImmutable,
+	pushValImmutable: pushValImmutable,
 	pushVal: pushVal,
 	pullVal: pullVal,
 	furthest: furthest,
@@ -1339,6 +1355,7 @@ module.exports = {
 	joinEscaped: joinEscaped,
 	up: up,
 	down: down,
+	push: push,
 	pop: pop,
 	shift: shift,
 	countLeafNodes: countLeafNodes,

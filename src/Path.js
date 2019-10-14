@@ -109,6 +109,19 @@ const pop = (path, levels = 1) => {
 };
 
 /**
+ * Adds a leaf to the end of the path. E.g.
+ * pushing "goo" to path "foo.bar.thing" returns
+ * "foo.bar.thing.goo".
+ * @param {String} path The path to operate on.
+ * @param {String} val The string value to push
+ * to the end of the path.
+ * @returns {String} The new path string.
+ */
+const push = (path, val = "") => {
+	return `${path}.${val}`;
+};
+
+/**
  * Returns the first leaf from the path. E.g.
  * "foo.bar.thing" returns "foo".
  * @param {String} path The path to operate on.
@@ -1210,8 +1223,8 @@ const setImmutable = (obj, path, val, options = {}) => {
  * @param {Object=} options The options object.
  * @returns {*} The new object with the modified data.
  */
-const pushImmutable = (obj, path, val, options = {}) => {
-	return push(obj, path, val, {...options, immutable: true});
+const pushValImmutable = (obj, path, val, options = {}) => {
+	return pushVal(obj, path, val, {...options, immutable: true});
 };
 
 /**
@@ -1237,6 +1250,7 @@ module.exports = {
 	setImmutable,
 	unSet,
 	unSetImmutable,
+	pushValImmutable,
 	pushVal,
 	pullVal,
 	furthest,
@@ -1247,6 +1261,7 @@ module.exports = {
 	joinEscaped,
 	up,
 	down,
+	push,
 	pop,
 	shift,
 	countLeafNodes,
