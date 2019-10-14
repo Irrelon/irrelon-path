@@ -1,4 +1,133 @@
 /**
+ * Scans an object for all keys that are either objects or arrays
+ * and returns an array of those keys only.
+ * @param {Object|Array} obj The object to scan.
+ * @returns {[string]} An array of string keys.
+ * @private
+ */
+const _iterableKeys = (obj) => {
+	return Object.entries(obj).reduce((arr, [key, val]) => {
+		const valType = type(val);
+		if (valType === "object" || valType === "array") {
+			arr.push(key);
+		}
+		
+		return arr;
+	}, []);
+};
+
+/**
+ * Creates a new instance of "item" that is dereferenced. Useful
+ * when you want to return a new version of "item" with the same
+ * data for immutable data structures.
+ * @param {Object|Array} item The item to mimic.
+ * @param {String} key The key to set data in.
+ * @param {*} val The data to set in the key.
+ * @returns {*} A new dereferenced version of "item" with the "key"
+ * containing the "val" data.
+ * @private
+ */
+const _newInstance = (item, key = undefined, val = undefined) => {
+	const objType = type(item);
+	
+	let newObj;
+	
+	if (objType === "object") {
+		newObj = {
+			...item
+		};
+	}
+	
+	if (objType === "array") {
+		newObj = [
+			...item
+		];
+	}
+	
+	if (key !== undefined) {
+		newObj[key] = val;
+	}
+	
+	return newObj;
+};
+
+/**
+ * Returns the given path after removing the last
+ * leaf from the path. E.g. "foo.bar.thing" becomes
+ * "foo.bar".
+ * @param {String} path The path to operate on.
+ * @param {Number=} levels The number of levels to
+ * move up.
+ * @returns {String} The new path string.
+ */
+const up = (path, levels = 1) => {
+	const parts = split(path);
+	
+	for (let i = 0; i < levels; i++) {
+		parts.pop();
+	}
+	
+	return parts.join(".");
+};
+
+/**
+ * Returns the given path after removing the first
+ * leaf from the path. E.g. "foo.bar.thing" becomes
+ * "bar.thing".
+ * @param {String} path The path to operate on.
+ * @param {Number=} levels The number of levels to
+ * move down.
+ * @returns {String} The new path string.
+ */
+const down = (path, levels = 1) => {
+	const parts = split(path);
+	
+	for (let i = 0; i < levels; i++) {
+		parts.shift();
+	}
+	
+	return parts.join(".");
+};
+
+/**
+ * Returns the last leaf from the path. E.g.
+ * "foo.bar.thing" returns "thing".
+ * @param {String} path The path to operate on.
+ * @param {Number=} levels The number of levels to
+ * pop.
+ * @returns {String} The new path string.
+ */
+const pop = (path, levels = 1) => {
+	const parts = split(path);
+	let part;
+	
+	for (let i = 0; i < levels; i++) {
+		part = parts.pop();
+	}
+	
+	return part || "";
+};
+
+/**
+ * Returns the first leaf from the path. E.g.
+ * "foo.bar.thing" returns "foo".
+ * @param {String} path The path to operate on.
+ * @param {Number=} levels The number of levels to
+ * shift.
+ * @returns {String} The new path string.
+ */
+const shift = (path, levels = 1) => {
+	const parts = split(path);
+	let part;
+	
+	for (let i = 0; i < levels; i++) {
+		part = parts.shift();
+	}
+	
+	return part || "";
+};
+
+/**
  * A function that just returns the first argument.
  * @param {*} val The argument to return.
  * @returns {*} The passed argument.
@@ -91,7 +220,7 @@ const escape = (str) => {
 
 /**
  * Gets a single value from the passed object and given path.
- * @param {Object} obj The object to inspect.
+ * @param {Object|Array} obj The object to operate on.
  * @param {String} path The path to retrieve data from.
  * @param {*=} defaultVal Optional default to return if the
  * value retrieved from the given object and path equals undefined.
@@ -166,7 +295,7 @@ const get = (obj, path, defaultVal = undefined, options = {}) => {
  * Sets a single value on the passed object and given path. This
  * will directly modify the "obj" object. If you need immutable
  * updates, use setImmutable() instead.
- * @param {Object} obj The object to inspect.
+ * @param {Object|Array} obj The object to operate on.
  * @param {String} path The path to set data on.
  * @param {*} val The value to assign to the obj at the path.
  * @param {Object=} options The options object.
@@ -206,125 +335,12 @@ const set = (obj, path, val, options = {}) => {
 	
 	// Path has no dot-notation, set key/value
 	if (internalPath.indexOf(".") === -1) {
+		obj = decouple(obj, options);
 		obj[options.transformKey(internalPath)] = val;
-		return;
-	}
-	
-	const pathParts = split(internalPath);
-	objPart = obj;
-	
-	for (let i = 0; i < pathParts.length - 1; i++) {
-		const pathPart = pathParts[i];
-		const transformedPathPart = options.transformKey(pathPart);
-		const tmpPart = objPart[transformedPathPart];
-		
-		if ((!tmpPart || typeof(objPart) !== "object")) {
-			// Create an object or array on the path
-			if (String(parseInt(transformedPathPart, 10)) === transformedPathPart) {
-				// This is an array index
-				objPart[transformedPathPart] = [];
-			} else {
-				objPart[transformedPathPart] = {};
-			}
-			
-			objPart = objPart[transformedPathPart];
-		} else {
-			objPart = tmpPart;
-		}
-	}
-	
-	// Set value
-	const transformedPathPart = options.transformKey(pathParts[pathParts.length - 1]);
-	objPart[transformedPathPart] = val;
-};
-
-/**
- * Creates a new instance of "item" that is dereferenced. Useful
- * when you want to return a new version of "item" with the same
- * data for immutable data structures.
- * @param {Object|Array} item The item to mimic.
- * @param {String} key The key to set data in.
- * @param {*} val The data to set in the key.
- * @returns {*} A new dereferenced version of "item" with the "key"
- * containing the "val" data.
- * @private
- */
-const _newInstance = (item, key = undefined, val = undefined) => {
-	const objType = type(item);
-	
-	let newObj;
-	
-	if (objType === "object") {
-		newObj = {
-			...item
-		};
-	}
-	
-	if (objType === "array") {
-		newObj = [
-			...item
-		];
-	}
-	
-	if (key !== undefined) {
-		newObj[key] = val;
-	}
-	
-	return newObj;
-};
-
-/**
- * Sets a single value on the passed object and given path in an
- * immutable way. Will not change or modify the existing "obj".
- *
- * Keep in mind that references to objects that were not modified
- * by the operation remain the same. This allows systems like React
- * to appropriately act on changes to specific data rather than
- * re-rendering an entire DOM tree when one sub-object changes.
- * @param {Object} obj The object to inspect.
- * @param {String} path The path to set data on.
- * @param {*} val The value to assign to the obj at the path.
- * @param {Object=} options The options object.
- * @returns {*} The new object with the modified data.
- */
-const setImmutable = (obj, path, val, options = {}) => {
-	let internalPath = path,
-		objPart;
-	
-	options = {
-		"transformRead": returnWhatWasGiven,
-		"transformKey": returnWhatWasGiven,
-		"transformWrite": returnWhatWasGiven,
-		...options
-	};
-	
-	// No object data
-	if (obj === undefined || obj === null) {
 		return obj;
 	}
 	
-	// No path string
-	if (!internalPath) {
-		return obj;
-	}
-	
-	internalPath = clean(internalPath);
-	
-	// Path is not a string, throw error
-	if (typeof internalPath !== "string") {
-		throw new Error("Path argument must be a string");
-	}
-	
-	if (typeof obj !== "object") {
-		return obj;
-	}
-	
-	// Path has no dot-notation, set key/value
-	if (internalPath.indexOf(".") === -1) {
-		return _newInstance(obj, options.transformKey(internalPath), val);
-	}
-	
-	const newObj = _newInstance(obj);
+	const newObj = decouple(obj, options);
 	const pathParts = split(internalPath);
 	const pathPart = pathParts.shift();
 	const transformedPathPart = options.transformKey(pathPart);
@@ -344,37 +360,128 @@ const setImmutable = (obj, path, val, options = {}) => {
 		objPart = childPart;
 	}
 	
-	return _newInstance(newObj, transformedPathPart, setImmutable(objPart, pathParts.join('.'), val, options));
+	return set(newObj, transformedPathPart, set(objPart, pathParts.join('.'), val, options), options);
+};
+
+/**
+ * Deletes a key from an object by the given path.
+ * @param {Object|Array} obj The object to operate on.
+ * @param {String} path The path to delete.
+ * @param {Object=} options The options object.
+ * @param {Object=} tracking Do not use.
+ */
+const unSet = (obj, path, options = {}, tracking = {}) => {
+	let internalPath = path;
+	
+	options = {
+		"transformRead": returnWhatWasGiven,
+		"transformKey": returnWhatWasGiven,
+		"transformWrite": returnWhatWasGiven,
+		...options
+	};
+	
+	// No object data
+	if (obj === undefined || obj === null) {
+		return;
+	}
+	
+	// No path string
+	if (!internalPath) {
+		return;
+	}
+	
+	internalPath = clean(internalPath);
+	
+	// Path is not a string, throw error
+	if (typeof internalPath !== "string") {
+		throw new Error("Path argument must be a string");
+	}
+	
+	if (typeof obj !== "object") {
+		return;
+	}
+	
+	const newObj = decouple(obj, options);
+	
+	// Path has no dot-notation, set key/value
+	if (internalPath.indexOf(".") === -1) {
+		if (newObj.hasOwnProperty(internalPath)) {
+			delete newObj[options.transformKey(internalPath)];
+			return newObj;
+		}
+		
+		tracking.returnOriginal = true;
+		return obj;
+	}
+	
+	
+	const pathParts = split(internalPath);
+	const pathPart = pathParts.shift();
+	const transformedPathPart = options.transformKey(pathPart);
+	let childPart = newObj[transformedPathPart];
+	
+	if (!childPart) {
+		// No child part available, nothing to unset!
+		tracking.returnOriginal = true;
+		return obj;
+	}
+	
+	newObj[transformedPathPart] = unSet(childPart, pathParts.join('.'), options, tracking);
+	
+	if (tracking.returnOriginal) {
+		return obj;
+	}
+	
+	return newObj;
+};
+
+/**
+ * If options.immutable === true then return a new de-referenced
+ * instance of the passed object/array. If immutable is false
+ * then simply return the same `obj` that was passed.
+ * @param {*} obj The object or array to decouple.
+ * @param {Object=} options The options object that has the immutable
+ * key with a boolean value.
+ * @returns {*} The new decoupled instance (if immutable is true)
+ * or the original `obj` if immutable is false.
+ */
+const decouple = (obj, options = {}) => {
+	if (!options.immutable) {
+		return obj;
+	}
+	
+	return _newInstance(obj);
 };
 
 /**
  * Push a value to an array on an object for the specified path.
- * @param {Object} obj The object to update.
+ * @param {Object|Array} obj The object to update.
  * @param {String} path The path to the array to push to.
  * @param {*} val The value to push to the array at the object path.
- * @returns {Object} The original object passed in "obj" but with
+ * @param {Object=} options An options object.
+ * @returns {Object|Array} The original object passed in "obj" but with
  * the array at the path specified having the newly pushed value.
  */
-const push = (obj, path, val) => {
+const pushVal = (obj, path, val, options = {}) => {
 	if (obj === undefined || obj === null || path === undefined) {
 		return obj;
 	}
 	
 	// Clean the path
-	path = this.clean(path);
+	path = clean(path);
 	
 	const pathParts = split(path);
 	const part = pathParts.shift();
 	
 	if (pathParts.length) {
 		// Generate the path part in the object if it does not already exist
-		obj[part] = obj[part] || {};
+		obj[part] = decouple(obj[part], options) || {};
 		
 		// Recurse
-		push(obj[part], pathParts.join("."), val);
+		pushVal(obj[part], pathParts.join("."), val);
 	} else {
 		// We have found the target array, push the value
-		obj[part] = obj[part] || [];
+		obj[part] = decouple(obj[part], options) || [];
 		
 		if (obj[part] instanceof Array) {
 			obj[part].push(val);
@@ -383,13 +490,53 @@ const push = (obj, path, val) => {
 		}
 	}
 	
-	return obj;
+	return decouple(obj, options);
+};
+
+/**
+ * Pull a value to from an array at the specified path.
+ * @param {Object|Array} obj The object to update.
+ * @param {String} path The path to the array to pull from.
+ * @param {*} val The value to pull from the array.
+ * @param {Object=} options An options object.
+ * @returns {Object|Array} The original object passed in "obj" but with
+ * the array at the path specified having the newly pushed value.
+ */
+const pullVal = (obj, path, val, options = {}) => {
+	if (obj === undefined || obj === null || path === undefined) {
+		return obj;
+	}
+	
+	// Clean the path
+	path = clean(path);
+	
+	const pathParts = split(path);
+	const part = pathParts.shift();
+	
+	if (pathParts.length) {
+		// Generate the path part in the object if it does not already exist
+		obj[part] = decouple(obj[part], options) || {};
+		
+		// Recurse
+		pushVal(obj[part], pathParts.join("."), val);
+	} else {
+		// We have found the target array, push the value
+		obj[part] = decouple(obj[part], options) || [];
+		
+		if (obj[part] instanceof Array) {
+			obj[part].push(val);
+		} else {
+			throw("Cannot push to a path whose leaf node is not an array!");
+		}
+	}
+	
+	return decouple(obj, options);
 };
 
 /**
  * Given a path and an object, determines the outermost leaf node
  * that can be reached where the leaf value is not undefined.
- * @param {Object} obj The object to inspect.
+ * @param {Object|Array} obj The object to operate on.
  * @param {String} path The path to retrieve data from.
  * @param {Object=} options Optional options object.
  * @returns {String} The path to the furthest non-undefined value.
@@ -455,10 +602,10 @@ const furthest = (obj, path, options = {}) => {
  * from the leaf node from the overall object in the obj argument,
  * essentially providing all available paths in an object and all the
  * values for each path.
- * @param {Object} obj The object to inspect.
+ * @param {Object|Array} obj The object to operate on.
  * @param {String} path The path to retrieve data from.
  * @param {Object=} options Optional options object.
- * @returns {Object} The result of the traversal.
+ * @returns {Object|Array} The result of the traversal.
  */
 const values = (obj, path, options = {}) => {
 	const internalPath = clean(path);
@@ -488,7 +635,7 @@ const values = (obj, path, options = {}) => {
 /**
  * Takes an object and finds all paths, then returns the paths as an
  * array of strings.
- * @param {Object} obj The object to scan.
+ * @param {Object|Array} obj The object to scan.
  * @param {Array=} finalArr An object used to collect the path keys.
  * (Do not pass this in directly - use undefined).
  * @param {String=} parentPath The path of the parent object. (Do not
@@ -539,13 +686,13 @@ const flatten = (obj, finalArr = [], parentPath = "", options = {}, objCache = [
 /**
  * Takes an object and finds all paths, then returns the paths as keys
  * and the values of each path as the values.
- * @param {Object} obj The object to scan.
+ * @param {Object|Array} obj The object to scan.
  * @param {Object=} finalObj An object used to collect the path keys.
  * (Do not pass this in directly).
  * @param {String=} parentPath The path of the parent object. (Do not
  * pass this in directly).
  * @param {Object=} options An options object.
- * @returns {Object} An object containing path keys and their values.
+ * @returns {Object|Array} An object containing path keys and their values.
  */
 const flattenValues = (obj, finalObj = {}, parentPath = "", options = {}, objCache = []) => {
 	options = {
@@ -620,28 +767,8 @@ const joinEscaped = (...args) => {
 };
 
 /**
- * Returns the specified path but removes the last
- * leaf from the path. E.g. "foo.bar.thing" becomes
- * "foo.bar".
- * @param {String} path The path to operate on.
- * @param {Number=} levels The number of levels to
- * move up.
- * @returns {String} The new path string.
- */
-// TODO: Rename to pop and add shift() as well
-const up = (path, levels = 1) => {
-	const parts = split(path);
-	
-	for (let i = 0; i < levels; i++) {
-		parts.pop();
-	}
-	
-	return parts.join(".");
-};
-
-/**
  * Counts the total number of key leaf nodes in the passed object.
- * @param {Object} obj The object to count key leaf nodes for.
+ * @param {Object|Array} obj The object to count key leaf nodes for.
  * @param {Array=} objCache Do not use. Internal array to track
  * visited leafs.
  * @returns {Number} The number of keys.
@@ -693,8 +820,8 @@ const leafNodes = (obj, parentPath = "", objCache = []) => {
 /**
  * Tests if the passed object has the paths that are specified and that
  * a value exists in those paths. MAY NOT BE INFINITE RECURSION SAFE.
- * @param {Object} testKeys The object describing the paths to test for.
- * @param {Object} testObj The object to test paths against.
+ * @param {Object|Array} testKeys The object describing the paths to test for.
+ * @param {Object|Array} testObj The object to test paths against.
  * @returns {Boolean} True if the object paths exist.
  */
 const hasMatchingPathsInObject = function (testKeys, testObj) {
@@ -725,8 +852,8 @@ const hasMatchingPathsInObject = function (testKeys, testObj) {
  * Tests if the passed object has the paths that are specified and that
  * a value exists in those paths and if so returns the number matched.
  * MAY NOT BE INFINITE RECURSION SAFE.
- * @param {Object} testKeys The object describing the paths to test for.
- * @param {Object} testObj The object to test paths against.
+ * @param {Object|Array} testKeys The object describing the paths to test for.
+ * @param {Object|Array} testObj The object to test paths against.
  * @returns {Object<matchedKeys<Number>, matchedKeyCount<Number>, totalKeyCount<Number>>} Stats on the matched keys.
  */
 const countMatchingPathsInObject = (testKeys, testObj) => {
@@ -783,24 +910,6 @@ const type = (item) => {
 	}
 	
 	return typeof item;
-};
-
-/**
- * Scans an object for all keys that are either objects or arrays
- * and returns an array of those keys only.
- * @param {Object} obj The object to scan.
- * @returns {[string]} An array of string keys.
- * @private
- */
-const _iterableKeys = (obj) => {
-	return Object.entries(obj).reduce((arr, [key, val]) => {
-		const valType = type(val);
-		if (valType === "object" || valType === "array") {
-			arr.push(key);
-		}
-		
-		return arr;
-	}, []);
 };
 
 /**
@@ -1079,6 +1188,44 @@ const isNotEqual = (obj1, obj2, path, deep = false, strict = false) => {
 	return !isEqual(obj1, obj2, path, deep, strict);
 };
 
+/**
+ * Same as set() but will not change or modify the existing `obj`.
+ * References to objects that were not modified remain the same.
+ * @param {Object|Array} obj The object to operate on.
+ * @param {String} path The path to operate on.
+ * @param {*} val The value to use for the operation.
+ * @param {Object=} options The options object.
+ * @returns {*} The new object with the modified data.
+ */
+const setImmutable = (obj, path, val, options = {}) => {
+	return set(obj, path, val, {...options, immutable: true});
+};
+
+/**
+ * Same as push() but will not change or modify the existing `obj`.
+ * References to objects that were not modified remain the same.
+ * @param {Object|Array} obj The object to operate on.
+ * @param {String} path The path to operate on.
+ * @param {*} val The value to use for the operation.
+ * @param {Object=} options The options object.
+ * @returns {*} The new object with the modified data.
+ */
+const pushImmutable = (obj, path, val, options = {}) => {
+	return push(obj, path, val, {...options, immutable: true});
+};
+
+/**
+ * Same as unSet() but will not change or modify the existing `obj`.
+ * References to objects that were not modified remain the same.
+ * @param {Object|Array} obj The object to operate on.
+ * @param {String} path The path to operate on.
+ * @param {Object=} options The options object.
+ * @returns {*} The new object with the modified data.
+ */
+const unSetImmutable = (obj, path, options = {}) => {
+	return unSet(obj, path, {...options, immutable: true});
+};
+
 module.exports = {
 	wildcardToZero,
 	numberToWildcard,
@@ -1088,7 +1235,10 @@ module.exports = {
 	get,
 	set,
 	setImmutable,
-	push,
+	unSet,
+	unSetImmutable,
+	pushVal,
+	pullVal,
 	furthest,
 	values,
 	flatten,
@@ -1096,6 +1246,9 @@ module.exports = {
 	join,
 	joinEscaped,
 	up,
+	down,
+	pop,
+	shift,
 	countLeafNodes,
 	hasMatchingPathsInObject,
 	countMatchingPathsInObject,

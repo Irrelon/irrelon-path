@@ -150,6 +150,8 @@ console.log(result2); // Logs: hello
 ```
 
 ### setImmutable (`obj`, `path`, `value`)
+> This is a helper function that calls `set()` with immutable
+ flag switched on.
 
 |Param|Type|Required|Default|
 |---|---|---|---|
@@ -208,6 +210,27 @@ console.log(obj.foo === newObj.foo); // Logs: false
 // Child objects of modified parents will still have references
 // to the original since the child object wasn't modified directly
 console.log(obj.foo.subBar === newObj.foo.subBar); // Logs: true
+```
+
+### unSet (`obj`, `path`)
+Deletes a key from an object by the given path.
+
+```js
+const obj = {
+	"foo": {
+		"bar": [{
+			"moo": true,
+			"baa": "ram you"
+		}]
+	}
+};
+
+console.log(obj.foo.bar[0].baa); // Logs: ram you
+
+unSet(obj, "foo.bar.0.baa");
+
+console.log(obj.foo.bar[0].baa); // Logs: undefined
+console.log(obj.foo.bar[0].hasOwnProperty("baa")); // Logs: false
 ```
 
 ### clean (`str`)

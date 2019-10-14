@@ -2,21 +2,160 @@
 
 var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
 
-var _slicedToArray2 = _interopRequireDefault(require("@babel/runtime/helpers/slicedToArray"));
+var _typeof2 = _interopRequireDefault(require("@babel/runtime/helpers/typeof"));
 
 var _toConsumableArray2 = _interopRequireDefault(require("@babel/runtime/helpers/toConsumableArray"));
 
-var _typeof2 = _interopRequireDefault(require("@babel/runtime/helpers/typeof"));
-
 var _objectSpread2 = _interopRequireDefault(require("@babel/runtime/helpers/objectSpread"));
 
-var _this = void 0;
+var _slicedToArray2 = _interopRequireDefault(require("@babel/runtime/helpers/slicedToArray"));
 
+/**
+ * Scans an object for all keys that are either objects or arrays
+ * and returns an array of those keys only.
+ * @param {Object|Array} obj The object to scan.
+ * @returns {[string]} An array of string keys.
+ * @private
+ */
+var _iterableKeys = function _iterableKeys (obj) {
+	return Object.entries(obj).reduce(function (arr, _ref) {
+		var _ref2 = (0, _slicedToArray2.default)(_ref, 2),
+			key = _ref2[0],
+			val = _ref2[1];
+		
+		var valType = type(val);
+		
+		if (valType === "object" || valType === "array") {
+			arr.push(key);
+		}
+		
+		return arr;
+	}, []);
+};
+/**
+ * Creates a new instance of "item" that is dereferenced. Useful
+ * when you want to return a new version of "item" with the same
+ * data for immutable data structures.
+ * @param {Object|Array} item The item to mimic.
+ * @param {String} key The key to set data in.
+ * @param {*} val The data to set in the key.
+ * @returns {*} A new dereferenced version of "item" with the "key"
+ * containing the "val" data.
+ * @private
+ */
+
+
+var _newInstance = function _newInstance (item) {
+	var key = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : undefined;
+	var val = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : undefined;
+	var objType = type(item);
+	var newObj;
+	
+	if (objType === "object") {
+		newObj = (0, _objectSpread2.default)({}, item);
+	}
+	
+	if (objType === "array") {
+		newObj = (0, _toConsumableArray2.default)(item);
+	}
+	
+	if (key !== undefined) {
+		newObj[key] = val;
+	}
+	
+	return newObj;
+};
+/**
+ * Returns the given path after removing the last
+ * leaf from the path. E.g. "foo.bar.thing" becomes
+ * "foo.bar".
+ * @param {String} path The path to operate on.
+ * @param {Number=} levels The number of levels to
+ * move up.
+ * @returns {String} The new path string.
+ */
+
+
+var up = function up (path) {
+	var levels = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 1;
+	var parts = split(path);
+	
+	for (var i = 0; i < levels; i++) {
+		parts.pop();
+	}
+	
+	return parts.join(".");
+};
+/**
+ * Returns the given path after removing the first
+ * leaf from the path. E.g. "foo.bar.thing" becomes
+ * "bar.thing".
+ * @param {String} path The path to operate on.
+ * @param {Number=} levels The number of levels to
+ * move down.
+ * @returns {String} The new path string.
+ */
+
+
+var down = function down (path) {
+	var levels = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 1;
+	var parts = split(path);
+	
+	for (var i = 0; i < levels; i++) {
+		parts.shift();
+	}
+	
+	return parts.join(".");
+};
+/**
+ * Returns the last leaf from the path. E.g.
+ * "foo.bar.thing" returns "thing".
+ * @param {String} path The path to operate on.
+ * @param {Number=} levels The number of levels to
+ * pop.
+ * @returns {String} The new path string.
+ */
+
+
+var pop = function pop (path) {
+	var levels = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 1;
+	var parts = split(path);
+	var part;
+	
+	for (var i = 0; i < levels; i++) {
+		part = parts.pop();
+	}
+	
+	return part || "";
+};
+/**
+ * Returns the first leaf from the path. E.g.
+ * "foo.bar.thing" returns "foo".
+ * @param {String} path The path to operate on.
+ * @param {Number=} levels The number of levels to
+ * shift.
+ * @returns {String} The new path string.
+ */
+
+
+var shift = function shift (path) {
+	var levels = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 1;
+	var parts = split(path);
+	var part;
+	
+	for (var i = 0; i < levels; i++) {
+		part = parts.shift();
+	}
+	
+	return part || "";
+};
 /**
  * A function that just returns the first argument.
  * @param {*} val The argument to return.
  * @returns {*} The passed argument.
  */
+
+
 var returnWhatWasGiven = function returnWhatWasGiven (val) {
 	return val;
 };
@@ -110,7 +249,7 @@ var escape = function escape (str) {
 };
 /**
  * Gets a single value from the passed object and given path.
- * @param {Object} obj The object to inspect.
+ * @param {Object|Array} obj The object to operate on.
  * @param {String} path The path to retrieve data from.
  * @param {*=} defaultVal Optional default to return if the
  * value retrieved from the given object and path equals undefined.
@@ -186,7 +325,7 @@ var get = function get (obj, path) {
  * Sets a single value on the passed object and given path. This
  * will directly modify the "obj" object. If you need immutable
  * updates, use setImmutable() instead.
- * @param {Object} obj The object to inspect.
+ * @param {Object|Array} obj The object to operate on.
  * @param {String} path The path to set data on.
  * @param {*} val The value to assign to the obj at the path.
  * @param {Object=} options The options object.
@@ -225,124 +364,12 @@ var set = function set (obj, path, val) {
 	
 	
 	if (internalPath.indexOf(".") === -1) {
+		obj = decouple(obj, options);
 		obj[options.transformKey(internalPath)] = val;
-		return;
-	}
-	
-	var pathParts = split(internalPath);
-	objPart = obj;
-	
-	for (var i = 0; i < pathParts.length - 1; i++) {
-		var pathPart = pathParts[i];
-		
-		var _transformedPathPart = options.transformKey(pathPart);
-		
-		var tmpPart = objPart[_transformedPathPart];
-		
-		if (!tmpPart || (0, _typeof2.default)(objPart) !== "object") {
-			// Create an object or array on the path
-			if (String(parseInt(_transformedPathPart, 10)) === _transformedPathPart) {
-				// This is an array index
-				objPart[_transformedPathPart] = [];
-			} else {
-				objPart[_transformedPathPart] = {};
-			}
-			
-			objPart = objPart[_transformedPathPart];
-		} else {
-			objPart = tmpPart;
-		}
-	} // Set value
-	
-	
-	var transformedPathPart = options.transformKey(pathParts[pathParts.length - 1]);
-	objPart[transformedPathPart] = val;
-};
-/**
- * Creates a new instance of "item" that is dereferenced. Useful
- * when you want to return a new version of "item" with the same
- * data for immutable data structures.
- * @param {Object|Array} item The item to mimic.
- * @param {String} key The key to set data in.
- * @param {*} val The data to set in the key.
- * @returns {*} A new dereferenced version of "item" with the "key"
- * containing the "val" data.
- * @private
- */
-
-
-var _newInstance = function _newInstance (item) {
-	var key = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : undefined;
-	var val = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : undefined;
-	var objType = type(item);
-	var newObj;
-	
-	if (objType === "object") {
-		newObj = (0, _objectSpread2.default)({}, item);
-	}
-	
-	if (objType === "array") {
-		newObj = (0, _toConsumableArray2.default)(item);
-	}
-	
-	if (key !== undefined) {
-		newObj[key] = val;
-	}
-	
-	return newObj;
-};
-/**
- * Sets a single value on the passed object and given path in an
- * immutable way. Will not change or modify the existing "obj".
- *
- * Keep in mind that references to objects that were not modified
- * by the operation remain the same. This allows systems like React
- * to appropriately act on changes to specific data rather than
- * re-rendering an entire DOM tree when one sub-object changes.
- * @param {Object} obj The object to inspect.
- * @param {String} path The path to set data on.
- * @param {*} val The value to assign to the obj at the path.
- * @param {Object=} options The options object.
- * @returns {*} The new object with the modified data.
- */
-
-
-var setImmutable = function setImmutable (obj, path, val) {
-	var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
-	var internalPath = path,
-		objPart;
-	options = (0, _objectSpread2.default)({
-		"transformRead": returnWhatWasGiven,
-		"transformKey": returnWhatWasGiven,
-		"transformWrite": returnWhatWasGiven
-	}, options); // No object data
-	
-	if (obj === undefined || obj === null) {
-		return obj;
-	} // No path string
-	
-	
-	if (!internalPath) {
 		return obj;
 	}
 	
-	internalPath = clean(internalPath); // Path is not a string, throw error
-	
-	if (typeof internalPath !== "string") {
-		throw new Error("Path argument must be a string");
-	}
-	
-	if ((0, _typeof2.default)(obj) !== "object") {
-		return obj;
-	} // Path has no dot-notation, set key/value
-	
-	
-	if (internalPath.indexOf(".") === -1) {
-		return _newInstance(obj, options.transformKey(internalPath), val);
-	}
-	
-	var newObj = _newInstance(obj);
-	
+	var newObj = decouple(obj, options);
 	var pathParts = split(internalPath);
 	var pathPart = pathParts.shift();
 	var transformedPathPart = options.transformKey(pathPart);
@@ -362,36 +389,129 @@ var setImmutable = function setImmutable (obj, path, val) {
 		objPart = childPart;
 	}
 	
-	return _newInstance(newObj, transformedPathPart, setImmutable(objPart, pathParts.join('.'), val, options));
+	return set(newObj, transformedPathPart, set(objPart, pathParts.join('.'), val, options), options);
+};
+/**
+ * Deletes a key from an object by the given path.
+ * @param {Object|Array} obj The object to operate on.
+ * @param {String} path The path to delete.
+ * @param {Object=} options The options object.
+ * @param {Object=} tracking Do not use.
+ */
+
+
+var unSet = function unSet (obj, path) {
+	var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+	var tracking = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+	var internalPath = path;
+	options = (0, _objectSpread2.default)({
+		"transformRead": returnWhatWasGiven,
+		"transformKey": returnWhatWasGiven,
+		"transformWrite": returnWhatWasGiven
+	}, options); // No object data
+	
+	if (obj === undefined || obj === null) {
+		return;
+	} // No path string
+	
+	
+	if (!internalPath) {
+		return;
+	}
+	
+	internalPath = clean(internalPath); // Path is not a string, throw error
+	
+	if (typeof internalPath !== "string") {
+		throw new Error("Path argument must be a string");
+	}
+	
+	if ((0, _typeof2.default)(obj) !== "object") {
+		return;
+	}
+	
+	var newObj = decouple(obj, options); // Path has no dot-notation, set key/value
+	
+	if (internalPath.indexOf(".") === -1) {
+		if (newObj.hasOwnProperty(internalPath)) {
+			delete newObj[options.transformKey(internalPath)];
+			return newObj;
+		}
+		
+		tracking.returnOriginal = true;
+		return obj;
+	}
+	
+	var pathParts = split(internalPath);
+	var pathPart = pathParts.shift();
+	var transformedPathPart = options.transformKey(pathPart);
+	var childPart = newObj[transformedPathPart];
+	
+	if (!childPart) {
+		// No child part available, nothing to unset!
+		tracking.returnOriginal = true;
+		return obj;
+	}
+	
+	newObj[transformedPathPart] = unSet(childPart, pathParts.join('.'), options, tracking);
+	
+	if (tracking.returnOriginal) {
+		return obj;
+	}
+	
+	return newObj;
+};
+/**
+ * If options.immutable === true then return a new de-referenced
+ * instance of the passed object/array. If immutable is false
+ * then simply return the same `obj` that was passed.
+ * @param {*} obj The object or array to decouple.
+ * @param {Object=} options The options object that has the immutable
+ * key with a boolean value.
+ * @returns {*} The new decoupled instance (if immutable is true)
+ * or the original `obj` if immutable is false.
+ */
+
+
+var decouple = function decouple (obj) {
+	var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+	
+	if (!options.immutable) {
+		return obj;
+	}
+	
+	return _newInstance(obj);
 };
 /**
  * Push a value to an array on an object for the specified path.
- * @param {Object} obj The object to update.
+ * @param {Object|Array} obj The object to update.
  * @param {String} path The path to the array to push to.
  * @param {*} val The value to push to the array at the object path.
- * @returns {Object} The original object passed in "obj" but with
+ * @param {Object=} options An options object.
+ * @returns {Object|Array} The original object passed in "obj" but with
  * the array at the path specified having the newly pushed value.
  */
 
 
-var push = function push (obj, path, val) {
+var pushVal = function pushVal (obj, path, val) {
+	var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+	
 	if (obj === undefined || obj === null || path === undefined) {
 		return obj;
 	} // Clean the path
 	
 	
-	path = _this.clean(path);
+	path = clean(path);
 	var pathParts = split(path);
 	var part = pathParts.shift();
 	
 	if (pathParts.length) {
 		// Generate the path part in the object if it does not already exist
-		obj[part] = obj[part] || {}; // Recurse
+		obj[part] = decouple(obj[part], options) || {}; // Recurse
 		
-		push(obj[part], pathParts.join("."), val);
+		pushVal(obj[part], pathParts.join("."), val);
 	} else {
 		// We have found the target array, push the value
-		obj[part] = obj[part] || [];
+		obj[part] = decouple(obj[part], options) || [];
 		
 		if (obj[part] instanceof Array) {
 			obj[part].push(val);
@@ -400,12 +520,53 @@ var push = function push (obj, path, val) {
 		}
 	}
 	
-	return obj;
+	return decouple(obj, options);
+};
+/**
+ * Pull a value to from an array at the specified path.
+ * @param {Object|Array} obj The object to update.
+ * @param {String} path The path to the array to pull from.
+ * @param {*} val The value to pull from the array.
+ * @param {Object=} options An options object.
+ * @returns {Object|Array} The original object passed in "obj" but with
+ * the array at the path specified having the newly pushed value.
+ */
+
+
+var pullVal = function pullVal (obj, path, val) {
+	var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+	
+	if (obj === undefined || obj === null || path === undefined) {
+		return obj;
+	} // Clean the path
+	
+	
+	path = clean(path);
+	var pathParts = split(path);
+	var part = pathParts.shift();
+	
+	if (pathParts.length) {
+		// Generate the path part in the object if it does not already exist
+		obj[part] = decouple(obj[part], options) || {}; // Recurse
+		
+		pushVal(obj[part], pathParts.join("."), val);
+	} else {
+		// We have found the target array, push the value
+		obj[part] = decouple(obj[part], options) || [];
+		
+		if (obj[part] instanceof Array) {
+			obj[part].push(val);
+		} else {
+			throw "Cannot push to a path whose leaf node is not an array!";
+		}
+	}
+	
+	return decouple(obj, options);
 };
 /**
  * Given a path and an object, determines the outermost leaf node
  * that can be reached where the leaf value is not undefined.
- * @param {Object} obj The object to inspect.
+ * @param {Object|Array} obj The object to operate on.
  * @param {String} path The path to retrieve data from.
  * @param {Object=} options Optional options object.
  * @returns {String} The path to the furthest non-undefined value.
@@ -469,10 +630,10 @@ var furthest = function furthest (obj, path) {
  * from the leaf node from the overall object in the obj argument,
  * essentially providing all available paths in an object and all the
  * values for each path.
- * @param {Object} obj The object to inspect.
+ * @param {Object|Array} obj The object to operate on.
  * @param {String} path The path to retrieve data from.
  * @param {Object=} options Optional options object.
- * @returns {Object} The result of the traversal.
+ * @returns {Object|Array} The result of the traversal.
  */
 
 
@@ -500,7 +661,7 @@ var values = function values (obj, path) {
 /**
  * Takes an object and finds all paths, then returns the paths as an
  * array of strings.
- * @param {Object} obj The object to scan.
+ * @param {Object|Array} obj The object to scan.
  * @param {Array=} finalArr An object used to collect the path keys.
  * (Do not pass this in directly - use undefined).
  * @param {String=} parentPath The path of the parent object. (Do not
@@ -553,13 +714,13 @@ var flatten = function flatten (obj) {
 /**
  * Takes an object and finds all paths, then returns the paths as keys
  * and the values of each path as the values.
- * @param {Object} obj The object to scan.
+ * @param {Object|Array} obj The object to scan.
  * @param {Object=} finalObj An object used to collect the path keys.
  * (Do not pass this in directly).
  * @param {String=} parentPath The path of the parent object. (Do not
  * pass this in directly).
  * @param {Object=} options An options object.
- * @returns {Object} An object containing path keys and their values.
+ * @returns {Object|Array} An object containing path keys and their values.
  */
 
 
@@ -645,30 +806,8 @@ var joinEscaped = function joinEscaped () {
 	return join.apply(void 0, (0, _toConsumableArray2.default)(escapedArgs));
 };
 /**
- * Returns the specified path but removes the last
- * leaf from the path. E.g. "foo.bar.thing" becomes
- * "foo.bar".
- * @param {String} path The path to operate on.
- * @param {Number=} levels The number of levels to
- * move up.
- * @returns {String} The new path string.
- */
-// TODO: Rename to pop and add shift() as well
-
-
-var up = function up (path) {
-	var levels = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 1;
-	var parts = split(path);
-	
-	for (var i = 0; i < levels; i++) {
-		parts.pop();
-	}
-	
-	return parts.join(".");
-};
-/**
  * Counts the total number of key leaf nodes in the passed object.
- * @param {Object} obj The object to count key leaf nodes for.
+ * @param {Object|Array} obj The object to count key leaf nodes for.
  * @param {Array=} objCache Do not use. Internal array to track
  * visited leafs.
  * @returns {Number} The number of keys.
@@ -722,8 +861,8 @@ var leafNodes = function leafNodes (obj) {
 /**
  * Tests if the passed object has the paths that are specified and that
  * a value exists in those paths. MAY NOT BE INFINITE RECURSION SAFE.
- * @param {Object} testKeys The object describing the paths to test for.
- * @param {Object} testObj The object to test paths against.
+ * @param {Object|Array} testKeys The object describing the paths to test for.
+ * @param {Object|Array} testObj The object to test paths against.
  * @returns {Boolean} True if the object paths exist.
  */
 
@@ -754,8 +893,8 @@ var hasMatchingPathsInObject = function hasMatchingPathsInObject (testKeys, test
  * Tests if the passed object has the paths that are specified and that
  * a value exists in those paths and if so returns the number matched.
  * MAY NOT BE INFINITE RECURSION SAFE.
- * @param {Object} testKeys The object describing the paths to test for.
- * @param {Object} testObj The object to test paths against.
+ * @param {Object|Array} testKeys The object describing the paths to test for.
+ * @param {Object|Array} testObj The object to test paths against.
  * @returns {Object<matchedKeys<Number>, matchedKeyCount<Number>, totalKeyCount<Number>>} Stats on the matched keys.
  */
 
@@ -813,30 +952,6 @@ var type = function type (item) {
 	}
 	
 	return (0, _typeof2.default)(item);
-};
-/**
- * Scans an object for all keys that are either objects or arrays
- * and returns an array of those keys only.
- * @param {Object} obj The object to scan.
- * @returns {[string]} An array of string keys.
- * @private
- */
-
-
-var _iterableKeys = function _iterableKeys (obj) {
-	return Object.entries(obj).reduce(function (arr, _ref) {
-		var _ref2 = (0, _slicedToArray2.default)(_ref, 2),
-			key = _ref2[0],
-			val = _ref2[1];
-		
-		var valType = type(val);
-		
-		if (valType === "object" || valType === "array") {
-			arr.push(key);
-		}
-		
-		return arr;
-	}, []);
 };
 /**
  * Determines if the query data exists anywhere inside the source
@@ -1152,6 +1267,56 @@ var isNotEqual = function isNotEqual (obj1, obj2, path) {
 	var strict = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : false;
 	return !isEqual(obj1, obj2, path, deep, strict);
 };
+/**
+ * Same as set() but will not change or modify the existing `obj`.
+ * References to objects that were not modified remain the same.
+ * @param {Object|Array} obj The object to operate on.
+ * @param {String} path The path to operate on.
+ * @param {*} val The value to use for the operation.
+ * @param {Object=} options The options object.
+ * @returns {*} The new object with the modified data.
+ */
+
+
+var setImmutable = function setImmutable (obj, path, val) {
+	var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+	return set(obj, path, val, (0, _objectSpread2.default)({}, options, {
+		immutable: true
+	}));
+};
+/**
+ * Same as push() but will not change or modify the existing `obj`.
+ * References to objects that were not modified remain the same.
+ * @param {Object|Array} obj The object to operate on.
+ * @param {String} path The path to operate on.
+ * @param {*} val The value to use for the operation.
+ * @param {Object=} options The options object.
+ * @returns {*} The new object with the modified data.
+ */
+
+
+var pushImmutable = function pushImmutable (obj, path, val) {
+	var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+	return push(obj, path, val, (0, _objectSpread2.default)({}, options, {
+		immutable: true
+	}));
+};
+/**
+ * Same as unSet() but will not change or modify the existing `obj`.
+ * References to objects that were not modified remain the same.
+ * @param {Object|Array} obj The object to operate on.
+ * @param {String} path The path to operate on.
+ * @param {Object=} options The options object.
+ * @returns {*} The new object with the modified data.
+ */
+
+
+var unSetImmutable = function unSetImmutable (obj, path) {
+	var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+	return unSet(obj, path, (0, _objectSpread2.default)({}, options, {
+		immutable: true
+	}));
+};
 
 module.exports = {
 	wildcardToZero: wildcardToZero,
@@ -1162,7 +1327,10 @@ module.exports = {
 	get: get,
 	set: set,
 	setImmutable: setImmutable,
-	push: push,
+	unSet: unSet,
+	unSetImmutable: unSetImmutable,
+	pushVal: pushVal,
+	pullVal: pullVal,
 	furthest: furthest,
 	values: values,
 	flatten: flatten,
@@ -1170,6 +1338,9 @@ module.exports = {
 	join: join,
 	joinEscaped: joinEscaped,
 	up: up,
+	down: down,
+	pop: pop,
+	shift: shift,
 	countLeafNodes: countLeafNodes,
 	hasMatchingPathsInObject: hasMatchingPathsInObject,
 	countMatchingPathsInObject: countMatchingPathsInObject,

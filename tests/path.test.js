@@ -2,7 +2,6 @@ const {describe, it, assert} = require("mocha-expect");
 const {
 	get,
 	set,
-	setImmutable,
 	furthest,
 	values,
 	flatten,
@@ -14,7 +13,13 @@ const {
 	match,
 	isNotEqual,
 	leafNodes,
-	diff
+	diff,
+	unSet,
+	pushVal,
+	pop,
+	shift,
+	up,
+	down
 } = require("../src/Path");
 
 describe("Path", () => {
@@ -269,9 +274,10 @@ describe("Path", () => {
 		it("Can set a value on the passed object at the correct path with auto-created objects", () => {
 			const obj = {};
 			
-			set(obj, "foo.bar.thing", "foo");
+			const newObj = set(obj, "foo.bar.thing", "foo");
 			
 			assert.strictEqual(obj.foo.bar.thing, "foo", "The value was set correctly");
+			assert.strictEqual(newObj, obj, "The object reference is the same");
 		});
 		
 		it("Can set a value on the passed object with an array index at the correct path", () => {
@@ -279,18 +285,20 @@ describe("Path", () => {
 				"arr": [1]
 			};
 			
-			set(obj, "arr.1", "foo");
+			const newObj = set(obj, "arr.1", "foo");
 			
 			assert.strictEqual(obj.arr[0], 1, "The value was set correctly");
 			assert.strictEqual(obj.arr[1], "foo", "The value was set correctly");
+			assert.strictEqual(newObj, obj, "The object reference is the same");
 		});
 		
 		it("Can set a value on the passed object with an array index when no array currently exists at the correct path", () => {
 			const obj = {};
 			
-			set(obj, "arr.0", "foo");
+			const newObj = set(obj, "arr.0", "foo");
 			
 			assert.strictEqual(obj.arr[0], "foo", "The value was set correctly");
+			assert.strictEqual(newObj, obj, "The object reference is the same");
 		});
 		
 		it("Can set a value on the passed object where the leaf node is an object", () => {
@@ -304,9 +312,10 @@ describe("Path", () => {
 				}
 			};
 			
-			set(obj, "foo.bar.ram", {copy: true});
+			const newObj = set(obj, "foo.bar.ram", {copy: true});
 			
 			assert.strictEqual(obj.foo.bar.ram.copy, true, "The value was set correctly");
+			assert.strictEqual(newObj, obj, "The object reference is the same");
 		});
 		
 		it("Can set a value on the passed object with a single path key", () => {
@@ -314,9 +323,10 @@ describe("Path", () => {
 				"foo": true
 			};
 			
-			set(obj, "foo", false);
+			const newObj = set(obj, "foo", false);
 			
 			assert.strictEqual(obj.foo, false, "The value was set correctly");
+			assert.strictEqual(newObj, obj, "The object reference is the same");
 		});
 	});
 	
@@ -343,7 +353,7 @@ describe("Path", () => {
 			const shouldChange2 = obj.shouldChange1.shouldChange2;
 			const shouldChange3 = obj.shouldChange1.shouldChange2.shouldChange3;
 			
-			const newObj = setImmutable(obj, "shouldChange1.shouldChange2.shouldChange3.value", true);
+			const newObj = set(obj, "shouldChange1.shouldChange2.shouldChange3.value", true, {immutable: true});
 			
 			assert.notStrictEqual(newObj, obj, "Root object is not the same");
 			
@@ -374,11 +384,106 @@ describe("Path", () => {
 			const foo = obj.foo;
 			const fooType = type(obj.foo);
 			
-			const newObj = setImmutable(obj, "foo.0.value", true);
+			const newObj = set(obj, "foo.0.value", true, {immutable: true});
 			const newFooType = type(newObj.foo);
 			
 			assert.notStrictEqual(newObj, obj, "Root object is not the same");
 			assert.strictEqual(fooType, newFooType, "Array type has not changed");
+		});
+	});
+	
+	describe("unSet()", () => {
+		describe("Mutable", () => {
+			it("Will remove the required key from an object", () => {
+				const obj = {
+					"foo": {
+						"bar": [{
+							"moo": true,
+							"baa": "ram you"
+						}]
+					}
+				};
+				
+				assert.strictEqual(obj.foo.bar[0].baa, "ram you", "Object has value");
+				
+				const newObj = unSet(obj, "foo.bar.0.baa");
+				
+				assert.strictEqual(obj.foo.bar[0].baa, undefined, "Object does not have value");
+				assert.strictEqual(obj.foo.bar[0].hasOwnProperty("baa"), false, "Object does not have key");
+				assert.strictEqual(newObj, obj, "Root object is the same");
+			});
+			
+			it("Will correctly handle a path to nowhere", () => {
+				const obj = {
+					"foo": {
+						"bar": [{
+							"moo": true,
+							"baa": "ram you"
+						}]
+					}
+				};
+				
+				const newObj = unSet(obj, "foo.bar.2.baa");
+				
+				assert.strictEqual(obj.foo.bar.hasOwnProperty("2"), false, "Object does not have key");
+				assert.strictEqual(newObj, obj, "Root object is the same");
+			});
+		});
+		
+		describe("Immutable", () => {
+			it("Will remove the required key from an object", () => {
+				const obj = {
+					"foo": {
+						"bar": [{
+							"moo": true,
+							"baa": "ram you"
+						}, {
+							"two": {},
+							"three": []
+						}]
+					}
+				};
+				
+				assert.strictEqual(obj.foo.bar[0].baa, "ram you", "Object has value");
+				
+				const newObj = unSet(obj, "foo.bar.0.baa", {immutable: true});
+				
+				// Check existing object is unchanged
+				assert.strictEqual(obj.foo.bar[0].baa, "ram you", "Data integrity");
+				assert.notStrictEqual(newObj, obj, "Root object should be different");
+				assert.notStrictEqual(newObj.foo, obj.foo, "foo object should be different");
+				assert.notStrictEqual(newObj.foo.bar, obj.foo.bar, "foo.bar object should be different");
+				assert.notStrictEqual(newObj.foo.bar[0], obj.foo.bar[0], "foo.bar[0] object should be different");
+				
+				// Check new object is changed
+				assert.strictEqual(newObj.foo.bar[0].baa, undefined, "Object does not have value");
+				assert.strictEqual(newObj.foo.bar[0].hasOwnProperty("baa"), false, "Object does not have key");
+				
+				// Check that new and old object do not share references to changed data
+				assert.notStrictEqual(newObj, obj, "Root object should be different");
+				assert.notStrictEqual(newObj.foo, obj.foo, "foo object should be different");
+				assert.notStrictEqual(newObj.foo.bar, obj.foo.bar, "foo.bar object should be different");
+				assert.notStrictEqual(newObj.foo.bar[0], obj.foo.bar[0], "foo.bar[0] object should be different");
+				
+				// Check that new and old object share references to unchanged data
+				assert.strictEqual(newObj.foo.bar[1], obj.foo.bar[1], "foo.bar[1] object should be same");
+			});
+			
+			it("Will correctly handle a path to nowhere", () => {
+				const obj = {
+					"foo": {
+						"bar": [{
+							"moo": true,
+							"baa": "ram you"
+						}]
+					}
+				};
+				
+				const newObj = unSet(obj, "foo.bar.2.baa", {immutable: true});
+				
+				assert.strictEqual(obj.foo.bar.hasOwnProperty("2"), false, "Object does not have key");
+				assert.strictEqual(newObj, obj, "Root object is the same because nothing changed");
+			});
 		});
 	});
 	
@@ -1015,6 +1120,137 @@ describe("Path", () => {
 			assert.strictEqual(result2 instanceof Array, true, "The result is an array");
 			assert.strictEqual(result2.length, 1, "The result value is correct");
 			assert.strictEqual(result2[0], "rootArray.0.arr.1.id", "The result value is correct");
+		});
+	});
+	
+	describe("pushVal()", () => {
+		it("Will push a value to an array at the given path", () => {
+			const obj = {
+				"foo": []
+			};
+			
+			assert.strictEqual(obj.foo.length, 0, "The array is empty");
+			
+			pushVal(obj, "foo", "New val");
+			
+			assert.strictEqual(obj.foo.length, 1, "The array is no longer empty");
+			assert.strictEqual(obj.foo[0], "New val", "The value is correct");
+		});
+		
+		it("Will push a value to an array that doesn't yet exist at the given path", () => {
+			const obj = {};
+			
+			assert.strictEqual(obj.foo, undefined, "The key has no array yet");
+			
+			pushVal(obj, "foo", "New val");
+			
+			assert.strictEqual(obj.foo instanceof Array, true, "The array was created");
+			assert.strictEqual(obj.foo.length, 1, "The array is no longer empty");
+			assert.strictEqual(obj.foo[0], "New val", "The value is correct");
+		});
+		
+		it("Will push a value to an array at the given path with immutability", () => {
+			const obj = {
+				"foo": []
+			};
+			
+			const oldFoo = obj.foo;
+			const newObj = pushVal(obj, "foo", "New val", {immutable: true});
+			
+			assert.strictEqual(obj !== newObj, true, "The old obj and new obj are not the same reference");
+			assert.strictEqual(oldFoo !== newObj.foo, true, "The old array and new array are not the same reference");
+		});
+	});
+	
+	describe("up()", () => {
+		it("Returns the new path correctly", () => {
+			const path = "foo.bar.thing";
+			const result = up(path);
+			
+			assert.strictEqual(result, "foo.bar", "The path is correct");
+		});
+		
+		it("Returns the new path correctly when levels are specified", () => {
+			const path = "foo.bar.thing";
+			const result = up(path, 2);
+			
+			assert.strictEqual(result, "foo", "The path is correct");
+		});
+		
+		it("Returns the new path correctly when too many levels are specified", () => {
+			const path = "foo.bar.thing";
+			const result = up(path, 5);
+			
+			assert.strictEqual(result, "", "The path is correct");
+		});
+	});
+	
+	describe("down()", () => {
+		it("Returns the new path correctly", () => {
+			const path = "foo.bar.thing";
+			const result = down(path);
+			
+			assert.strictEqual(result, "bar.thing", "The path is correct");
+		});
+		
+		it("Returns the new path correctly when levels are specified", () => {
+			const path = "foo.bar.thing";
+			const result = down(path, 2);
+			
+			assert.strictEqual(result, "thing", "The path is correct");
+		});
+		
+		it("Returns the new path correctly when too many levels are specified", () => {
+			const path = "foo.bar.thing";
+			const result = down(path, 5);
+			
+			assert.strictEqual(result, "", "The path is correct");
+		});
+	});
+	
+	describe("pop()", () => {
+		it("Returns the new path correctly", () => {
+			const path = "foo.bar.thing";
+			const result = pop(path);
+			
+			assert.strictEqual(result, "thing", "The path is correct");
+		});
+		
+		it("Returns the new path correctly when levels are specified", () => {
+			const path = "foo.bar.thing";
+			const result = pop(path, 2);
+			
+			assert.strictEqual(result, "bar", "The path is correct");
+		});
+		
+		it("Returns the new path correctly when too many levels are specified", () => {
+			const path = "foo.bar.thing";
+			const result = pop(path, 5);
+			
+			assert.strictEqual(result, "", "The path is correct");
+		});
+	});
+	
+	describe("shift()", () => {
+		it("Returns the new path correctly", () => {
+			const path = "foo.bar.thing";
+			const result = shift(path);
+			
+			assert.strictEqual(result, "foo", "The path is correct");
+		});
+		
+		it("Returns the new path correctly when levels are specified", () => {
+			const path = "foo.bar.thing";
+			const result = shift(path, 2);
+			
+			assert.strictEqual(result, "bar", "The path is correct");
+		});
+		
+		it("Returns the new path correctly when too many levels are specified", () => {
+			const path = "foo.bar.thing";
+			const result = shift(path, 5);
+			
+			assert.strictEqual(result, "", "The path is correct");
 		});
 	});
 });
