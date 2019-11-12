@@ -19,7 +19,9 @@ const {
 	pop,
 	shift,
 	up,
-	down
+	down,
+	update,
+	updateImmutable
 } = require("../src/Path");
 
 describe("Path", () => {
@@ -1251,6 +1253,34 @@ describe("Path", () => {
 			const result = shift(path, 5);
 			
 			assert.strictEqual(result, "", "The path is correct");
+		});
+	});
+	
+	describe("update()", () => {
+		it("Applies the correct values to multiple paths", () => {
+			const obj = {};
+			const resultObj = update(obj, {
+				"foo": "fooVal",
+				"bar.one.two": "Three"
+			});
+			
+			assert.strictEqual(resultObj.foo, "fooVal", "Value is correct for single noted path");
+			assert.strictEqual(resultObj.bar.one.two, "Three", "Value is correct for multi noted path");
+			assert.strictEqual(obj, resultObj, "The changes were made by reference");
+		});
+	});
+	
+	describe("updateImmutable()", () => {
+		it("Applies the correct values to multiple paths", () => {
+			const obj = {};
+			const resultObj = updateImmutable(obj, {
+				"foo": "fooVal",
+				"bar.one.two": "Three"
+			});
+			
+			assert.strictEqual(resultObj.foo, "fooVal", "Value is correct for single noted path");
+			assert.strictEqual(resultObj.bar.one.two, "Three", "Value is correct for multi noted path");
+			assert.notStrictEqual(obj, resultObj, "The changes were made by value");
 		});
 	});
 });

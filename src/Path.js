@@ -449,6 +449,32 @@ const unSet = (obj, path, options = {}, tracking = {}) => {
 };
 
 /**
+ * Takes an update object or array and iterates the keys of it, then
+ * sets data on the target object or array at the specified path with
+ * the corresponding value from the path key, effectively doing
+ * multiple set() operations in a single call. This will directly
+ * modify the "obj" object. If you need immutable updates, use
+ * updateImmutable() instead.
+ * @param {Object|Array} obj The object to operate on.
+ * @param {Object|Array} updateData The update data to apply with
+ * keys as string paths.
+ * @param {Object=} options The options object.
+ * @returns {*} The object with the modified data.
+ */
+const update = (obj, updateData, options = {}) => {
+	let newObj = obj;
+	
+	for (let path in updateData) {
+		if (updateData.hasOwnProperty(path)) {
+			const data = updateData[path];
+			newObj = set(newObj, path, data, options);
+		}
+	}
+	
+	return newObj;
+};
+
+/**
  * If options.immutable === true then return a new de-referenced
  * instance of the passed object/array. If immutable is false
  * then simply return the same `obj` that was passed.
@@ -1239,6 +1265,19 @@ const unSetImmutable = (obj, path, options = {}) => {
 	return unSet(obj, path, {...options, immutable: true});
 };
 
+/**
+ * Same as update() but will not change or modify the existing `obj`.
+ * References to objects that were not modified remain the same.
+ * @param {Object|Array} obj The object to operate on.
+ * @param {Object|Array} updateData The update data to apply with
+ * keys as string paths.
+ * @param {Object=} options The options object.
+ * @returns {*} The new object with the modified data.
+ */
+const updateImmutable = (obj, updateData, options) => {
+	return update(obj, updateData, {...options, immutable: true});
+};
+
 module.exports = {
 	wildcardToZero,
 	numberToWildcard,
@@ -1274,5 +1313,7 @@ module.exports = {
 	isEqual,
 	isNotEqual,
 	leafNodes,
-	diff
+	diff,
+	update,
+	updateImmutable
 };

@@ -233,6 +233,32 @@ console.log(obj.foo.bar[0].baa); // Logs: undefined
 console.log(obj.foo.bar[0].hasOwnProperty("baa")); // Logs: false
 ```
 
+### update (`obj`, `updateData`, `options`)
+Sets a single value on the passed object and given path. This
+will directly modify the "obj" object. If you need immutable
+updates, use updateImmutable() instead.
+
+```js
+const obj = {
+	"foo": {
+		"bar": [{
+			"moo": true,
+			"baa": "ram you"
+		}]
+	}
+};
+
+console.log(obj.foo.bar[0].baa); // Logs: ram you
+
+update(obj, {
+	"foo.bar.0.baa": "hello I've been updated",
+	"and.so": "have I!"
+});
+
+console.log(obj.foo.bar[0].baa); // Logs: hello I've been updated
+console.log(obj.and.so); // Logs: have I!
+```
+
 ### clean (`str`)
 Removes leading period (.) from string and returns new string.
 
