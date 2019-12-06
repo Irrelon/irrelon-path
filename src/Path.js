@@ -331,7 +331,7 @@ const set = (obj, path, val, options = {}) => {
 	}
 	
 	// No path string
-	if (!internalPath) {
+	if (internalPath == null) {
 		return;
 	}
 	
@@ -399,7 +399,7 @@ const unSet = (obj, path, options = {}, tracking = {}) => {
 	}
 	
 	// No path string
-	if (!internalPath) {
+	if (internalPath == null) {
 		return;
 	}
 	
