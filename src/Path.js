@@ -173,23 +173,6 @@ const numberToWildcard = (key) => {
 };
 
 /**
- * Removes leading period (.) from string and returns new string.
- * @param {String} str The string to clean.
- * @returns {*} The cleaned string.
- */
-const clean = (str) => {
-	if (!str) {
-		return str;
-	}
-
-	if (str.substr(0, 1) === ".") {
-		str = str.substr(1, str.length - 1);
-	}
-
-	return str;
-};
-
-/**
  * Splits a path by period character, taking into account
  * escaped period characters.
  * @param {String} path The path to split into an array.
@@ -267,8 +250,6 @@ const get = (obj, path, defaultVal = undefined, options = {}) => {
 	if (!internalPath) {
 		return obj;
 	}
-	internalPath = clean(internalPath);
-
 
 	// Path is not a string, throw error
 	if (typeof internalPath !== "string") {
@@ -334,8 +315,6 @@ const set = (obj, path, val, options = {}) => {
 	if (internalPath == null) {
 		return;
 	}
-	internalPath = clean(internalPath);
-
 
 	// Path is not a string, throw error
 	if (typeof internalPath !== "string") {
@@ -402,8 +381,6 @@ const unSet = (obj, path, options = {}, tracking = {}) => {
 	if (internalPath == null) {
 		return;
 	}
-
-	internalPath = clean(internalPath);
 
 	// Path is not a string, throw error
 	if (typeof internalPath !== "string") {
@@ -506,9 +483,6 @@ const pushVal = (obj, path, val, options = {}) => {
 		return obj;
 	}
 
-	// Clean the path
-	path = clean(path);
-
 	const pathParts = split(path);
 	const part = pathParts.shift();
 
@@ -545,9 +519,6 @@ const pullVal = (obj, path, val, options = {}) => {
 	if (obj === undefined || obj === null || path === undefined) {
 		return obj;
 	}
-
-	// Clean the path
-	path = clean(path);
 
 	const pathParts = split(path);
 	const part = pathParts.shift();
@@ -598,8 +569,6 @@ const furthest = (obj, path, options = {}) => {
 		return finalPath.join(".");
 	}
 
-	internalPath = clean(internalPath);
-
 	// Path is not a string, throw error
 	if (typeof internalPath !== "string") {
 		throw new Error("Path argument must be a string");
@@ -647,7 +616,7 @@ const furthest = (obj, path, options = {}) => {
  * @returns {Object|Array} The result of the traversal.
  */
 const values = (obj, path, options = {}) => {
-	const internalPath = clean(path);
+	const internalPath = path;
 	const pathParts = split(internalPath);
 	const currentPath = [];
 	const valueData = {};
@@ -1281,7 +1250,6 @@ const updateImmutable = (obj, updateData, options) => {
 module.exports = {
 	wildcardToZero,
 	numberToWildcard,
-	clean,
 	split,
 	escape,
 	get,
