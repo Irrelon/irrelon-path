@@ -270,6 +270,33 @@ describe("Path", () => {
 			const result = get(obj, "obj.val.roo.foo.moo");
 			assert.strictEqual(result, undefined, "The value was retrieved correctly");
 		});
+
+		it("Supports a path with empty string components", () => {
+			const obj = {
+				"a": {
+					"": 1
+				},
+				"": {
+					"val": 2,
+					"obj": {
+						"": 3
+					},
+					"": 4,
+					"b": {
+						"": {
+							"": 5
+						}
+					}
+				}
+			};
+
+			assert.strictEqual(get(obj, "a."), 1, "The value was retrieved correctly");
+			assert.strictEqual(get(obj, ".val"), 2, "The value was retrieved correctly");
+			assert.strictEqual(get(obj, ".obj."), 3, "The value was retrieved correctly");
+			assert.strictEqual(get(obj, "."), 4, "The value was retrieved correctly");
+			assert.strictEqual(get(obj, ".b.."), 5, "The value was retrieved correctly");
+
+		});
 	});
 
 	describe("set()", () => {
