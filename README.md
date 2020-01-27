@@ -328,7 +328,55 @@ console.log(result2); // Logs: "0.profile"
 
 > See the unit tests for findOnePath() for many more examples
  of usage.
- 
+
+### diff (`obj1`, `obj2`, `path`, `strict`)
+
+|Param|Type|Required|Default|
+|---|---|---|---|
+|obj1|Object or Array|true|none|
+|obj2|Object or Array|true|none|
+|path|String|false|""|
+|strict|Boolean|false|false|
+
+Compares two objects / arrays and returns the differences as an
+array of paths to the different fields.
+
+Fields are considered "different" if they do not contain equal
+values. The equality check is either strict or non-strict based
+on the `strict` argument.
+
+> It is important to understand that this function detects differences
+between field values, not differences between object structures. For
+instance if a field in obj1 contains `undefined` and obj2 does not contain
+that field at all, it's value in obj2 will also be `undefined` so there
+would be no difference detected.
+
+```js
+const {diff} = require("@irrelon/path");
+
+const obj1 = {
+	"user": {
+		"_id": 1,
+		"firstName": "Jimbo",
+		"lastName": "Jetson"
+  	}
+};
+
+const obj2 = {
+	"user": {
+		"_id": "1", // Notice string instead of numerical _id
+		"firstName": "James", // We also changed the name from "Jimbo" to "James"
+		"lastName": "Jetson"
+  	}
+};
+
+const resultArr1 = diff(obj1, obj2, "", false); // Non-strict equality check
+const resultArr2 = diff(obj1, obj2, "", true); // Strict equality check
+
+console.log(resultArr1); // Logs: ["user.firstName"]
+console.log(resultArr2); // Logs: ["user._id", "user.firstName"]
+```
+
 ## Version 3.x Breaking Changes
 There was a bug in the get() function that would return an incorrect value
 when a non-object was passed to get data from and a path was passed e.g.

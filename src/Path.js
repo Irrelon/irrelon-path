@@ -1127,12 +1127,29 @@ const findOnePath = (source, query, parentPath = "") => {
 	return {match: false};
 };
 
-const diff = (obj1, obj2, path = "", strict = false, parentPath = "") => {
+/**
+ * Compares two provided objects / arrays and returns an array of
+ * dot-notation paths to the fields that hold different values.
+ * @param {Object|Array} obj1 The first object / array to compare.
+ * @param {Object|Array} obj2 The second object / array to compare.
+ * @param {String=""} basePath The base path from which to check for
+ * differences. Differences outside the base path will not be
+ * returned as part of the array of differences. Leave blank to check
+ * for all differences between the two objects to compare.
+ * @param {Boolean=false} strict If strict is true, diff uses strict
+ * equality to determine difference rather than non-strict equality;
+ * effectively (=== is strict, == is non-strict).
+ * @param {String=""} parentPath Used internally only.
+ * @returns {Array} An array of strings, each string is a path to a
+ * field that holds a different value between the two objects being
+ * compared.
+ */
+const diff = (obj1, obj2, basePath = "", strict = false, parentPath = "") => {
 	const paths = [];
 	
-	if (path instanceof Array) {
+	if (basePath instanceof Array) {
 		// We were given an array of paths, check each path
-		return path.reduce((arr, individualPath) => {
+		return basePath.reduce((arr, individualPath) => {
 			// Here we find any path that has a *non-equal* result which
 			// returns true and then returns the index as a positive integer
 			// that is not -1. If -1 is returned then no non-equal matches
@@ -1146,9 +1163,9 @@ const diff = (obj1, obj2, path = "", strict = false, parentPath = "") => {
 		}, []);
 	}
 	
-	const currentPath = join(parentPath, path);
-	const val1 = get(obj1, path);
-	const val2 = get(obj2, path);
+	const currentPath = join(parentPath, basePath);
+	const val1 = get(obj1, basePath);
+	const val2 = get(obj2, basePath);
 	
 	if (typeof val1 === "object") {
 		return Object.keys(val1).reduce((arr, key) => {
