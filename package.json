@@ -1,6 +1,6 @@
 {
 	"name": "@irrelon/path",
-	"version": "4.1.1",
+	"version": "4.1.2",
 	"description": "A powerful JSON path processor. Allows you to drill into and manipulate JSON objects with a simple dot-delimited path format e.g. \"obj.name\".",
 	"main": "./src/Path.js",
 	"scripts": {
@@ -19,18 +19,18 @@
 	"author": "Rob Evans - Irrelon Software Limited",
 	"license": "MIT",
 	"devDependencies": {
-		"@babel/cli": "^7.2.3",
-		"@babel/core": "^7.2.2",
-		"@babel/plugin-proposal-class-properties": "^7.3.0",
-		"@babel/plugin-proposal-object-rest-spread": "^7.3.2",
-		"@babel/plugin-transform-runtime": "^7.2.0",
-		"@babel/preset-env": "^7.3.1",
-		"@babel/preset-react": "^7.0.0",
-		"@babel/register": "^7.0.0",
+		"@babel/cli": "^7.8.3",
+		"@babel/core": "^7.8.3",
+		"@babel/plugin-proposal-class-properties": "^7.8.3",
+		"@babel/plugin-proposal-object-rest-spread": "^7.8.3",
+		"@babel/plugin-transform-runtime": "^7.8.3",
+		"@babel/preset-env": "^7.8.3",
+		"@babel/preset-react": "^7.8.3",
+		"@babel/register": "^7.8.3",
 		"eslint-config-irrelon": "^1.0.2",
-		"mocha": "^6.0.2",
-		"mocha-expect": "^1.0.2",
-		"rimraf": "^2.6.2"
+		"mocha": "^6.2.2",
+		"mocha-expect": "^1.0.3",
+		"rimraf": "^2.7.1"
 	},
 	"repository": {
 		"type": "git",

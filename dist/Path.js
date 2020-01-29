@@ -6,9 +6,41 @@ var _typeof2 = _interopRequireDefault(require("@babel/runtime/helpers/typeof"));
 
 var _toConsumableArray2 = _interopRequireDefault(require("@babel/runtime/helpers/toConsumableArray"));
 
-var _objectSpread2 = _interopRequireDefault(require("@babel/runtime/helpers/objectSpread"));
+var _defineProperty2 = _interopRequireDefault(require("@babel/runtime/helpers/defineProperty"));
 
 var _slicedToArray2 = _interopRequireDefault(require("@babel/runtime/helpers/slicedToArray"));
+
+function ownKeys (object, enumerableOnly) {
+	var keys = Object.keys(object);
+	if (Object.getOwnPropertySymbols) {
+		var symbols = Object.getOwnPropertySymbols(object);
+		if (enumerableOnly) {
+			symbols = symbols.filter(function (sym) {
+				return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+			});
+		}
+		keys.push.apply(keys, symbols);
+	}
+	return keys;
+}
+
+function _objectSpread (target) {
+	for (var i = 1; i < arguments.length; i++) {
+		var source = arguments[i] != null ? arguments[i] : {};
+		if (i % 2) {
+			ownKeys(Object(source), true).forEach(function (key) {
+				(0, _defineProperty2["default"])(target, key, source[key]);
+			});
+		} else if (Object.getOwnPropertyDescriptors) {
+			Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
+		} else {
+			ownKeys(Object(source)).forEach(function (key) {
+				Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+			});
+		}
+	}
+	return target;
+}
 
 /**
  * Scans an object for all keys that are either objects or arrays
@@ -19,7 +51,7 @@ var _slicedToArray2 = _interopRequireDefault(require("@babel/runtime/helpers/sli
  */
 var _iterableKeys = function _iterableKeys (obj) {
 	return Object.entries(obj).reduce(function (arr, _ref) {
-		var _ref2 = (0, _slicedToArray2.default)(_ref, 2),
+		var _ref2 = (0, _slicedToArray2["default"])(_ref, 2),
 			key = _ref2[0],
 			val = _ref2[1];
 		
@@ -52,11 +84,11 @@ var _newInstance = function _newInstance (item) {
 	var newObj;
 	
 	if (objType === "object") {
-		newObj = (0, _objectSpread2.default)({}, item);
+		newObj = _objectSpread({}, item);
 	}
 	
 	if (objType === "array") {
-		newObj = (0, _toConsumableArray2.default)(item);
+		newObj = (0, _toConsumableArray2["default"])(item);
 	}
 	
 	if (key !== undefined) {
@@ -286,7 +318,7 @@ var get = function get (obj, path) {
 		});
 	}
 	
-	options = (0, _objectSpread2.default)({
+	options = _objectSpread({
 		"transformRead": returnWhatWasGiven,
 		"transformKey": returnWhatWasGiven,
 		"transformWrite": returnWhatWasGiven
@@ -309,11 +341,11 @@ var get = function get (obj, path) {
 	
 	
 	if (internalPath.indexOf(".") === -1) {
-		return obj[internalPath];
+		return obj[internalPath] !== undefined ? obj[internalPath] : defaultVal;
 	}
 	
-	if ((0, _typeof2.default)(obj) !== "object") {
-		return undefined;
+	if ((0, _typeof2["default"])(obj) !== "object") {
+		return defaultVal !== undefined ? defaultVal : undefined;
 	}
 	
 	var pathParts = split(internalPath);
@@ -323,7 +355,7 @@ var get = function get (obj, path) {
 		var pathPart = pathParts[i];
 		objPart = objPart[options.transformKey(pathPart)];
 		
-		if (!objPart || (0, _typeof2.default)(objPart) !== "object") {
+		if (!objPart || (0, _typeof2["default"])(objPart) !== "object") {
 			if (i !== pathParts.length - 1) {
 				// The path terminated in the object before we reached
 				// the end node we wanted so make sure we return undefined
@@ -352,7 +384,7 @@ var set = function set (obj, path, val) {
 	var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
 	var internalPath = path,
 		objPart;
-	options = (0, _objectSpread2.default)({
+	options = _objectSpread({
 		"transformRead": returnWhatWasGiven,
 		"transformKey": returnWhatWasGiven,
 		"transformWrite": returnWhatWasGiven
@@ -373,7 +405,7 @@ var set = function set (obj, path, val) {
 		throw new Error("Path argument must be a string");
 	}
 	
-	if ((0, _typeof2.default)(obj) !== "object") {
+	if ((0, _typeof2["default"])(obj) !== "object") {
 		return;
 	} // Path has no dot-notation, set key/value
 	
@@ -419,7 +451,7 @@ var unSet = function unSet (obj, path) {
 	var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
 	var tracking = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
 	var internalPath = path;
-	options = (0, _objectSpread2.default)({
+	options = _objectSpread({
 		"transformRead": returnWhatWasGiven,
 		"transformKey": returnWhatWasGiven,
 		"transformWrite": returnWhatWasGiven
@@ -440,7 +472,7 @@ var unSet = function unSet (obj, path) {
 		throw new Error("Path argument must be a string");
 	}
 	
-	if ((0, _typeof2.default)(obj) !== "object") {
+	if ((0, _typeof2["default"])(obj) !== "object") {
 		return;
 	}
 	
@@ -471,6 +503,34 @@ var unSet = function unSet (obj, path) {
 	
 	if (tracking.returnOriginal) {
 		return obj;
+	}
+	
+	return newObj;
+};
+/**
+ * Takes an update object or array and iterates the keys of it, then
+ * sets data on the target object or array at the specified path with
+ * the corresponding value from the path key, effectively doing
+ * multiple set() operations in a single call. This will directly
+ * modify the "obj" object. If you need immutable updates, use
+ * updateImmutable() instead.
+ * @param {Object|Array} obj The object to operate on.
+ * @param {Object|Array} updateData The update data to apply with
+ * keys as string paths.
+ * @param {Object=} options The options object.
+ * @returns {*} The object with the modified data.
+ */
+
+
+var update = function update (obj, updateData) {
+	var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+	var newObj = obj;
+	
+	for (var path in updateData) {
+		if (updateData.hasOwnProperty(path)) {
+			var data = updateData[path];
+			newObj = set(newObj, path, data, options);
+		}
 	}
 	
 	return newObj;
@@ -592,7 +652,7 @@ var furthest = function furthest (obj, path) {
 	var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
 	var internalPath = path,
 		objPart;
-	options = (0, _objectSpread2.default)({
+	options = _objectSpread({
 		"transformRead": returnWhatWasGiven,
 		"transformKey": wildcardToZero,
 		// Any path that has a wildcard will essentially check the first array item to continue down the tree
@@ -610,7 +670,7 @@ var furthest = function furthest (obj, path) {
 		throw new Error("Path argument must be a string");
 	}
 	
-	if ((0, _typeof2.default)(obj) !== "object") {
+	if ((0, _typeof2["default"])(obj) !== "object") {
 		return finalPath.join(".");
 	} // Path has no dot-notation, return key/value
 	
@@ -658,7 +718,7 @@ var values = function values (obj, path) {
 	var pathParts = split(internalPath);
 	var currentPath = [];
 	var valueData = {};
-	options = (0, _objectSpread2.default)({
+	options = _objectSpread({
 		"transformRead": returnWhatWasGiven,
 		"transformKey": returnWhatWasGiven,
 		"transformWrite": returnWhatWasGiven
@@ -691,7 +751,7 @@ var flatten = function flatten (obj) {
 	var parentPath = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : "";
 	var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
 	var objCache = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : [];
-	options = (0, _objectSpread2.default)({
+	options = _objectSpread({
 		"transformRead": returnWhatWasGiven,
 		"transformKey": returnWhatWasGiven,
 		"transformWrite": returnWhatWasGiven
@@ -716,7 +776,7 @@ var flatten = function flatten (obj) {
 				continue;
 			}
 			
-			if ((0, _typeof2.default)(transformedObj[i]) === "object") {
+			if ((0, _typeof2["default"])(transformedObj[i]) === "object") {
 				flatten(transformedObj[i], finalArr, currentPath(i), options, objCache);
 			}
 			
@@ -744,7 +804,7 @@ var flattenValues = function flattenValues (obj) {
 	var parentPath = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : "";
 	var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
 	var objCache = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : [];
-	options = (0, _objectSpread2.default)({
+	options = _objectSpread({
 		"transformRead": returnWhatWasGiven,
 		"transformKey": returnWhatWasGiven,
 		"transformWrite": returnWhatWasGiven
@@ -765,7 +825,7 @@ var flattenValues = function flattenValues (obj) {
 	
 	for (var i in transformedObj) {
 		if (transformedObj.hasOwnProperty(i)) {
-			if ((0, _typeof2.default)(transformedObj[i]) === "object") {
+			if ((0, _typeof2["default"])(transformedObj[i]) === "object") {
 				flattenValues(transformedObj[i], finalObj, currentPath(i), options, objCache);
 			}
 			
@@ -818,7 +878,7 @@ var joinEscaped = function joinEscaped () {
 	var escapedArgs = args.map(function (item) {
 		return escape(item);
 	});
-	return join.apply(void 0, (0, _toConsumableArray2.default)(escapedArgs));
+	return join.apply(void 0, (0, _toConsumableArray2["default"])(escapedArgs));
 };
 /**
  * Counts the total number of key leaf nodes in the passed object.
@@ -838,7 +898,7 @@ var countLeafNodes = function countLeafNodes (obj) {
 	for (var i in obj) {
 		if (obj.hasOwnProperty(i)) {
 			if (obj[i] !== undefined) {
-				if ((0, _typeof2.default)(obj[i]) !== "object" || objCache.indexOf(obj[i]) > -1) {
+				if ((0, _typeof2["default"])(obj[i]) !== "object" || objCache.indexOf(obj[i]) > -1) {
 					totalKeys++;
 				} else {
 					totalKeys += countLeafNodes(obj[i], objCache);
@@ -862,10 +922,10 @@ var leafNodes = function leafNodes (obj) {
 			if (obj[i] !== undefined) {
 				var currentPath = join(parentPath, i);
 				
-				if ((0, _typeof2.default)(obj[i]) !== "object" || objCache.indexOf(obj[i]) > -1) {
+				if ((0, _typeof2["default"])(obj[i]) !== "object" || objCache.indexOf(obj[i]) > -1) {
 					paths.push(currentPath);
 				} else {
-					paths.push.apply(paths, (0, _toConsumableArray2.default)(leafNodes(obj[i], currentPath, objCache)));
+					paths.push.apply(paths, (0, _toConsumableArray2["default"])(leafNodes(obj[i], currentPath, objCache)));
 				}
 			}
 		}
@@ -891,7 +951,7 @@ var hasMatchingPathsInObject = function hasMatchingPathsInObject (testKeys, test
 				return false;
 			}
 			
-			if ((0, _typeof2.default)(testKeys[i]) === "object") {
+			if ((0, _typeof2["default"])(testKeys[i]) === "object") {
 				// Recurse object
 				result = hasMatchingPathsInObject(testKeys[i], testObj[i]); // Should we exit early?
 				
@@ -922,7 +982,7 @@ var countMatchingPathsInObject = function countMatchingPathsInObject (testKeys, 
 	
 	for (var i in testObj) {
 		if (testObj.hasOwnProperty(i)) {
-			if ((0, _typeof2.default)(testObj[i]) === "object") {
+			if ((0, _typeof2["default"])(testObj[i]) === "object") {
 				// The test / query object key is an object, recurse
 				matchData = countMatchingPathsInObject(testKeys[i], testObj[i]);
 				matchedKeys[i] = matchData.matchedKeys;
@@ -932,7 +992,7 @@ var countMatchingPathsInObject = function countMatchingPathsInObject (testKeys, 
 				// The test / query object has a property that is not an object so add it as a key
 				totalKeyCount++; // Check if the test keys also have this key and it is also not an object
 				
-				if (testKeys && testKeys[i] && (0, _typeof2.default)(testKeys[i]) !== "object") {
+				if (testKeys && testKeys[i] && (0, _typeof2["default"])(testKeys[i]) !== "object") {
 					matchedKeys[i] = true;
 					matchedKeyCount++;
 				} else {
@@ -966,7 +1026,7 @@ var type = function type (item) {
 		return 'array';
 	}
 	
-	return (0, _typeof2.default)(item);
+	return (0, _typeof2["default"])(item);
 };
 /**
  * Determines if the query data exists anywhere inside the source
@@ -978,8 +1038,8 @@ var type = function type (item) {
 
 
 var match = function match (source, query) {
-	var sourceType = (0, _typeof2.default)(source);
-	var queryType = (0, _typeof2.default)(query);
+	var sourceType = (0, _typeof2["default"])(source);
+	var queryType = (0, _typeof2["default"])(query);
 	
 	if (sourceType !== queryType) {
 		return false;
@@ -993,12 +1053,12 @@ var match = function match (source, query) {
 	
 	var entries = Object.entries(query);
 	var foundNonMatch = entries.find(function (_ref3) {
-		var _ref4 = (0, _slicedToArray2.default)(_ref3, 2),
+		var _ref4 = (0, _slicedToArray2["default"])(_ref3, 2),
 			key = _ref4[0],
 			val = _ref4[1];
 		
 		// Recurse if type is array or object
-		if ((0, _typeof2.default)(val) === "object") {
+		if ((0, _typeof2["default"])(val) === "object") {
 			return !match(source[key], val);
 		}
 		
@@ -1020,7 +1080,7 @@ var match = function match (source, query) {
 var findPath = function findPath (source, query) {
 	var parentPath = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : "";
 	var resultArr = [];
-	var sourceType = (0, _typeof2.default)(source);
+	var sourceType = (0, _typeof2["default"])(source);
 	
 	if (match(source, query)) {
 		resultArr.push(parentPath);
@@ -1029,7 +1089,7 @@ var findPath = function findPath (source, query) {
 	if (sourceType === "object") {
 		var entries = Object.entries(source);
 		entries.forEach(function (_ref5) {
-			var _ref6 = (0, _slicedToArray2.default)(_ref5, 2),
+			var _ref6 = (0, _slicedToArray2["default"])(_ref5, 2),
 				key = _ref6[0],
 				val = _ref6[1];
 			
@@ -1037,7 +1097,7 @@ var findPath = function findPath (source, query) {
 			var result = findPath(val, query, join(parentPath, key));
 			
 			if (result.match) {
-				resultArr.push.apply(resultArr, (0, _toConsumableArray2.default)(result.path));
+				resultArr.push.apply(resultArr, (0, _toConsumableArray2["default"])(result.path));
 			}
 		});
 	}
@@ -1170,16 +1230,34 @@ var findOnePath = function findOnePath (source, query) {
 		match: false
 	};
 };
+/**
+ * Compares two provided objects / arrays and returns an array of
+ * dot-notation paths to the fields that hold different values.
+ * @param {Object|Array} obj1 The first object / array to compare.
+ * @param {Object|Array} obj2 The second object / array to compare.
+ * @param {String=""} basePath The base path from which to check for
+ * differences. Differences outside the base path will not be
+ * returned as part of the array of differences. Leave blank to check
+ * for all differences between the two objects to compare.
+ * @param {Boolean=false} strict If strict is true, diff uses strict
+ * equality to determine difference rather than non-strict equality;
+ * effectively (=== is strict, == is non-strict).
+ * @param {String=""} parentPath Used internally only.
+ * @returns {Array} An array of strings, each string is a path to a
+ * field that holds a different value between the two objects being
+ * compared.
+ */
+
 
 var diff = function diff (obj1, obj2) {
-	var path = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : "";
+	var basePath = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : "";
 	var strict = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
 	var parentPath = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : "";
 	var paths = [];
 	
-	if (path instanceof Array) {
+	if (basePath instanceof Array) {
 		// We were given an array of paths, check each path
-		return path.reduce(function (arr, individualPath) {
+		return basePath.reduce(function (arr, individualPath) {
 			// Here we find any path that has a *non-equal* result which
 			// returns true and then returns the index as a positive integer
 			// that is not -1. If -1 is returned then no non-equal matches
@@ -1187,23 +1265,23 @@ var diff = function diff (obj1, obj2) {
 			var result = diff(obj1, obj2, individualPath, strict, parentPath);
 			
 			if (result && result.length) {
-				arr.push.apply(arr, (0, _toConsumableArray2.default)(result));
+				arr.push.apply(arr, (0, _toConsumableArray2["default"])(result));
 			}
 			
 			return arr;
 		}, []);
 	}
 	
-	var currentPath = join(parentPath, path);
-	var val1 = get(obj1, path);
-	var val2 = get(obj2, path);
+	var currentPath = join(parentPath, basePath);
+	var val1 = get(obj1, basePath);
+	var val2 = get(obj2, basePath);
 	
-	if ((0, _typeof2.default)(val1) === "object") {
+	if ((0, _typeof2["default"])(val1) === "object") {
 		return Object.keys(val1).reduce(function (arr, key) {
 			var result = diff(val1, val2, key, strict, currentPath);
 			
 			if (result && result.length) {
-				arr.push.apply(arr, (0, _toConsumableArray2.default)(result));
+				arr.push.apply(arr, (0, _toConsumableArray2["default"])(result));
 			}
 			
 			return arr;
@@ -1251,7 +1329,7 @@ var isEqual = function isEqual (obj1, obj2, path) {
 	var val2 = get(obj2, path);
 	
 	if (deep) {
-		if ((0, _typeof2.default)(val1) === "object") {
+		if ((0, _typeof2["default"])(val1) === "object") {
 			return Object.keys(val1).findIndex(function (key) {
 				return isNotEqual(val1, val2, key, deep, strict);
 			}) === -1;
@@ -1295,7 +1373,7 @@ var isNotEqual = function isNotEqual (obj1, obj2, path) {
 
 var setImmutable = function setImmutable (obj, path, val) {
 	var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
-	return set(obj, path, val, (0, _objectSpread2.default)({}, options, {
+	return set(obj, path, val, _objectSpread({}, options, {
 		immutable: true
 	}));
 };
@@ -1312,7 +1390,7 @@ var setImmutable = function setImmutable (obj, path, val) {
 
 var pushValImmutable = function pushValImmutable (obj, path, val) {
 	var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
-	return pushVal(obj, path, val, (0, _objectSpread2.default)({}, options, {
+	return pushVal(obj, path, val, _objectSpread({}, options, {
 		immutable: true
 	}));
 };
@@ -1328,7 +1406,23 @@ var pushValImmutable = function pushValImmutable (obj, path, val) {
 
 var unSetImmutable = function unSetImmutable (obj, path) {
 	var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
-	return unSet(obj, path, (0, _objectSpread2.default)({}, options, {
+	return unSet(obj, path, _objectSpread({}, options, {
+		immutable: true
+	}));
+};
+/**
+ * Same as update() but will not change or modify the existing `obj`.
+ * References to objects that were not modified remain the same.
+ * @param {Object|Array} obj The object to operate on.
+ * @param {Object|Array} updateData The update data to apply with
+ * keys as string paths.
+ * @param {Object=} options The options object.
+ * @returns {*} The new object with the modified data.
+ */
+
+
+var updateImmutable = function updateImmutable (obj, updateData, options) {
+	return update(obj, updateData, _objectSpread({}, options, {
 		immutable: true
 	}));
 };
@@ -1368,5 +1462,7 @@ module.exports = {
 	isEqual: isEqual,
 	isNotEqual: isNotEqual,
 	leafNodes: leafNodes,
-	diff: diff
+	diff: diff,
+	update: update,
+	updateImmutable: updateImmutable
 };

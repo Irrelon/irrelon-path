@@ -277,11 +277,11 @@ const get = (obj, path, defaultVal = undefined, options = {}) => {
 	
 	// Path has no dot-notation, return key/value
 	if (internalPath.indexOf(".") === -1) {
-		return obj[internalPath];
+		return obj[internalPath] !== undefined ? obj[internalPath] : defaultVal;
 	}
 	
 	if (typeof obj !== "object") {
-		return undefined;
+		return defaultVal !== undefined ? defaultVal : undefined;
 	}
 	
 	const pathParts = split(internalPath);
