@@ -741,7 +741,7 @@ const flatten = (obj, finalArr = [], parentPath = "", options = {}, objCache = [
 				continue;
 			}
 			
-			if (typeof transformedObj[i] === "object") {
+			if (typeof transformedObj[i] === "object" && transformedObj[i] !== null) {
 				flatten(transformedObj[i], finalArr, currentPath(i), options, objCache);
 			}
 			
@@ -788,7 +788,7 @@ const flattenValues = (obj, finalObj = {}, parentPath = "", options = {}, objCac
 	
 	for (const i in transformedObj) {
 		if (transformedObj.hasOwnProperty(i)) {
-			if (typeof transformedObj[i] === "object") {
+			if (typeof transformedObj[i] === "object" && transformedObj[i] !== null) {
 				flattenValues(transformedObj[i], finalObj, currentPath(i), options, objCache);
 			}
 			
@@ -902,7 +902,7 @@ const hasMatchingPathsInObject = function (testKeys, testObj) {
 				return false;
 			}
 			
-			if (typeof testKeys[i] === "object") {
+			if (typeof testKeys[i] === "object" && testKeys[i] !== null) {
 				// Recurse object
 				result = hasMatchingPathsInObject(testKeys[i], testObj[i]);
 				
@@ -934,7 +934,7 @@ const countMatchingPathsInObject = (testKeys, testObj) => {
 	
 	for (const i in testObj) {
 		if (testObj.hasOwnProperty(i)) {
-			if (typeof testObj[i] === "object") {
+			if (typeof testObj[i] === "object" && testObj[i] !== null) {
 				// The test / query object key is an object, recurse
 				matchData = countMatchingPathsInObject(testKeys[i], testObj[i]);
 				
@@ -946,7 +946,7 @@ const countMatchingPathsInObject = (testKeys, testObj) => {
 				totalKeyCount++;
 				
 				// Check if the test keys also have this key and it is also not an object
-				if (testKeys && testKeys[i] && typeof testKeys[i] !== "object") {
+				if (testKeys && testKeys[i] && (typeof testKeys[i] !== "object" || testKeys[i] === null)) {
 					matchedKeys[i] = true;
 					matchedKeyCount++;
 				} else {
@@ -1006,7 +1006,7 @@ const match = (source, query) => {
 	
 	const foundNonMatch = entries.find(([key, val]) => {
 		// Recurse if type is array or object
-		if (typeof val === "object") {
+		if (typeof val === "object" && val !== null) {
 			return !match(source[key], val);
 		}
 		
@@ -1197,7 +1197,7 @@ const diff = (obj1, obj2, basePath = "", strict = false, parentPath = "") => {
 	const val1 = get(obj1, basePath);
 	const val2 = get(obj2, basePath);
 	
-	if (typeof val1 === "object") {
+	if (typeof val1 === "object" && val1 !== null) {
 		return Object.keys(val1).reduce((arr, key) => {
 			const result = diff(val1, val2, key, strict, currentPath);
 			if (result && result.length) {
@@ -1245,7 +1245,7 @@ const isEqual = (obj1, obj2, path, deep = false, strict = false) => {
 	const val2 = get(obj2, path);
 	
 	if (deep) {
-		if (typeof val1 === "object") {
+		if (typeof val1 === "object" && val1 !== null) {
 			return Object.keys(val1).findIndex((key) => {
 				return isNotEqual(val1, val2, key, deep, strict);
 			}) === -1;

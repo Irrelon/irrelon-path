@@ -806,7 +806,7 @@ var flatten = function flatten (obj) {
 				continue;
 			}
 			
-			if ((0, _typeof2["default"])(transformedObj[i]) === "object") {
+			if ((0, _typeof2["default"])(transformedObj[i]) === "object" && transformedObj[i] !== null) {
 				flatten(transformedObj[i], finalArr, currentPath(i), options, objCache);
 			}
 			
@@ -855,7 +855,7 @@ var flattenValues = function flattenValues (obj) {
 	
 	for (var i in transformedObj) {
 		if (transformedObj.hasOwnProperty(i)) {
-			if ((0, _typeof2["default"])(transformedObj[i]) === "object") {
+			if ((0, _typeof2["default"])(transformedObj[i]) === "object" && transformedObj[i] !== null) {
 				flattenValues(transformedObj[i], finalObj, currentPath(i), options, objCache);
 			}
 			
@@ -981,7 +981,7 @@ var hasMatchingPathsInObject = function hasMatchingPathsInObject (testKeys, test
 				return false;
 			}
 			
-			if ((0, _typeof2["default"])(testKeys[i]) === "object") {
+			if ((0, _typeof2["default"])(testKeys[i]) === "object" && testKeys[i] !== null) {
 				// Recurse object
 				result = hasMatchingPathsInObject(testKeys[i], testObj[i]); // Should we exit early?
 				
@@ -1012,7 +1012,7 @@ var countMatchingPathsInObject = function countMatchingPathsInObject (testKeys, 
 	
 	for (var i in testObj) {
 		if (testObj.hasOwnProperty(i)) {
-			if ((0, _typeof2["default"])(testObj[i]) === "object") {
+			if ((0, _typeof2["default"])(testObj[i]) === "object" && testObj[i] !== null) {
 				// The test / query object key is an object, recurse
 				matchData = countMatchingPathsInObject(testKeys[i], testObj[i]);
 				matchedKeys[i] = matchData.matchedKeys;
@@ -1022,7 +1022,7 @@ var countMatchingPathsInObject = function countMatchingPathsInObject (testKeys, 
 				// The test / query object has a property that is not an object so add it as a key
 				totalKeyCount++; // Check if the test keys also have this key and it is also not an object
 				
-				if (testKeys && testKeys[i] && (0, _typeof2["default"])(testKeys[i]) !== "object") {
+				if (testKeys && testKeys[i] && ((0, _typeof2["default"])(testKeys[i]) !== "object" || testKeys[i] === null)) {
 					matchedKeys[i] = true;
 					matchedKeyCount++;
 				} else {
@@ -1088,7 +1088,7 @@ var match = function match (source, query) {
 			val = _ref4[1];
 		
 		// Recurse if type is array or object
-		if ((0, _typeof2["default"])(val) === "object") {
+		if ((0, _typeof2["default"])(val) === "object" && val !== null) {
 			return !match(source[key], val);
 		}
 		
@@ -1306,7 +1306,7 @@ var diff = function diff (obj1, obj2) {
 	var val1 = get(obj1, basePath);
 	var val2 = get(obj2, basePath);
 	
-	if ((0, _typeof2["default"])(val1) === "object") {
+	if ((0, _typeof2["default"])(val1) === "object" && val1 !== null) {
 		return Object.keys(val1).reduce(function (arr, key) {
 			var result = diff(val1, val2, key, strict, currentPath);
 			
@@ -1359,7 +1359,7 @@ var isEqual = function isEqual (obj1, obj2, path) {
 	var val2 = get(obj2, path);
 	
 	if (deep) {
-		if ((0, _typeof2["default"])(val1) === "object") {
+		if ((0, _typeof2["default"])(val1) === "object" && val1 !== null) {
 			return Object.keys(val1).findIndex(function (key) {
 				return isNotEqual(val1, val2, key, deep, strict);
 			}) === -1;
