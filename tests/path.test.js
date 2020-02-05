@@ -16,6 +16,7 @@ const {
 	diff,
 	unSet,
 	pushVal,
+	pullVal,
 	pop,
 	shift,
 	up,
@@ -1161,6 +1162,73 @@ describe("Path", () => {
 			
 			assert.strictEqual(obj !== newObj, true, "The old obj and new obj are not the same reference");
 			assert.strictEqual(oldFoo !== newObj.foo, true, "The old array and new array are not the same reference");
+		});
+		
+		it("Will push a value to an array with a blank path (root)", () => {
+			const obj = [];
+			
+			assert.strictEqual(obj.length, 0, "The array is empty");
+			
+			pushVal(obj, "", "New val");
+			
+			assert.strictEqual(obj.length, 1, "The array is no longer empty");
+			assert.strictEqual(obj[0], "New val", "The value is correct");
+		});
+	});
+	
+	describe("pullVal()", () => {
+		it("Will pull a string literal from an array at the given path", () => {
+			const obj = {
+				"foo": ["valueToPull"]
+			};
+			
+			assert.strictEqual(obj.foo.length, 1, "The array is populated");
+			
+			pullVal(obj, "foo", "valueToPull");
+			
+			assert.strictEqual(obj.foo.length, 0, "The array is empty");
+			assert.strictEqual(obj.foo[0], undefined, "The value is correct");
+		});
+		
+		it("Will pull a string literal from an array at the given path with immutability", () => {
+			const obj = {
+				"foo": ["valueToPull"]
+			};
+			
+			assert.strictEqual(obj.foo.length, 1, "The array is populated");
+			
+			const oldFoo = obj.foo;
+			const newObj = pullVal(obj, "foo", "valueToPull", {immutable: true});
+			
+			assert.strictEqual(obj !== newObj, true, "The old obj and new obj are not the same reference");
+			assert.strictEqual(oldFoo !== newObj.foo, true, "The old array and new array are not the same reference");
+			assert.strictEqual(obj.foo.length, 0, "The array empty");
+		});
+		
+		it("Will pull a string literal from an array with a blank path (root)", () => {
+			const obj = ["valueToPull"];
+			
+			assert.strictEqual(obj.length, 1, "The array is populated");
+			
+			pullVal(obj, "", "valueToPull");
+			
+			assert.strictEqual(obj.length, 0, "The array is empty");
+			assert.strictEqual(obj[0], undefined, "The value is correct");
+		});
+		
+		it("Will pull a object from an array at the given path", () => {
+			const objToPull = {"bar": "ram you"};
+			const obj = {
+				"foo": [objToPull]
+			};
+			
+			assert.strictEqual(obj.foo.length, 1, "The array is populated");
+			assert.strictEqual(obj.foo[0], objToPull, "The value is correct");
+			
+			pullVal(obj, "foo", objToPull);
+			
+			assert.strictEqual(obj.foo.length, 0, "The array is empty");
+			assert.strictEqual(obj.foo[0], undefined, "The value is correct");
 		});
 	});
 	

@@ -518,12 +518,21 @@ const pushVal = (obj, path, val, options = {}) => {
 		
 		// Recurse
 		pushVal(obj[part], pathParts.join("."), val);
-	} else {
+	} else if (part) {
 		// We have found the target array, push the value
 		obj[part] = decouple(obj[part], options) || [];
 		
 		if (obj[part] instanceof Array) {
 			obj[part].push(val);
+		} else {
+			throw("Cannot push to a path whose leaf node is not an array!");
+		}
+	} else {
+		// We have found the target array, push the value
+		obj = decouple(obj, options) || [];
+		
+		if (obj instanceof Array) {
+			obj.push(val);
 		} else {
 			throw("Cannot push to a path whose leaf node is not an array!");
 		}
@@ -557,15 +566,36 @@ const pullVal = (obj, path, val, options = {}) => {
 		obj[part] = decouple(obj[part], options) || {};
 		
 		// Recurse
-		pushVal(obj[part], pathParts.join("."), val);
-	} else {
-		// We have found the target array, push the value
+		pullVal(obj[part], pathParts.join("."), val);
+	} else if (part) {
+		// We have found the target array, pull the value
 		obj[part] = decouple(obj[part], options) || [];
 		
 		if (obj[part] instanceof Array) {
-			obj[part].push(val);
+			// Find the index of the passed value
+			const index = obj[part].indexOf(val);
+			
+			if (index > -1) {
+				// Remove the item from the array
+				obj[part].splice(index, 1);
+			}
 		} else {
-			throw("Cannot push to a path whose leaf node is not an array!");
+			throw("Cannot pull from a path whose leaf node is not an array!");
+		}
+	} else {
+		// The target array is the root object, pull the value
+		obj = decouple(obj, options) || [];
+		
+		if (obj instanceof Array) {
+			// Find the index of the passed value
+			const index = obj.indexOf(val);
+			
+			if (index > -1) {
+				// Remove the item from the array
+				obj.splice(index, 1);
+			}
+		} else {
+			throw("Cannot pull from a path whose leaf node is not an array!");
 		}
 	}
 	
@@ -1258,7 +1288,7 @@ const setImmutable = (obj, path, val, options = {}) => {
 };
 
 /**
- * Same as push() but will not change or modify the existing `obj`.
+ * Same as pushVal() but will not change or modify the existing `obj`.
  * References to objects that were not modified remain the same.
  * @param {Object|Array} obj The object to operate on.
  * @param {String} path The path to operate on.
@@ -1268,6 +1298,19 @@ const setImmutable = (obj, path, val, options = {}) => {
  */
 const pushValImmutable = (obj, path, val, options = {}) => {
 	return pushVal(obj, path, val, {...options, immutable: true});
+};
+
+/**
+ * Same as pullVal() but will not change or modify the existing `obj`.
+ * References to objects that were not modified remain the same.
+ * @param {Object|Array} obj The object to operate on.
+ * @param {String} path The path to operate on.
+ * @param {*} val The value to use for the operation.
+ * @param {Object=} options The options object.
+ * @returns {*} The new object with the modified data.
+ */
+const pullValImmutable = (obj, path, val, options = {}) => {
+	return pullVal(obj, path, val, {...options, immutable: true});
 };
 
 /**
@@ -1308,6 +1351,7 @@ module.exports = {
 	unSetImmutable,
 	pushValImmutable,
 	pushVal,
+	pullValImmutable,
 	pullVal,
 	furthest,
 	values,
