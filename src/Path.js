@@ -51,6 +51,26 @@ const _newInstance = (item, key = undefined, val = undefined) => {
 	return newObj;
 };
 
+const isCompositePath = (path) => {
+	const regExp = /\./g;
+	let result;
+	
+	while (result = regExp.exec(path)) {
+		// Check if the previous character was an escape
+		// and if so, ignore this delimiter
+		if (result.index === 0 || path.substr(result.index - 1, 1) !== "\\") {
+			// This is not an escaped path so it IS a composite path
+			return true;
+		}
+	}
+	
+	return false;
+};
+
+const isNonCompositePath = (path) => {
+	return !isCompositePath(path);
+};
+
 /**
  * Returns the given path after removing the last
  * leaf from the path. E.g. "foo.bar.thing" becomes
@@ -205,7 +225,7 @@ const split = (path) => {
 	// Loop the split path array and convert any escaped period
 	// placeholders back to their real period characters
 	for (let i = 0; i < splitPath.length; i++) {
-		splitPath[i] = splitPath[i].replace(/\[--]/g, ".");
+		splitPath[i] = splitPath[i].replace(/\[--]/g, "\\.");
 	}
 	
 	return splitPath;
@@ -229,6 +249,10 @@ const split = (path) => {
  */
 const escape = (str) => {
 	return str.replace(/\./g, "\\.");
+};
+
+const unEscape = (str) => {
+	return str.replace(/\\./g, ".");
 };
 
 /**
@@ -276,7 +300,7 @@ const get = (obj, path, defaultVal = undefined, options = {}) => {
 	}
 	
 	// Path has no dot-notation, return key/value
-	if (internalPath.indexOf(".") === -1) {
+	if (isNonCompositePath(internalPath)) {
 		return obj[internalPath] !== undefined ? obj[internalPath] : defaultVal;
 	}
 	
@@ -289,7 +313,7 @@ const get = (obj, path, defaultVal = undefined, options = {}) => {
 	
 	for (let i = 0; i < pathParts.length; i++) {
 		const pathPart = pathParts[i];
-		objPart = objPart[options.transformKey(pathPart)];
+		objPart = objPart[options.transformKey(unEscape(pathPart))];
 		
 		if (!objPart || typeof(objPart) !== "object") {
 			if (i !== pathParts.length - 1) {
@@ -347,9 +371,9 @@ const set = (obj, path, val, options = {}) => {
 	}
 	
 	// Path has no dot-notation, set key/value
-	if (internalPath.indexOf(".") === -1) {
+	if (isNonCompositePath(internalPath)) {
 		obj = decouple(obj, options);
-		obj[options.transformKey(internalPath)] = val;
+		obj[options.transformKey(unEscape(internalPath))] = val;
 		return obj;
 	}
 	
@@ -359,7 +383,7 @@ const set = (obj, path, val, options = {}) => {
 	const transformedPathPart = options.transformKey(pathPart);
 	let childPart = newObj[transformedPathPart];
 	
-	if (!childPart) {
+	if (typeof childPart !== "object") {
 		// Create an object or array on the path
 		if (String(parseInt(transformedPathPart, 10)) === transformedPathPart) {
 			// This is an array index
@@ -417,9 +441,9 @@ const unSet = (obj, path, options = {}, tracking = {}) => {
 	const newObj = decouple(obj, options);
 	
 	// Path has no dot-notation, set key/value
-	if (internalPath.indexOf(".") === -1) {
+	if (isNonCompositePath(internalPath)) {
 		if (newObj.hasOwnProperty(internalPath)) {
-			delete newObj[options.transformKey(internalPath)];
+			delete newObj[options.transformKey(unEscape(internalPath))];
 			return newObj;
 		}
 		
@@ -640,7 +664,7 @@ const furthest = (obj, path, options = {}) => {
 	}
 	
 	// Path has no dot-notation, return key/value
-	if (internalPath.indexOf(".") === -1) {
+	if (isNonCompositePath(internalPath)) {
 		if (obj[internalPath] !== undefined) {
 			return internalPath;
 		}
@@ -653,7 +677,7 @@ const furthest = (obj, path, options = {}) => {
 	
 	for (let i = 0; i < pathParts.length; i++) {
 		const pathPart = pathParts[i];
-		objPart = objPart[options.transformKey(pathPart)];
+		objPart = objPart[options.transformKey(unEscape(pathPart))];
 		
 		if (objPart === undefined) {
 			break;
@@ -804,9 +828,8 @@ const flattenValues = (obj, finalObj = {}, parentPath = "", options = {}, objCac
  * Ignores blank or undefined path parts and also ensures
  * that each part is escaped so passing "foo.bar" will
  * result in an escaped version.
- * @param {...String} args The arguments passed to the function,
- * spread using ES6 spread.
- * @returns {string} A final path string.
+ * @param {...String} args args Path to join.
+ * @returns {String} A final path string.
  */
 const join = (...args) => {
 	return args.reduce((arr, item) => {
@@ -823,9 +846,8 @@ const join = (...args) => {
  * Ignores blank or undefined path parts and also ensures
  * that each part is escaped so passing "foo.bar" will
  * result in an escaped version.
- * @param {Array} args The arguments passed to the function,
- * spread using ES6 spread.
- * @returns {string} A final path string.
+ * @param {...String} args Path to join.
+ * @returns {String} A final path string.
  */
 const joinEscaped = (...args) => {
 	const escapedArgs = args.map((item) => {

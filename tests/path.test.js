@@ -1,31 +1,48 @@
 const {describe, it, assert} = require("mocha-expect");
 const {
-	get,
-	set,
-	furthest,
-	values,
+	countLeafNodes,
+	diff,
+	down,
+	findOnePath,
+	findPath,
 	flatten,
 	flattenValues,
-	countLeafNodes,
-	findPath,
-	findOnePath,
-	type,
-	match,
+	furthest,
+	get,
 	isNotEqual,
+	join,
+	joinEscaped,
 	leafNodes,
-	diff,
-	unSet,
-	pushVal,
-	pullVal,
+	match,
 	pop,
+	pullVal,
+	pushVal,
+	set,
 	shift,
+	type,
+	unSet,
 	up,
-	down,
 	update,
-	updateImmutable
+	updateImmutable,
+	values,
+	split
 } = require("../src/Path");
 
 describe("Path", () => {
+	describe("join()", () => {
+		it("Will join multiple paths together", () => {
+			const result = join("test1", "test2");
+			assert.strictEqual(result, "test1.test2", "Path is correct");
+		});
+	});
+	
+	describe("joinEscape()", () => {
+		it("Will join multiple paths together escaped", () => {
+			const result = joinEscaped("test1.com", "test2.com");
+			assert.strictEqual(result, "test1\\.com.test2\\.com", "Path is correct");
+		});
+	});
+	
 	describe("values()", () => {
 		it("Will traverse the tree and find all values for each part of the path", () => {
 			const obj = {
@@ -216,6 +233,28 @@ describe("Path", () => {
 		});
 	});
 	
+	describe("split()", () => {
+		it("Will split non-escaped strings correctly", () => {
+			const path = "foo.test.bar";
+			const result = split(path);
+			
+			assert.strictEqual(result.length, 3, "The result length is correct");
+			assert.strictEqual(result[0], "foo", "The result is correct");
+			assert.strictEqual(result[1], "test", "The result is correct");
+			assert.strictEqual(result[2], "bar", "The result is correct");
+		});
+		
+		it("Will split escaped strings correctly", () => {
+			const path = "foo.test@test\\.com";
+			debugger;
+			const result = split(path);
+			
+			assert.strictEqual(result.length, 2, "The result length is correct");
+			assert.strictEqual(result[0], "foo", "The result is correct");
+			assert.strictEqual(result[1], "test@test\\.com", "The result is correct");
+		});
+	});
+	
 	describe("get()", () => {
 		it("Can get a field value from an object path", () => {
 			const obj = {
@@ -270,6 +309,19 @@ describe("Path", () => {
 			
 			const result = get(obj, "obj.val.roo.foo.moo");
 			assert.strictEqual(result, undefined, "The value was retrieved correctly");
+		});
+		
+		it("Supports escaped paths to get data correctly", () => {
+			const obj = {
+				"foo": {
+					"jim@jones.com": "bar"
+				}
+			};
+			
+			const path = joinEscaped("foo", "jim@jones.com");
+			const result = get(obj, path);
+			
+			assert.strictEqual(result, "bar", "The value is correct");
 		});
 	});
 	
@@ -330,6 +382,17 @@ describe("Path", () => {
 			
 			assert.strictEqual(obj.foo, false, "The value was set correctly");
 			assert.strictEqual(newObj, obj, "The object reference is the same");
+		});
+		
+		it("Supports escaped paths to set data correctly", () => {
+			const obj = {
+				"foo": true
+			};
+			
+			const path = joinEscaped("foo", "jim@jones.com");
+			const newObj = set(obj, path, false);
+			
+			assert.strictEqual(newObj.foo["jim@jones.com"], false, "The value was set correctly");
 		});
 	});
 	
