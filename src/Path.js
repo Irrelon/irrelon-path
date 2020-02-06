@@ -1342,6 +1342,7 @@ module.exports = {
 	wildcardToZero,
 	numberToWildcard,
 	clean,
+	decouple,
 	split,
 	escape,
 	get,

@@ -1478,6 +1478,7 @@ module.exports = {
 	wildcardToZero: wildcardToZero,
 	numberToWildcard: numberToWildcard,
 	clean: clean,
+	decouple: decouple,
 	split: split,
 	escape: escape,
 	get: get,
