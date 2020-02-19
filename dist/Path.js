@@ -97,6 +97,26 @@ var _newInstance = function _newInstance (item) {
 	
 	return newObj;
 };
+
+var isCompositePath = function isCompositePath (path) {
+	var regExp = /\./g;
+	var result;
+	
+	while (result = regExp.exec(path)) {
+		// Check if the previous character was an escape
+		// and if so, ignore this delimiter
+		if (result.index === 0 || path.substr(result.index - 1, 1) !== "\\") {
+			// This is not an escaped path so it IS a composite path
+			return true;
+		}
+	}
+	
+	return false;
+};
+
+var isNonCompositePath = function isNonCompositePath (path) {
+	return !isCompositePath(path);
+};
 /**
  * Returns the given path after removing the last
  * leaf from the path. E.g. "foo.bar.thing" becomes
@@ -268,7 +288,7 @@ var split = function split (path) {
 	// placeholders back to their real period characters
 	
 	for (var i = 0; i < splitPath.length; i++) {
-		splitPath[i] = splitPath[i].replace(/\[--]/g, ".");
+		splitPath[i] = splitPath[i].replace(/\[--]/g, "\\.");
 	}
 	
 	return splitPath;
@@ -293,6 +313,10 @@ var split = function split (path) {
 
 var escape = function escape (str) {
 	return str.replace(/\./g, "\\.");
+};
+
+var unEscape = function unEscape (str) {
+	return str.replace(/\\./g, ".");
 };
 /**
  * Gets a single value from the passed object and given path.
@@ -340,7 +364,7 @@ var get = function get (obj, path) {
 	} // Path has no dot-notation, return key/value
 	
 	
-	if (internalPath.indexOf(".") === -1) {
+	if (isNonCompositePath(internalPath)) {
 		return obj[internalPath] !== undefined ? obj[internalPath] : defaultVal;
 	}
 	
@@ -353,7 +377,7 @@ var get = function get (obj, path) {
 	
 	for (var i = 0; i < pathParts.length; i++) {
 		var pathPart = pathParts[i];
-		objPart = objPart[options.transformKey(pathPart)];
+		objPart = objPart[options.transformKey(unEscape(pathPart))];
 		
 		if (!objPart || (0, _typeof2["default"])(objPart) !== "object") {
 			if (i !== pathParts.length - 1) {
@@ -410,9 +434,9 @@ var set = function set (obj, path, val) {
 	} // Path has no dot-notation, set key/value
 	
 	
-	if (internalPath.indexOf(".") === -1) {
+	if (isNonCompositePath(internalPath)) {
 		obj = decouple(obj, options);
-		obj[options.transformKey(internalPath)] = val;
+		obj[options.transformKey(unEscape(internalPath))] = val;
 		return obj;
 	}
 	
@@ -422,7 +446,7 @@ var set = function set (obj, path, val) {
 	var transformedPathPart = options.transformKey(pathPart);
 	var childPart = newObj[transformedPathPart];
 	
-	if (!childPart) {
+	if ((0, _typeof2["default"])(childPart) !== "object") {
 		// Create an object or array on the path
 		if (String(parseInt(transformedPathPart, 10)) === transformedPathPart) {
 			// This is an array index
@@ -478,9 +502,9 @@ var unSet = function unSet (obj, path) {
 	
 	var newObj = decouple(obj, options); // Path has no dot-notation, set key/value
 	
-	if (internalPath.indexOf(".") === -1) {
+	if (isNonCompositePath(internalPath)) {
 		if (newObj.hasOwnProperty(internalPath)) {
-			delete newObj[options.transformKey(internalPath)];
+			delete newObj[options.transformKey(unEscape(internalPath))];
 			return newObj;
 		}
 		
@@ -705,7 +729,7 @@ var furthest = function furthest (obj, path) {
 	} // Path has no dot-notation, return key/value
 	
 	
-	if (internalPath.indexOf(".") === -1) {
+	if (isNonCompositePath(internalPath)) {
 		if (obj[internalPath] !== undefined) {
 			return internalPath;
 		}
@@ -718,7 +742,7 @@ var furthest = function furthest (obj, path) {
 	
 	for (var i = 0; i < pathParts.length; i++) {
 		var pathPart = pathParts[i];
-		objPart = objPart[options.transformKey(pathPart)];
+		objPart = objPart[options.transformKey(unEscape(pathPart))];
 		
 		if (objPart === undefined) {
 			break;
@@ -870,9 +894,8 @@ var flattenValues = function flattenValues (obj) {
  * Ignores blank or undefined path parts and also ensures
  * that each part is escaped so passing "foo.bar" will
  * result in an escaped version.
- * @param {...String} args The arguments passed to the function,
- * spread using ES6 spread.
- * @returns {string} A final path string.
+ * @param {...String} args args Path to join.
+ * @returns {String} A final path string.
  */
 
 
@@ -894,9 +917,8 @@ var join = function join () {
  * Ignores blank or undefined path parts and also ensures
  * that each part is escaped so passing "foo.bar" will
  * result in an escaped version.
- * @param {Array} args The arguments passed to the function,
- * spread using ES6 spread.
- * @returns {string} A final path string.
+ * @param {...String} args Path to join.
+ * @returns {String} A final path string.
  */
 
 
@@ -1260,6 +1282,12 @@ var findOnePath = function findOnePath (source, query) {
 		match: false
 	};
 };
+
+var keyDedup = function keyDedup (keys) {
+	return keys.filter(function (elem, pos, arr) {
+		return arr.indexOf(elem) === pos;
+	});
+};
 /**
  * Compares two provided objects / arrays and returns an array of
  * dot-notation paths to the fields that hold different values.
@@ -1307,7 +1335,9 @@ var diff = function diff (obj1, obj2) {
 	var val2 = get(obj2, basePath);
 	
 	if ((0, _typeof2["default"])(val1) === "object" && val1 !== null) {
-		return Object.keys(val1).reduce(function (arr, key) {
+		// Grab composite of all keys on val1 and val2
+		var compositeKeys = keyDedup(Object.keys(val1).concat(Object.keys(val2)));
+		return compositeKeys.reduce(function (arr, key) {
 			var result = diff(val1, val2, key, strict, currentPath);
 			
 			if (result && result.length) {

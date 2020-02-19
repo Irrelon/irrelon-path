@@ -1081,6 +1081,56 @@ describe("Path", () => {
 			assert.strictEqual(result2[1], "0.type", "The result value is correct");
 		});
 		
+		it("Will return an array of paths for all leafs in an array structure that differ from the other structure independent of which object is passed as the first param and which is passed as second", () => {
+			const obj1 = [{
+				"arr": [{
+					"id": 1
+				}, {
+					"id": 2
+				}, {
+					"id": 3
+				}],
+				"name": "An array",
+				"type": 42
+			}];
+			
+			const obj2 = [{
+				"arr": [{
+					"id": 1
+				}, {
+					"id": 2
+				}, {
+					"id": 3
+				}],
+				"name": "An array",
+				"type": 42
+			}];
+			
+			const obj3 = [{
+				"arr": [{
+					"id": 1
+				}, {
+					"id": 4
+				}, {
+					"id": 3
+				}],
+				"name": "An array",
+				"type": 43,
+				"someExtraField": "foo"
+			}];
+			
+			const result1 = diff(obj1, obj2);
+			const result2 = diff(obj1, obj3);
+			
+			assert.strictEqual(result1 instanceof Array, true, "The result is an array");
+			assert.strictEqual(result1.length, 0, "The result value is correct");
+			assert.strictEqual(result2 instanceof Array, true, "The result is an array");
+			assert.strictEqual(result2.length, 3, "The result value is correct");
+			assert.strictEqual(result2[0], "0.arr.1.id", "The result value is correct");
+			assert.strictEqual(result2[1], "0.type", "The result value is correct");
+			assert.strictEqual(result2[2], "0.someExtraField", "The result value is correct");
+		});
+		
 		it("Will return an array of paths for all leafs in an object structure that differ from the other structure", () => {
 			const obj1 = {
 				"rootArray": [{

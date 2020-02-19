@@ -1179,6 +1179,12 @@ const findOnePath = (source, query, parentPath = "") => {
 	return {match: false};
 };
 
+const keyDedup = (keys) => {
+	return keys.filter((elem, pos, arr) => {
+		return arr.indexOf(elem) === pos;
+	});
+};
+
 /**
  * Compares two provided objects / arrays and returns an array of
  * dot-notation paths to the fields that hold different values.
@@ -1220,7 +1226,9 @@ const diff = (obj1, obj2, basePath = "", strict = false, parentPath = "") => {
 	const val2 = get(obj2, basePath);
 	
 	if (typeof val1 === "object" && val1 !== null) {
-		return Object.keys(val1).reduce((arr, key) => {
+		// Grab composite of all keys on val1 and val2
+		const compositeKeys = keyDedup(Object.keys(val1).concat(Object.keys(val2)));
+		return compositeKeys.reduce((arr, key) => {
 			const result = diff(val1, val2, key, strict, currentPath);
 			if (result && result.length) {
 				arr.push(...result);
