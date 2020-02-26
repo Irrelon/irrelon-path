@@ -31,9 +31,7 @@ function _objectSpread (target) {
 			ownKeys(Object(source), true).forEach(function (key) {
 				(0, _defineProperty2["default"])(target, key, source[key]);
 			});
-		} else if (Object.getOwnPropertyDescriptors) {
-			Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
-		} else {
+		} else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else {
 			ownKeys(Object(source)).forEach(function (key) {
 				Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
 			});
@@ -460,7 +458,7 @@ var set = function set (obj, path, val) {
 		objPart = childPart;
 	}
 	
-	return set(newObj, transformedPathPart, set(objPart, pathParts.join('.'), val, options), options);
+	return set(newObj, transformedPathPart, set(objPart, pathParts.join("."), val, options), options);
 };
 /**
  * Deletes a key from an object by the given path.
@@ -523,7 +521,7 @@ var unSet = function unSet (obj, path) {
 		return obj;
 	}
 	
-	newObj[transformedPathPart] = unSet(childPart, pathParts.join('.'), options, tracking);
+	newObj[transformedPathPart] = unSet(childPart, pathParts.join("."), options, tracking);
 	
 	if (tracking.returnOriginal) {
 		return obj;
@@ -1071,11 +1069,11 @@ var countMatchingPathsInObject = function countMatchingPathsInObject (testKeys, 
 
 var type = function type (item) {
 	if (item === null) {
-		return 'null';
+		return "null";
 	}
 	
 	if (Array.isArray(item)) {
-		return 'array';
+		return "array";
 	}
 	
 	return (0, _typeof2["default"])(item);
@@ -1503,6 +1501,21 @@ var updateImmutable = function updateImmutable (obj, updateData, options) {
 		immutable: true
 	}));
 };
+/**
+ * Gets the values of the paths in pathArr and returns them as an object
+ * with each key matching the path and the value matching the value from
+ * obj that was at that path.
+ * @param {Object} obj The object to operate on.
+ * @param {Array<String>} pathArr Array of path strings.
+ * @returns {*} The new object.
+ */
+
+
+var distill = function distill (obj, pathArr) {
+	return pathArr.reduce(function (newObj, path) {
+		newObj[path] = get(obj, path);
+	}, {});
+};
 
 module.exports = {
 	wildcardToZero: wildcardToZero,
@@ -1543,5 +1556,6 @@ module.exports = {
 	leafNodes: leafNodes,
 	diff: diff,
 	update: update,
-	updateImmutable: updateImmutable
+	updateImmutable: updateImmutable,
+	distill: distill
 };

@@ -1368,6 +1368,20 @@ const updateImmutable = (obj, updateData, options) => {
 	return update(obj, updateData, {...options, immutable: true});
 };
 
+/**
+ * Gets the values of the paths in pathArr and returns them as an object
+ * with each key matching the path and the value matching the value from
+ * obj that was at that path.
+ * @param {Object} obj The object to operate on.
+ * @param {Array<String>} pathArr Array of path strings.
+ * @returns {*} The new object.
+ */
+const distill = (obj, pathArr) => {
+	return pathArr.reduce((newObj, path) => {
+		newObj[path] = get(obj, path);
+	}, {});
+};
+
 module.exports = {
 	wildcardToZero,
 	numberToWildcard,
@@ -1407,5 +1421,6 @@ module.exports = {
 	leafNodes,
 	diff,
 	update,
-	updateImmutable
+	updateImmutable,
+	distill
 };
