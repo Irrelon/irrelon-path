@@ -1514,6 +1514,7 @@ var updateImmutable = function updateImmutable (obj, updateData, options) {
 var distill = function distill (obj, pathArr) {
 	return pathArr.reduce(function (newObj, path) {
 		newObj[path] = get(obj, path);
+		return newObj;
 	}, {});
 };
 

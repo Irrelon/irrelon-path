@@ -1379,6 +1379,7 @@ const updateImmutable = (obj, updateData, options) => {
 const distill = (obj, pathArr) => {
 	return pathArr.reduce((newObj, path) => {
 		newObj[path] = get(obj, path);
+		return newObj;
 	}, {});
 };
 
