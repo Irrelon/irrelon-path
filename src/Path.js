@@ -1197,12 +1197,17 @@ const keyDedup = (keys) => {
  * @param {Boolean=false} strict If strict is true, diff uses strict
  * equality to determine difference rather than non-strict equality;
  * effectively (=== is strict, == is non-strict).
+ * @param {Number=Infinity} maxDepth Specifies the maximum number of
+ * path sub-trees to walk down before returning what we have found.
+ * For instance, if set to 2, a diff would only check down,
+ * "someFieldName.anotherField", or "user.name" and would not go
+ * further down than two fields.
  * @param {String=""} parentPath Used internally only.
  * @returns {Array} An array of strings, each string is a path to a
  * field that holds a different value between the two objects being
  * compared.
  */
-const diff = (obj1, obj2, basePath = "", strict = false, parentPath = "") => {
+const diff = (obj1, obj2, basePath = "", strict = false, maxDepth = Infinity, parentPath = "") => {
 	const paths = [];
 	
 	if (basePath instanceof Array) {
@@ -1212,7 +1217,7 @@ const diff = (obj1, obj2, basePath = "", strict = false, parentPath = "") => {
 			// returns true and then returns the index as a positive integer
 			// that is not -1. If -1 is returned then no non-equal matches
 			// were found
-			const result = diff(obj1, obj2, individualPath, strict, parentPath);
+			const result = diff(obj1, obj2, individualPath, strict, maxDepth, parentPath);
 			if (result && result.length) {
 				arr.push(...result);
 			}
@@ -1230,14 +1235,14 @@ const diff = (obj1, obj2, basePath = "", strict = false, parentPath = "") => {
 		paths.push(currentPath);
 	}
 	
-	if (typeof val1 === "object" && val1 !== null) {
+	if (currentPath.split(".").length < maxDepth && typeof val1 === "object" && val1 !== null) {
 		// Grab composite of all keys on val1 and val2
 		const val1Keys = Object.keys(val1);
 		const val2Keys = (typeof val2 === "object" && val2 !== null) ? Object.keys(val2) : [];
 		const compositeKeys = keyDedup(val1Keys.concat(val2Keys));
 		
 		return compositeKeys.reduce((arr, key) => {
-			const result = diff(val1, val2, key, strict, currentPath);
+			const result = diff(val1, val2, key, strict, maxDepth, currentPath);
 			if (result && result.length) {
 				arr.push(...result);
 			}

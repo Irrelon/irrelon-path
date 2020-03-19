@@ -329,7 +329,7 @@ console.log(result2); // Logs: "0.profile"
 > See the unit tests for findOnePath() for many more examples
  of usage.
 
-### diff (`obj1`, `obj2`, `path`, `strict`)
+### diff (`obj1`, `obj2`, `path`, `strict`, `maxDepth`)
 
 |Param|Type|Required|Default|
 |---|---|---|---|
@@ -337,6 +337,7 @@ console.log(result2); // Logs: "0.profile"
 |obj2|Object or Array|true|none|
 |path|String|false|""|
 |strict|Boolean|false|false|
+|maxDepth|Number|false|Infinity|
 
 Compares two objects / arrays and returns the differences as an
 array of paths to the different fields.

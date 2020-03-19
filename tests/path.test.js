@@ -1081,7 +1081,7 @@ describe("Path", () => {
 			assert.strictEqual(result2[1], "0.type", "The result value is correct");
 		});
 		
-		it("Will handle black arrays correctly", () => {
+		it("Will handle blank arrays correctly", () => {
 			const obj1 = {
 				events: [{
 					id: "foo"
@@ -1096,6 +1096,22 @@ describe("Path", () => {
 			assert.strictEqual(result1.length, 2, "The result value is correct");
 			assert.strictEqual(result1[0], "events.0", "The result value is correct");
 			assert.strictEqual(result1[1], "events.0.id", "The result value is correct");
+		});
+		
+		it("Will handle max depth correctly", () => {
+			const obj1 = {
+				events: [{
+					id: "foo"
+				}]
+			};
+			
+			const obj2 = {events: []};
+			
+			const result1 = diff(obj1, obj2, "", true, 2);
+			
+			assert.strictEqual(result1 instanceof Array, true, "The result is an array");
+			assert.strictEqual(result1.length, 1, "The result value is correct");
+			assert.strictEqual(result1[0], "events.0", "The result value is correct");
 		});
 		
 		it("Will return an array of paths for all leafs in an array structure that differ from the other structure independent of which object is passed as the first param and which is passed as second", () => {
