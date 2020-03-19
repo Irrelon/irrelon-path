@@ -1033,7 +1033,7 @@ describe("Path", () => {
 	});
 	
 	describe("diff()", () => {
-		it("Will return an array of paths for all leafs in an array structure that differ from the other structure", () => {
+		it("Will handle differences in arrays correctly", () => {
 			const obj1 = [{
 				"arr": [{
 					"id": 1
@@ -1081,6 +1081,23 @@ describe("Path", () => {
 			assert.strictEqual(result2[1], "0.type", "The result value is correct");
 		});
 		
+		it("Will handle black arrays correctly", () => {
+			const obj1 = {
+				events: [{
+					id: "foo"
+				}]
+			};
+			
+			const obj2 = {events: []};
+			
+			const result1 = diff(obj1, obj2, "", true);
+			
+			assert.strictEqual(result1 instanceof Array, true, "The result is an array");
+			assert.strictEqual(result1.length, 2, "The result value is correct");
+			assert.strictEqual(result1[0], "events.0", "The result value is correct");
+			assert.strictEqual(result1[1], "events.0.id", "The result value is correct");
+		});
+		
 		it("Will return an array of paths for all leafs in an array structure that differ from the other structure independent of which object is passed as the first param and which is passed as second", () => {
 			const obj1 = [{
 				"arr": [{
@@ -1121,7 +1138,7 @@ describe("Path", () => {
 			
 			const result1 = diff(obj1, obj2);
 			const result2 = diff(obj1, obj3);
-			
+			debugger;
 			assert.strictEqual(result1 instanceof Array, true, "The result is an array");
 			assert.strictEqual(result1.length, 0, "The result value is correct");
 			assert.strictEqual(result2 instanceof Array, true, "The result is an array");

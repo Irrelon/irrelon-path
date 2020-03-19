@@ -1225,9 +1225,17 @@ const diff = (obj1, obj2, basePath = "", strict = false, parentPath = "") => {
 	const val1 = get(obj1, basePath);
 	const val2 = get(obj2, basePath);
 	
+	if (type(val1) !== type(val2)) {
+		// Difference in source and comparison types
+		paths.push(currentPath);
+	}
+	
 	if (typeof val1 === "object" && val1 !== null) {
 		// Grab composite of all keys on val1 and val2
-		const compositeKeys = keyDedup(Object.keys(val1).concat(Object.keys(val2)));
+		const val1Keys = Object.keys(val1);
+		const val2Keys = (typeof val2 === "object" && val2 !== null) ? Object.keys(val2) : [];
+		const compositeKeys = keyDedup(val1Keys.concat(val2Keys));
+		
 		return compositeKeys.reduce((arr, key) => {
 			const result = diff(val1, val2, key, strict, currentPath);
 			if (result && result.length) {
@@ -1235,14 +1243,14 @@ const diff = (obj1, obj2, basePath = "", strict = false, parentPath = "") => {
 			}
 			
 			return arr;
-		}, []);
+		}, paths);
 	}
 	
 	if ((strict && val1 !== val2) || (!strict && val1 != val2)) {
 		paths.push(currentPath);
 	}
 	
-	return paths;
+	return keyDedup(paths);
 };
 
 /**

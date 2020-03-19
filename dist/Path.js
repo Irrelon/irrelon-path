@@ -1332,9 +1332,16 @@ var diff = function diff (obj1, obj2) {
 	var val1 = get(obj1, basePath);
 	var val2 = get(obj2, basePath);
 	
+	if (type(val1) !== type(val2)) {
+		// Difference in source and comparison types
+		paths.push(currentPath);
+	}
+	
 	if ((0, _typeof2["default"])(val1) === "object" && val1 !== null) {
 		// Grab composite of all keys on val1 and val2
-		var compositeKeys = keyDedup(Object.keys(val1).concat(Object.keys(val2)));
+		var val1Keys = Object.keys(val1);
+		var val2Keys = (0, _typeof2["default"])(val2) === "object" && val2 !== null ? Object.keys(val2) : [];
+		var compositeKeys = keyDedup(val1Keys.concat(val2Keys));
 		return compositeKeys.reduce(function (arr, key) {
 			var result = diff(val1, val2, key, strict, currentPath);
 			
@@ -1343,14 +1350,14 @@ var diff = function diff (obj1, obj2) {
 			}
 			
 			return arr;
-		}, []);
+		}, paths);
 	}
 	
 	if (strict && val1 !== val2 || !strict && val1 != val2) {
 		paths.push(currentPath);
 	}
 	
-	return paths;
+	return keyDedup(paths);
 };
 /**
  * A boolean check to see if the values at the given path or paths
