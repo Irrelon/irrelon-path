@@ -1229,13 +1229,21 @@ const diff = (obj1, obj2, basePath = "", strict = false, maxDepth = Infinity, pa
 	const currentPath = join(parentPath, basePath);
 	const val1 = get(obj1, basePath);
 	const val2 = get(obj2, basePath);
+	const type1 = type(val1);
+	const type2 = type(val2);
 	
-	if (type(val1) !== type(val2)) {
+	if (type1 !== type2) {
+		// Difference in source and comparison types
+		paths.push(currentPath);
+	} else if (type1 === "array" && val1.length !== val2.length) {
 		// Difference in source and comparison types
 		paths.push(currentPath);
 	}
 	
-	if (currentPath.split(".").length < maxDepth && typeof val1 === "object" && val1 !== null) {
+	const pathParts = currentPath.split(".");
+	const hasParts = pathParts[0] !== "";
+	
+	if ((!hasParts || pathParts.length < maxDepth) && typeof val1 === "object" && val1 !== null) {
 		// Grab composite of all keys on val1 and val2
 		const val1Keys = Object.keys(val1);
 		const val2Keys = (typeof val2 === "object" && val2 !== null) ? Object.keys(val2) : [];
@@ -1289,6 +1297,8 @@ const isEqual = (obj1, obj2, path, deep = false, strict = false) => {
 	
 	if (deep) {
 		if (typeof val1 === "object" && val1 !== null) {
+			// TODO: This probably needs a composite key array of val1 and val2 keys
+			//  just as we do in the diff() function
 			return Object.keys(val1).findIndex((key) => {
 				return isNotEqual(val1, val2, key, deep, strict);
 			}) === -1;
