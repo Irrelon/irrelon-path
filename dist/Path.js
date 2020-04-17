@@ -629,7 +629,8 @@ var pushVal = function pushVal (obj, path, val) {
 	return decouple(obj, options);
 };
 /**
- * Pull a value to from an array at the specified path.
+ * Pull a value to from an array at the specified path. Removes the first
+ * matching value, not every matching value.
  * @param {Object|Array} obj The object to update.
  * @param {String} path The path to the array to pull from.
  * @param {*} val The value to pull from the array.
@@ -640,7 +641,9 @@ var pushVal = function pushVal (obj, path, val) {
 
 
 var pullVal = function pullVal (obj, path, val) {
-	var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+	var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {
+		strict: true
+	};
 	
 	if (obj === undefined || obj === null || path === undefined) {
 		return obj;
@@ -661,8 +664,17 @@ var pullVal = function pullVal (obj, path, val) {
 		obj[part] = decouple(obj[part], options) || [];
 		
 		if (obj[part] instanceof Array) {
-			// Find the index of the passed value
-			var index = obj[part].indexOf(val);
+			var index = -1;
+			
+			if (options.strict === true) {
+				// Find the index of the passed value
+				index = obj[part].indexOf(val);
+			} else {
+				// Do a non-strict check
+				index = obj[part].findIndex(function (item) {
+					return match(item, val);
+				});
+			}
 			
 			if (index > -1) {
 				// Remove the item from the array
@@ -1298,6 +1310,11 @@ var keyDedup = function keyDedup (keys) {
  * @param {Boolean=false} strict If strict is true, diff uses strict
  * equality to determine difference rather than non-strict equality;
  * effectively (=== is strict, == is non-strict).
+ * @param {Number=Infinity} maxDepth Specifies the maximum number of
+ * path sub-trees to walk down before returning what we have found.
+ * For instance, if set to 2, a diff would only check down,
+ * "someFieldName.anotherField", or "user.name" and would not go
+ * further down than two fields.
  * @param {String=""} parentPath Used internally only.
  * @returns {Array} An array of strings, each string is a path to a
  * field that holds a different value between the two objects being
@@ -1308,7 +1325,8 @@ var keyDedup = function keyDedup (keys) {
 var diff = function diff (obj1, obj2) {
 	var basePath = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : "";
 	var strict = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
-	var parentPath = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : "";
+	var maxDepth = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : Infinity;
+	var parentPath = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : "";
 	var paths = [];
 	
 	if (basePath instanceof Array) {
@@ -1318,7 +1336,7 @@ var diff = function diff (obj1, obj2) {
 			// returns true and then returns the index as a positive integer
 			// that is not -1. If -1 is returned then no non-equal matches
 			// were found
-			var result = diff(obj1, obj2, individualPath, strict, parentPath);
+			var result = diff(obj1, obj2, individualPath, strict, maxDepth, parentPath);
 			
 			if (result && result.length) {
 				arr.push.apply(arr, (0, _toConsumableArray2["default"])(result));
@@ -1331,19 +1349,27 @@ var diff = function diff (obj1, obj2) {
 	var currentPath = join(parentPath, basePath);
 	var val1 = get(obj1, basePath);
 	var val2 = get(obj2, basePath);
+	var type1 = type(val1);
+	var type2 = type(val2);
 	
-	if (type(val1) !== type(val2)) {
+	if (type1 !== type2) {
+		// Difference in source and comparison types
+		paths.push(currentPath);
+	} else if (type1 === "array" && val1.length !== val2.length) {
 		// Difference in source and comparison types
 		paths.push(currentPath);
 	}
 	
-	if ((0, _typeof2["default"])(val1) === "object" && val1 !== null) {
+	var pathParts = currentPath.split(".");
+	var hasParts = pathParts[0] !== "";
+	
+	if ((!hasParts || pathParts.length < maxDepth) && (0, _typeof2["default"])(val1) === "object" && val1 !== null) {
 		// Grab composite of all keys on val1 and val2
 		var val1Keys = Object.keys(val1);
 		var val2Keys = (0, _typeof2["default"])(val2) === "object" && val2 !== null ? Object.keys(val2) : [];
 		var compositeKeys = keyDedup(val1Keys.concat(val2Keys));
 		return compositeKeys.reduce(function (arr, key) {
-			var result = diff(val1, val2, key, strict, currentPath);
+			var result = diff(val1, val2, key, strict, maxDepth, currentPath);
 			
 			if (result && result.length) {
 				arr.push.apply(arr, (0, _toConsumableArray2["default"])(result));
@@ -1395,6 +1421,8 @@ var isEqual = function isEqual (obj1, obj2, path) {
 	
 	if (deep) {
 		if ((0, _typeof2["default"])(val1) === "object" && val1 !== null) {
+			// TODO: This probably needs a composite key array of val1 and val2 keys
+			//  just as we do in the diff() function
 			return Object.keys(val1).findIndex(function (key) {
 				return isNotEqual(val1, val2, key, deep, strict);
 			}) === -1;
