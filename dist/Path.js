@@ -610,20 +610,20 @@ var pushVal = function pushVal (obj, path, val) {
 		// We have found the target array, push the value
 		obj[part] = decouple(obj[part], options) || [];
 		
-		if (obj[part] instanceof Array) {
-			obj[part].push(val);
-		} else {
+		if (!(obj[part] instanceof Array)) {
 			throw "Cannot push to a path whose leaf node is not an array!";
 		}
+		
+		obj[part].push(val);
 	} else {
 		// We have found the target array, push the value
 		obj = decouple(obj, options) || [];
 		
-		if (obj instanceof Array) {
-			obj.push(val);
-		} else {
+		if (!(obj instanceof Array)) {
 			throw "Cannot push to a path whose leaf node is not an array!";
 		}
+		
+		obj.push(val);
 	}
 	
 	return decouple(obj, options);
@@ -656,47 +656,38 @@ var pullVal = function pullVal (obj, path, val) {
 	
 	if (pathParts.length) {
 		// Generate the path part in the object if it does not already exist
-		obj[part] = decouple(obj[part], options) || {}; // Recurse
+		obj[part] = decouple(obj[part], options) || {}; // Recurse - we don't need to assign obj[part] the result of this call because
+		// we are modifying by reference since we haven't reached the furthest path
+		// part (leaf) node yet
 		
 		pullVal(obj[part], pathParts.join("."), val, options);
 	} else if (part) {
-		// We have found the target array, pull the value
-		obj[part] = decouple(obj[part], options) || [];
+		obj[part] = decouple(obj[part], options) || []; // Recurse - this is the leaf node so assign the response to obj[part] in
+		// case it is set to an immutable response
 		
-		if (obj[part] instanceof Array) {
-			var index = -1;
-			
-			if (options.strict === true) {
-				// Find the index of the passed value
-				index = obj[part].indexOf(val);
-			} else {
-				// Do a non-strict check
-				index = obj[part].findIndex(function (item) {
-					return match(item, val);
-				});
-			}
-			
-			if (index > -1) {
-				// Remove the item from the array
-				obj[part].splice(index, 1);
-			}
-		} else {
-			throw "Cannot pull from a path whose leaf node is not an array!";
-		}
+		obj[part] = pullVal(obj[part], "", val, options);
 	} else {
 		// The target array is the root object, pull the value
 		obj = decouple(obj, options) || [];
 		
-		if (obj instanceof Array) {
-			// Find the index of the passed value
-			var _index = obj.indexOf(val);
-			
-			if (_index > -1) {
-				// Remove the item from the array
-				obj.splice(_index, 1);
-			}
-		} else {
+		if (!(obj instanceof Array)) {
 			throw "Cannot pull from a path whose leaf node is not an array!";
+		}
+		
+		var index = -1; // Find the index of the passed value
+		
+		if (options.strict === true) {
+			index = obj.indexOf(val);
+		} else {
+			// Do a non-strict check
+			index = obj.findIndex(function (item) {
+				return match(item, val);
+			});
+		}
+		
+		if (index > -1) {
+			// Remove the item from the array
+			obj.splice(index, 1);
 		}
 	}
 	

@@ -1369,6 +1369,25 @@ describe("Path", () => {
 			assert.strictEqual(obj.foo.length, 0, "The array empty");
 		});
 		
+		it("Will pull a string literal from a nested array at the given path with immutability", () => {
+			const obj = {
+				"foo": {
+					"bar": {
+						"moo": ["valueToPull"]
+					}
+				}
+			};
+			
+			assert.strictEqual(obj.foo.bar.moo.length, 1, "The array is populated");
+			
+			const oldFoo = obj.foo.bar.moo;
+			const newObj = pullVal(obj, "foo.bar.moo", "valueToPull", {immutable: true});
+			
+			assert.strictEqual(obj !== newObj, true, "The old obj and new obj are not the same reference");
+			assert.strictEqual(oldFoo !== newObj.foo.bar.moo, true, "The old array and new array are not the same reference");
+			assert.strictEqual(obj.foo.bar.moo.length, 0, "The array empty");
+		});
+		
 		it("Will pull a string literal from an array with a blank path (root)", () => {
 			const obj = ["valueToPull"];
 			
