@@ -566,7 +566,8 @@ const pushVal = (obj, path, val, options = {}) => {
 };
 
 /**
- * Pull a value to from an array at the specified path.
+ * Pull a value to from an array at the specified path. Removes the first
+ * matching value, not every matching value.
  * @param {Object|Array} obj The object to update.
  * @param {String} path The path to the array to pull from.
  * @param {*} val The value to pull from the array.
@@ -574,7 +575,7 @@ const pushVal = (obj, path, val, options = {}) => {
  * @returns {Object|Array} The original object passed in "obj" but with
  * the array at the path specified having the newly pushed value.
  */
-const pullVal = (obj, path, val, options = {}) => {
+const pullVal = (obj, path, val, options = {strict: true}) => {
 	if (obj === undefined || obj === null || path === undefined) {
 		return obj;
 	}
@@ -596,8 +597,17 @@ const pullVal = (obj, path, val, options = {}) => {
 		obj[part] = decouple(obj[part], options) || [];
 		
 		if (obj[part] instanceof Array) {
-			// Find the index of the passed value
-			const index = obj[part].indexOf(val);
+			let index = -1;
+			
+			if (options.strict === true) {
+				// Find the index of the passed value
+				index = obj[part].indexOf(val);
+			} else {
+				// Do a non-strict check
+				index = obj[part].findIndex((item) => {
+					return match(item, val);
+				});
+			}
 			
 			if (index > -1) {
 				// Remove the item from the array

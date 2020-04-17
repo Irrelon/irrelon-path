@@ -1394,6 +1394,28 @@ describe("Path", () => {
 			assert.strictEqual(obj.foo.length, 0, "The array is empty");
 			assert.strictEqual(obj.foo[0], undefined, "The value is correct");
 		});
+		
+		it("Will pull an object that matches the search criteria from an array at the given path (strict off)", () => {
+			const obj = {
+				"foo": [{
+					"_id": "1",
+					"name": "bar"
+				}, {
+					"_id": "2",
+					"name": "bar"
+				}]
+			};
+			
+			assert.strictEqual(obj.foo.length, 2, "The array is populated");
+			assert.strictEqual(obj.foo[0]._id, "1", "The value is correct");
+			assert.strictEqual(obj.foo[1]._id, "2", "The value is correct");
+			
+			pullVal(obj, "foo", {_id: "2"}, {"strict": false});
+			
+			assert.strictEqual(obj.foo.length, 1, "The array is empty");
+			assert.strictEqual(obj.foo[0]._id, "1", "The value is correct");
+			assert.strictEqual(obj.foo[1], undefined, "The value is correct");
+		});
 	});
 	
 	describe("up()", () => {

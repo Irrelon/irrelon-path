@@ -5,7 +5,7 @@
 	"main": "./src/Path.js",
 	"scripts": {
 		"test": "NODE_ENV=test mocha ./tests/**/**.test.js",
-		"build": "npm test && rimraf dist && babel ./src/*.js --out-dir dist",
+		"build": "npm test && npm version minor && rimraf dist && babel ./src/*.js --out-dir dist",
 		"eslint": "eslint ./src/**.js ./tests/**.js ./dist/Path.js",
 		"eslint-fix": "eslint --fix ./src/**.js ./tests/**.js"
 	},
