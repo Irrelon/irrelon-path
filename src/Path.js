@@ -541,7 +541,7 @@ const pushVal = (obj, path, val, options = {}) => {
 		obj[part] = decouple(obj[part], options) || {};
 		
 		// Recurse
-		pushVal(obj[part], pathParts.join("."), val);
+		pushVal(obj[part], pathParts.join("."), val, options);
 	} else if (part) {
 		// We have found the target array, push the value
 		obj[part] = decouple(obj[part], options) || [];
@@ -591,7 +591,7 @@ const pullVal = (obj, path, val, options = {strict: true}) => {
 		obj[part] = decouple(obj[part], options) || {};
 		
 		// Recurse
-		pullVal(obj[part], pathParts.join("."), val);
+		pullVal(obj[part], pathParts.join("."), val, options);
 	} else if (part) {
 		// We have found the target array, pull the value
 		obj[part] = decouple(obj[part], options) || [];

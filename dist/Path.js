@@ -605,7 +605,7 @@ var pushVal = function pushVal (obj, path, val) {
 		// Generate the path part in the object if it does not already exist
 		obj[part] = decouple(obj[part], options) || {}; // Recurse
 		
-		pushVal(obj[part], pathParts.join("."), val);
+		pushVal(obj[part], pathParts.join("."), val, options);
 	} else if (part) {
 		// We have found the target array, push the value
 		obj[part] = decouple(obj[part], options) || [];
@@ -658,7 +658,7 @@ var pullVal = function pullVal (obj, path, val) {
 		// Generate the path part in the object if it does not already exist
 		obj[part] = decouple(obj[part], options) || {}; // Recurse
 		
-		pullVal(obj[part], pathParts.join("."), val);
+		pullVal(obj[part], pathParts.join("."), val, options);
 	} else if (part) {
 		// We have found the target array, pull the value
 		obj[part] = decouple(obj[part], options) || [];
