@@ -1210,7 +1210,7 @@ const keyDedup = (keys) => {
  * field that holds a different value between the two objects being
  * compared.
  */
-const diff = (obj1, obj2, basePath = "", strict = false, maxDepth = Infinity, parentPath = "") => {
+const diff = (obj1, obj2, basePath = "", strict = false, maxDepth = Infinity, parentPath = "", objCache = []) => {
 	const paths = [];
 	
 	if (basePath instanceof Array) {
@@ -1220,7 +1220,7 @@ const diff = (obj1, obj2, basePath = "", strict = false, maxDepth = Infinity, pa
 			// returns true and then returns the index as a positive integer
 			// that is not -1. If -1 is returned then no non-equal matches
 			// were found
-			const result = diff(obj1, obj2, individualPath, strict, maxDepth, parentPath);
+			const result = diff(obj1, obj2, individualPath, strict, maxDepth, parentPath, objCache);
 			if (result && result.length) {
 				arr.push(...result);
 			}
@@ -1247,13 +1247,21 @@ const diff = (obj1, obj2, basePath = "", strict = false, maxDepth = Infinity, pa
 	const hasParts = pathParts[0] !== "";
 	
 	if ((!hasParts || pathParts.length < maxDepth) && typeof val1 === "object" && val1 !== null) {
+		// Check that we haven't visited this object before (avoid infinite recursion)
+		if (objCache.indexOf(val1) > -1 || objCache.indexOf(val2) > -1) {
+			return paths;
+		}
+		
+		objCache.push(val1);
+		objCache.push(val2);
+		
 		// Grab composite of all keys on val1 and val2
 		const val1Keys = Object.keys(val1);
 		const val2Keys = (typeof val2 === "object" && val2 !== null) ? Object.keys(val2) : [];
 		const compositeKeys = keyDedup(val1Keys.concat(val2Keys));
 		
 		return compositeKeys.reduce((arr, key) => {
-			const result = diff(val1, val2, key, strict, maxDepth, currentPath);
+			const result = diff(val1, val2, key, strict, maxDepth, currentPath, objCache);
 			if (result && result.length) {
 				arr.push(...result);
 			}

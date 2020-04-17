@@ -1033,6 +1033,21 @@ describe("Path", () => {
 	});
 	
 	describe("diff()", () => {
+		it("Will not fail if given circular referenced data", () => {
+			const circle = {};
+			circle.circle = circle;
+			
+			const circle2 = {};
+			circle2.circle = circle;
+			
+			try {
+				const result = diff(circle, circle2);
+				assert.ok(true, "We didn't fail!");
+			} catch (e) {
+				assert.ok(false, "We failed!");
+			}
+		});
+		
 		it("Will handle differences in arrays correctly", () => {
 			const obj1 = [{
 				"arr": [{
