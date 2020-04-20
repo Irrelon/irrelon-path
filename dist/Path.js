@@ -1120,11 +1120,21 @@ var match = function match (source, query) {
 	return !foundNonMatch;
 };
 /**
+ * @typedef {object} FindOptionsObject
+ * @property {number} [maxDepth=Infinity] The maximum depth to scan inside
+ * the source object for matching data.
+ * @property {number} [currentDepth=0] The current depth of the
+ * operation scan.
+ * @property {boolean} [includeRoot=true] If true, will include the
+ * root source object if it matches the query.
+ */
+
+/**
  * Finds all items that matches the structure of `query` and
  * returns the path to them as an array of strings.
  * @param {*} source The source to test.
  * @param {*} query The query to match.
- * @param {object} [options={maxDepth: Infinity}] Options object.
+ * @param {FindOptionsObject} [options] Options object.
  * @param {String=""} parentPath Do not use. The aggregated
  * path to the current structure in source.
  * @returns {Object} Contains match<Boolean> and path<Array>.
@@ -1175,6 +1185,7 @@ var findPath = function findPath (source, query) {
  * and returns the path to it.
  * @param {*} source The source to test.
  * @param {*} query The query to match.
+ * @param {FindOptionsObject} [options] Options object.
  * @param {String=""} parentPath Do not use. The aggregated
  * path to the current structure in source.
  * @returns {Object} Contains match<Boolean> and path<String>.
@@ -1182,111 +1193,41 @@ var findPath = function findPath (source, query) {
 
 
 var findOnePath = function findOnePath (source, query) {
-	var parentPath = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : "";
-	var sourceType = type(source);
-	var queryType = type(query); // Early exits
+	var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {
+		maxDepth: Infinity,
+		currentDepth: 0,
+		includeRoot: true
+	};
+	var parentPath = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : "";
+	var sourceType = (0, _typeof2["default"])(source);
 	
-	if (source === query) {
-		return {
-			match: true,
-			path: parentPath
-		};
+	if (options.currentDepth !== 0 || options.currentDepth === 0 && options.includeRoot) {
+		if (match(source, query)) {
+			return {
+				match: true,
+				path: parentPath
+			};
+		}
 	}
 	
-	if (source === undefined && query !== undefined) {
-		return {
-			match: false
-		};
-	}
+	options.currentDepth++;
 	
-	if (sourceType === "array") {
-		// Loop source and compare each item with query
-		for (var i = 0; i < source.length; i++) {
-			var result = findOnePath(source[i], query, join(parentPath, String(i)));
+	if (options.currentDepth <= options.maxDepth && sourceType === "object") {
+		var entries = Object.entries(source);
+		
+		for (var i = 0; i < entries.length; i++) {
+			var _entries$i = (0, _slicedToArray2["default"])(entries[i], 2),
+				key = _entries$i[0],
+				val = _entries$i[1]; // Recurse down object to find more instances
+			
+			
+			var subPath = join(parentPath, key);
+			var result = findOnePath(val, query, options, subPath);
 			
 			if (result.match) {
 				return result;
 			}
 		}
-		
-		return {
-			match: false
-		};
-	}
-	
-	if (sourceType === "object" && queryType === "object") {
-		var keys = Object.keys(query);
-		var _result = {
-			match: false
-		};
-		
-		for (var _i = 0; _i < keys.length; _i++) {
-			var key = keys[_i];
-			_result = findOnePath(source[key], query[key], join(parentPath, key));
-			
-			if (_result.match) {
-				return {
-					match: true,
-					path: parentPath
-				};
-			}
-		} // If we don't have a match, check if we should drill down
-		
-		
-		if (!_result.match) {
-			var subSearch = _iterableKeys(source); // Drill down into each sub-object to see if we have a match
-			
-			
-			for (var _i2 = 0; _i2 < subSearch.length; _i2++) {
-				var _key3 = subSearch[_i2];
-				var subSearchResult = findOnePath(source[_key3], query, join(parentPath, _key3));
-				
-				if (subSearchResult.match) {
-					return subSearchResult;
-				}
-			}
-		} // All keys in the query matched the source, return our current path
-		
-		
-		return {
-			match: false
-		};
-	}
-	
-	if (sourceType === "object" && (queryType === "string" || queryType === "number" || queryType === "null")) {
-		var _keys = Object.keys(source);
-		
-		var _result2 = {
-			match: false
-		};
-		
-		for (var _i3 = 0; _i3 < _keys.length; _i3++) {
-			var _key4 = _keys[_i3];
-			_result2 = findOnePath(source[_key4], query, join(parentPath, _key4)); // If we find a single non-matching key, return false
-			
-			if (_result2.match) {
-				return _result2;
-			}
-		} // If we don't have a match, check if we should drill down
-		
-		
-		if (!_result2.match) {
-			var _subSearch = _iterableKeys(source); // Drill down into each sub-object to see if we have a match
-			
-			
-			for (var _i4 = 0; _i4 < _subSearch.length; _i4++) {
-				var _key5 = _subSearch[_i4];
-				
-				var _subSearchResult = findOnePath(source[_key5], query, join(parentPath, _key5));
-				
-				if (_subSearchResult.match) {
-					return _subSearchResult;
-				}
-			}
-		} // All keys in the query matched the source, return our current path
-		
-		
-		return _result2;
 	}
 	
 	return {

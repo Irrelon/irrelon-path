@@ -246,7 +246,7 @@ describe("Path", () => {
 		
 		it("Will split escaped strings correctly", () => {
 			const path = "foo.test@test\\.com";
-			debugger;
+			
 			const result = split(path);
 			
 			assert.strictEqual(result.length, 2, "The result length is correct");
