@@ -1065,6 +1065,13 @@ const findPath = (source, query, options = {maxDepth: Infinity, currentDepth: 0,
 	const resultArr = [];
 	const sourceType = typeof source;
 	
+	options = {
+		maxDepth: Infinity,
+		currentDepth: 0,
+		includeRoot: true,
+		...options
+	};
+	
 	if (options.currentDepth !== 0 || (options.currentDepth === 0 && options.includeRoot)) {
 		if (match(source, query)) {
 			resultArr.push(parentPath);
@@ -1101,6 +1108,13 @@ const findPath = (source, query, options = {maxDepth: Infinity, currentDepth: 0,
  */
 const findOnePath = (source, query, options = {maxDepth: Infinity, currentDepth: 0, includeRoot: true}, parentPath = "") => {
 	const sourceType = typeof source;
+	
+	options = {
+		maxDepth: Infinity,
+		currentDepth: 0,
+		includeRoot: true,
+		...options
+	};
 	
 	if (options.currentDepth !== 0 || (options.currentDepth === 0 && options.includeRoot)) {
 		if (match(source, query)) {

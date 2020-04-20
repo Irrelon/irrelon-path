@@ -1150,6 +1150,11 @@ var findPath = function findPath (source, query) {
 	var parentPath = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : "";
 	var resultArr = [];
 	var sourceType = (0, _typeof2["default"])(source);
+	options = _objectSpread({
+		maxDepth: Infinity,
+		currentDepth: 0,
+		includeRoot: true
+	}, options);
 	
 	if (options.currentDepth !== 0 || options.currentDepth === 0 && options.includeRoot) {
 		if (match(source, query)) {
@@ -1200,6 +1205,11 @@ var findOnePath = function findOnePath (source, query) {
 	};
 	var parentPath = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : "";
 	var sourceType = (0, _typeof2["default"])(source);
+	options = _objectSpread({
+		maxDepth: Infinity,
+		currentDepth: 0,
+		includeRoot: true
+	}, options);
 	
 	if (options.currentDepth !== 0 || options.currentDepth === 0 && options.includeRoot) {
 		if (match(source, query)) {
