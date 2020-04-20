@@ -1046,24 +1046,29 @@ const match = (source, query) => {
  * returns the path to them as an array of strings.
  * @param {*} source The source to test.
  * @param {*} query The query to match.
+ * @param {object} [options={maxDepth: Infinity}] Options object.
  * @param {String=""} parentPath Do not use. The aggregated
  * path to the current structure in source.
  * @returns {Object} Contains match<Boolean> and path<Array>.
  */
-const findPath = (source, query, parentPath = "") => {
+const findPath = (source, query, options = {maxDepth: Infinity, currentDepth: 0, includeRoot: true}, parentPath = "") => {
 	const resultArr = [];
 	const sourceType = typeof source;
 	
-	if (match(source, query)) {
-		resultArr.push(parentPath);
+	if (options.currentDepth !== 0 || (options.currentDepth === 0 && options.includeRoot)) {
+		if (match(source, query)) {
+			resultArr.push(parentPath);
+		}
 	}
 	
-	if (sourceType === "object") {
+	options.currentDepth++;
+	
+	if (options.currentDepth <= options.maxDepth && sourceType === "object") {
 		const entries = Object.entries(source);
 		
 		entries.forEach(([key, val]) => {
 			// Recurse down object to find more instances
-			const result = findPath(val, query, join(parentPath, key));
+			const result = findPath(val, query, options, join(parentPath, key));
 			
 			if (result.match) {
 				resultArr.push(...result.path);

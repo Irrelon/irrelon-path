@@ -1124,6 +1124,7 @@ var match = function match (source, query) {
  * returns the path to them as an array of strings.
  * @param {*} source The source to test.
  * @param {*} query The query to match.
+ * @param {object} [options={maxDepth: Infinity}] Options object.
  * @param {String=""} parentPath Do not use. The aggregated
  * path to the current structure in source.
  * @returns {Object} Contains match<Boolean> and path<Array>.
@@ -1131,15 +1132,24 @@ var match = function match (source, query) {
 
 
 var findPath = function findPath (source, query) {
-	var parentPath = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : "";
+	var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {
+		maxDepth: Infinity,
+		currentDepth: 0,
+		includeRoot: true
+	};
+	var parentPath = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : "";
 	var resultArr = [];
 	var sourceType = (0, _typeof2["default"])(source);
 	
-	if (match(source, query)) {
-		resultArr.push(parentPath);
+	if (options.currentDepth !== 0 || options.currentDepth === 0 && options.includeRoot) {
+		if (match(source, query)) {
+			resultArr.push(parentPath);
+		}
 	}
 	
-	if (sourceType === "object") {
+	options.currentDepth++;
+	
+	if (options.currentDepth <= options.maxDepth && sourceType === "object") {
 		var entries = Object.entries(source);
 		entries.forEach(function (_ref5) {
 			var _ref6 = (0, _slicedToArray2["default"])(_ref5, 2),
@@ -1147,7 +1157,7 @@ var findPath = function findPath (source, query) {
 				val = _ref6[1];
 			
 			// Recurse down object to find more instances
-			var result = findPath(val, query, join(parentPath, key));
+			var result = findPath(val, query, options, join(parentPath, key));
 			
 			if (result.match) {
 				resultArr.push.apply(resultArr, (0, _toConsumableArray2["default"])(result.path));
@@ -1318,6 +1328,7 @@ var diff = function diff (obj1, obj2) {
 	var strict = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
 	var maxDepth = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : Infinity;
 	var parentPath = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : "";
+	var objCache = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : [];
 	var paths = [];
 	
 	if (basePath instanceof Array) {
@@ -1327,7 +1338,7 @@ var diff = function diff (obj1, obj2) {
 			// returns true and then returns the index as a positive integer
 			// that is not -1. If -1 is returned then no non-equal matches
 			// were found
-			var result = diff(obj1, obj2, individualPath, strict, maxDepth, parentPath);
+			var result = diff(obj1, obj2, individualPath, strict, maxDepth, parentPath, objCache);
 			
 			if (result && result.length) {
 				arr.push.apply(arr, (0, _toConsumableArray2["default"])(result));
@@ -1355,12 +1366,19 @@ var diff = function diff (obj1, obj2) {
 	var hasParts = pathParts[0] !== "";
 	
 	if ((!hasParts || pathParts.length < maxDepth) && (0, _typeof2["default"])(val1) === "object" && val1 !== null) {
-		// Grab composite of all keys on val1 and val2
+		// Check that we haven't visited this object before (avoid infinite recursion)
+		if (objCache.indexOf(val1) > -1 || objCache.indexOf(val2) > -1) {
+			return paths;
+		}
+		
+		objCache.push(val1);
+		objCache.push(val2); // Grab composite of all keys on val1 and val2
+		
 		var val1Keys = Object.keys(val1);
 		var val2Keys = (0, _typeof2["default"])(val2) === "object" && val2 !== null ? Object.keys(val2) : [];
 		var compositeKeys = keyDedup(val1Keys.concat(val2Keys));
 		return compositeKeys.reduce(function (arr, key) {
-			var result = diff(val1, val2, key, strict, maxDepth, currentPath);
+			var result = diff(val1, val2, key, strict, maxDepth, currentPath, objCache);
 			
 			if (result && result.length) {
 				arr.push.apply(arr, (0, _toConsumableArray2["default"])(result));
