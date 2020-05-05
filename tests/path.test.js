@@ -749,6 +749,24 @@ describe("Path", () => {
 				assert.strictEqual(result.path, "");
 			});
 			
+			it("Will return the correct path for a root true boolean", () => {
+				const result = findOnePath(true, true);
+				
+				assert.strictEqual(result.path, "");
+			});
+			
+			it("Will return the correct path for a root false boolean", () => {
+				const result = findOnePath(false, false);
+				
+				assert.strictEqual(result.path, "");
+			});
+			
+			it("Will return the correct path for an object nested true boolean", () => {
+				const result = findOnePath([{"_id": {"1": true, "2": false}}], true);
+				
+				assert.strictEqual(result.path, "0._id.1");
+			});
+			
 			it("Will return the correct path for an object nested string", () => {
 				const result = findOnePath([{"_id": "Bookshop1"}], "Bookshop1");
 				
