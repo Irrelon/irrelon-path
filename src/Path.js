@@ -822,11 +822,18 @@ const flattenValues = (obj, finalObj = {}, parentPath = "", options = {}, objCac
 			
 			const pathKey = currentPath(i, info);
 			
-			if (info.type === "object" && transformedObj[i] !== null) {
-				flattenValues(transformedObj[i], finalObj, pathKey, options, objCache);
+			if (info.type === "object") {
+				if (transformedObj[i] !== null) {
+					flattenValues(transformedObj[i], finalObj, pathKey, options, objCache);
+				}
+			} else if (options.leavesOnly) {
+				// Found leaf node!
+				finalObj[pathKey] = options.transformWrite(transformedObj[i]);
 			}
 			
-			finalObj[pathKey] = options.transformWrite(transformedObj[i]);
+			if (!options.leavesOnly) {
+				finalObj[pathKey] = options.transformWrite(transformedObj[i]);
+			}
 		}
 	}
 	

@@ -196,6 +196,27 @@ describe("Path", () => {
 			assert.strictEqual(result["obj.$.other.moo"], "foo", "The test value is correct");
 		});
 		
+		it("Will flatten an object structure with custom key transformer", () => {
+			const obj = {
+				"obj": [{
+					"other": {
+						"moo": "foo"
+					}
+				}]
+			};
+			
+			const expected = {
+				"obj.$.other.moo": "foo"
+			};
+			
+			const result = flattenValues(obj, undefined, "", {
+				transformKey: (key, info) => info.isArrayIndex ? "$" : key,
+				leavesOnly: true
+			});
+			
+			assert.deepStrictEqual(result, expected, "The test type is correct");
+		});
+		
 		it("Will handle an infinite recursive structure", () => {
 			const obj = {
 				"obj": [{
