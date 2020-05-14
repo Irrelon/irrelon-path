@@ -137,7 +137,7 @@ describe("Path", () => {
 			const obj = {
 				"obj": [{
 					"other": {
-						moo: "foo"
+						"moo": "foo"
 					}
 				}]
 			};
@@ -162,7 +162,7 @@ describe("Path", () => {
 			const obj = {
 				"obj": [{
 					"other": {
-						moo: "foo"
+						"moo": "foo"
 					}
 				}]
 			};
@@ -174,6 +174,26 @@ describe("Path", () => {
 			assert.strictEqual(typeof result["obj.0.other"], "object", "The test type is correct");
 			assert.strictEqual(typeof result["obj.0.other.moo"], "string", "The test type is correct");
 			assert.strictEqual(result["obj.0.other.moo"], "foo", "The test value is correct");
+		});
+		
+		it("Will flatten an object structure with custom key transformer", () => {
+			const obj = {
+				"obj": [{
+					"other": {
+						"moo": "foo"
+					}
+				}]
+			};
+			
+			const result = flattenValues(obj, undefined, "", {
+				transformKey: (key, info) => info.isArrayIndex ? "$" : key
+			});
+			
+			assert.strictEqual(typeof result, "object", "The test type is correct");
+			assert.strictEqual(result["obj"] instanceof Array, true, "The test type is correct");
+			assert.strictEqual(typeof result["obj.$.other"], "object", "The test type is correct");
+			assert.strictEqual(typeof result["obj.$.other.moo"], "string", "The test type is correct");
+			assert.strictEqual(result["obj.$.other.moo"], "foo", "The test value is correct");
 		});
 		
 		it("Will handle an infinite recursive structure", () => {

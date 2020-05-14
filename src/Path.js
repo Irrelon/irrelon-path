@@ -315,7 +315,7 @@ const get = (obj, path, defaultVal = undefined, options = {}) => {
 		const pathPart = pathParts[i];
 		objPart = objPart[options.transformKey(unEscape(pathPart))];
 		
-		if (!objPart || typeof(objPart) !== "object") {
+		if (!objPart || typeof objPart !== "object") {
 			if (i !== pathParts.length - 1) {
 				// The path terminated in the object before we reached
 				// the end node we wanted so make sure we return undefined
@@ -808,18 +808,25 @@ const flattenValues = (obj, finalObj = {}, parentPath = "", options = {}, objCac
 	// Add object to cache to make sure we don't traverse it twice
 	objCache.push(transformedObj);
 	
-	const currentPath = (i) => {
-		const tKey = options.transformKey(i);
+	const currentPath = (i, info) => {
+		const tKey = options.transformKey(i, info);
 		return parentPath ? parentPath + "." + tKey : tKey;
 	};
 	
 	for (const i in transformedObj) {
 		if (transformedObj.hasOwnProperty(i)) {
-			if (typeof transformedObj[i] === "object" && transformedObj[i] !== null) {
-				flattenValues(transformedObj[i], finalObj, currentPath(i), options, objCache);
+			const info = {
+				type: typeof transformedObj[i],
+				isArrayIndex: Array.isArray(transformedObj)
+			};
+			
+			const pathKey = currentPath(i, info);
+			
+			if (info.type === "object" && transformedObj[i] !== null) {
+				flattenValues(transformedObj[i], finalObj, pathKey, options, objCache);
 			}
 			
-			finalObj[currentPath(i)] = options.transformWrite(transformedObj[i]);
+			finalObj[pathKey] = options.transformWrite(transformedObj[i]);
 		}
 	}
 	

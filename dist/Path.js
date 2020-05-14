@@ -873,18 +873,24 @@ var flattenValues = function flattenValues (obj) {
 	
 	objCache.push(transformedObj);
 	
-	var currentPath = function currentPath (i) {
-		var tKey = options.transformKey(i);
+	var currentPath = function currentPath (i, info) {
+		var tKey = options.transformKey(i, info);
 		return parentPath ? parentPath + "." + tKey : tKey;
 	};
 	
 	for (var i in transformedObj) {
 		if (transformedObj.hasOwnProperty(i)) {
-			if ((0, _typeof2["default"])(transformedObj[i]) === "object" && transformedObj[i] !== null) {
-				flattenValues(transformedObj[i], finalObj, currentPath(i), options, objCache);
+			var info = {
+				type: (0, _typeof2["default"])(transformedObj[i]),
+				isArrayIndex: Array.isArray(transformedObj)
+			};
+			var pathKey = currentPath(i, info);
+			
+			if (info.type === "object" && transformedObj[i] !== null) {
+				flattenValues(transformedObj[i], finalObj, pathKey, options, objCache);
 			}
 			
-			finalObj[currentPath(i)] = options.transformWrite(transformedObj[i]);
+			finalObj[pathKey] = options.transformWrite(transformedObj[i]);
 		}
 	}
 	
