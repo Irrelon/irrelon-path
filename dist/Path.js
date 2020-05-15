@@ -880,13 +880,16 @@ var flattenValues = function flattenValues (obj) {
 	
 	for (var i in transformedObj) {
 		if (transformedObj.hasOwnProperty(i)) {
+			var _type = (0, _typeof2["default"])(transformedObj[i]);
+			
 			var info = {
-				type: (0, _typeof2["default"])(transformedObj[i]),
-				isArrayIndex: Array.isArray(transformedObj)
+				type: _type,
+				isArrayIndex: Array.isArray(transformedObj),
+				isFlat: _type !== "object" || transformedObj[i] instanceof Date || transformedObj[i] instanceof RegExp
 			};
 			var pathKey = currentPath(i, info);
 			
-			if (info.type === "object") {
+			if (!info.isFlat) {
 				if (transformedObj[i] !== null) {
 					flattenValues(transformedObj[i], finalObj, pathKey, options, objCache);
 				}
