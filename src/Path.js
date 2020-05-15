@@ -815,14 +815,16 @@ const flattenValues = (obj, finalObj = {}, parentPath = "", options = {}, objCac
 	
 	for (const i in transformedObj) {
 		if (transformedObj.hasOwnProperty(i)) {
+			const type = typeof transformedObj[i];
 			const info = {
-				type: typeof transformedObj[i],
-				isArrayIndex: Array.isArray(transformedObj)
+				type,
+				isArrayIndex: Array.isArray(transformedObj),
+				isFlat: type !== "object" || transformedObj[i] instanceof Date || transformedObj[i] instanceof RegExp
 			};
 			
 			const pathKey = currentPath(i, info);
 			
-			if (info.type === "object") {
+			if (!info.isFlat) {
 				if (transformedObj[i] !== null) {
 					flattenValues(transformedObj[i], finalObj, pathKey, options, objCache);
 				}
