@@ -717,6 +717,456 @@ describe("Path", () => {
 				
 				assert.deepEqual(result.path, ["items.1"]);
 			});
+			
+			it("Will return the correct path/s for very complex objects", () => {
+				const data = {
+					"_id": "3310a727ba01440",
+					"label": "Project 1",
+					"type": "project",
+					"category": "root",
+					"acceptsCategory": [
+						"object",
+						"boolean"
+					],
+					"isExpanded": true,
+					"isEnabled": true,
+					"isSelected": false,
+					"isHovered": false,
+					"data": {},
+					"items": [
+						{
+							"_id": "pagesFolder",
+							"label": "Pages",
+							"type": "folder",
+							"category": "folder",
+							"acceptsCategory": [
+								"page"
+							],
+							"isExpanded": true,
+							"isEnabled": true,
+							"isSelected": false,
+							"isHovered": false,
+							"isSelectable": false,
+							"data": {},
+							"items": [
+								{
+									"_id": "page1",
+									"label": "Page 1",
+									"type": "page",
+									"category": "component",
+									"acceptsCategory": [
+										"layout"
+									],
+									"isExpanded": true,
+									"isEnabled": true,
+									"isSelected": false,
+									"isHovered": false,
+									"data": {
+										"schema": {
+											"selectedItem": {
+												"type": "Object",
+												"required": false
+											},
+											"hoveredItem": {
+												"type": "Object",
+												"required": false
+											},
+											"currentTool": {
+												"type": "String",
+												"required": false,
+												"default": "select"
+											},
+											"lang": {
+												"type": "String",
+												"required": false,
+												"default": "en"
+											},
+											"user": {
+												"type": "Object",
+												"required": false,
+												"default": {}
+											}
+										},
+										"stateToProps": {
+											"pipeline": [
+												{
+													"sessionState": {
+														"type": "globalState",
+														"fromId": "session",
+														"fromMethod": "get"
+													},
+													"setSessionState": {
+														"type": "globalState",
+														"fromId": "session",
+														"fromMethod": "set"
+													}
+												},
+												{
+													"lang": {
+														"type": "pipelineFunction",
+														"function": {
+															"type": "Program",
+															"ast": true
+														}
+													}
+												}
+											]
+										}
+									},
+									"items": [
+										{
+											"_id": "37df5e624ad4800",
+											"label": "Layer",
+											"isEditing": false,
+											"type": "layer",
+											"category": "layout",
+											"acceptsCategory": [
+												"layout"
+											],
+											"isExpanded": true,
+											"isEnabled": true,
+											"isSelected": false,
+											"isHovered": false,
+											"data": {
+												"display": {
+													"type": "flex"
+												},
+												"position": {
+													"type": "none",
+													"left": 0,
+													"top": 0,
+													"right": 0,
+													"bottom": 0
+												},
+												"flex": {
+													"direction": "row",
+													"flexGrow": 1,
+													"flexShrink": 1,
+													"flexBasis": 0,
+													"flexBasisUnit": "px"
+												},
+												"isPureLayout": false
+											},
+											"items": [
+												{
+													"_id": "292a82d000fdb60",
+													"label": "Layer",
+													"isEditing": false,
+													"type": "layer",
+													"category": "layout",
+													"acceptsCategory": [
+														"layout"
+													],
+													"isExpanded": true,
+													"isEnabled": true,
+													"isSelected": false,
+													"isHovered": true,
+													"data": {
+														"display": {
+															"type": "flex"
+														},
+														"position": {
+															"type": "none",
+															"left": 0,
+															"top": 0,
+															"right": 0,
+															"bottom": 0
+														},
+														"flex": {
+															"direction": "column",
+															"flexGrow": 1,
+															"flexShrink": 1,
+															"flexBasis": 0,
+															"flexBasisUnit": "px"
+														},
+														"isPureLayout": false
+													},
+													"items": []
+												},
+												{
+													"_id": "22f4f59e9045740",
+													"label": "Layer",
+													"isEditing": false,
+													"type": "layer",
+													"category": "layout",
+													"acceptsCategory": [
+														"layout"
+													],
+													"isExpanded": true,
+													"isEnabled": true,
+													"isSelected": false,
+													"isHovered": false,
+													"data": {
+														"display": {
+															"type": "flex"
+														},
+														"position": {
+															"type": "none",
+															"left": 0,
+															"top": 0,
+															"right": 0,
+															"bottom": 0
+														},
+														"flex": {
+															"direction": "column",
+															"flexGrow": 1,
+															"flexShrink": 1,
+															"flexBasis": 0,
+															"flexBasisUnit": "px"
+														},
+														"isPureLayout": false
+													},
+													"items": [
+														{
+															"_id": "375a0c74c911ce0",
+															"label": "Layer",
+															"isEditing": false,
+															"type": "layer",
+															"category": "layout",
+															"acceptsCategory": [
+																"layout"
+															],
+															"isExpanded": true,
+															"isEnabled": true,
+															"isSelected": false,
+															"isHovered": false,
+															"data": {
+																"display": {
+																	"type": "flex"
+																},
+																"position": {
+																	"type": "none",
+																	"left": 0,
+																	"top": 0,
+																	"right": 0,
+																	"bottom": 0
+																},
+																"flex": {
+																	"direction": "row",
+																	"grow": 1,
+																	"shrink": 1,
+																	"basis": 0,
+																	"basisUnit": "px"
+																},
+																"isPureLayout": false
+															},
+															"items": [
+																{
+																	"_id": "396c2e9b36f31a0",
+																	"label": "CrumbBar",
+																	"isEditing": false,
+																	"type": "component",
+																	"component": "CrumbBar",
+																	"category": "component",
+																	"acceptsCategory": [],
+																	"acceptsChildren": false,
+																	"isExpanded": true,
+																	"isEnabled": true,
+																	"isSelected": false,
+																	"isHovered": false,
+																	"data": {
+																		"display": {
+																			"type": "flex"
+																		},
+																		"position": {
+																			"type": "none",
+																			"left": 0,
+																			"top": 0,
+																			"right": 0,
+																			"bottom": 0
+																		},
+																		"flex": {
+																			"direction": "row",
+																			"grow": 1,
+																			"shrink": 1,
+																			"basis": 0,
+																			"basisUnit": "px"
+																		},
+																		"isPureLayout": false,
+																		"props": {}
+																	},
+																	"items": []
+																}
+															]
+														}
+													]
+												}
+											]
+										}
+									]
+								}
+							]
+						},
+						{
+							"_id": "stateFolder",
+							"label": "State",
+							"type": "folder",
+							"category": "folder",
+							"acceptsCategory": [
+								"state"
+							],
+							"isExpanded": true,
+							"isEnabled": true,
+							"isSelected": false,
+							"isHovered": true,
+							"isSelectable": false,
+							"data": {},
+							"items": [
+								{
+									"_id": "user",
+									"label": "User State",
+									"type": "globalState",
+									"category": "state",
+									"acceptsCategory": [],
+									"isExpanded": true,
+									"isEnabled": true,
+									"isSelected": false,
+									"isHovered": true,
+									"data": {
+										"schema": {
+											"firstName": {
+												"type": "String",
+												"required": true
+											},
+											"lastName": {
+												"type": "String",
+												"required": true
+											},
+											"email": {
+												"type": "String",
+												"required": true
+											},
+											"dob": {
+												"type": "Date",
+												"required": false
+											}
+										},
+										"initialState": {}
+									}
+								},
+								{
+									"_id": "ui",
+									"label": "UI State",
+									"type": "globalState",
+									"category": "state",
+									"acceptsCategory": [],
+									"isExpanded": true,
+									"isEnabled": true,
+									"isSelected": false,
+									"isHovered": true,
+									"data": {
+										"schema": {
+											"selectedItemId": {
+												"type": "String",
+												"default": ""
+											},
+											"hoveredItemId": {
+												"type": "String",
+												"default": ""
+											},
+											"currentTool": {
+												"type": "String",
+												"default": "select"
+											}
+										},
+										"initialState": {}
+									}
+								},
+								{
+									"_id": "lang",
+									"label": "Language State",
+									"type": "globalState",
+									"category": "state",
+									"acceptsCategory": [],
+									"isExpanded": true,
+									"isEnabled": true,
+									"isSelected": false,
+									"isHovered": true,
+									"data": {
+										"schema": {
+											"lang": {
+												"type": "String",
+												"default": "en"
+											},
+											"available": {
+												"type": "Array",
+												"elementType": {
+													"_id": {
+														"type": "String",
+														"required": true
+													},
+													"label": {
+														"type": "String",
+														"required": true
+													},
+													"enabled": {
+														"type": "Boolean",
+														"required": true
+													}
+												}
+											}
+										},
+										"initialState": {
+											"lang": "en",
+											"available": [
+												{
+													"_id": "en",
+													"label": "English",
+													"enabled": true
+												}
+											]
+										}
+									}
+								}
+							]
+						},
+						{
+							"_id": "servicesFolder",
+							"label": "Services",
+							"type": "folder",
+							"category": "folder",
+							"acceptsCategory": [
+								"service"
+							],
+							"isExpanded": true,
+							"isEnabled": true,
+							"isSelected": false,
+							"isHovered": true,
+							"isSelectable": false,
+							"data": {},
+							"items": [
+								{
+									"_id": "utils.js",
+									"label": "utils.js",
+									"type": "file",
+									"category": "service",
+									"middleTabId": "codeEditor",
+									"isExpanded": true,
+									"isEnabled": true,
+									"isSelected": false,
+									"isHovered": true,
+									"isSelectable": false,
+									"data": {
+										"content": {}
+									}
+								}
+							]
+						}
+					]
+				};
+				
+				const result = findPath(data, {"isHovered": true});
+				
+				assert.deepEqual(result.path, [
+					"items.0.items.0.items.0.items.0",
+					"items.1",
+					"items.1.items.0",
+					"items.1.items.1",
+					"items.1.items.2",
+					"items.2",
+					"items.2.items.0"
+				]);
+			});
 		});
 		
 		describe("Negative tests", () => {

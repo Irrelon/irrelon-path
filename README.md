@@ -119,6 +119,25 @@ console.log(result1); // Logs: null
 console.log(result2); // Logs: My Default Value
 ```
 
+If you want to access elements of an array, simply use the element index
+as part of your path e.g.
+
+```js
+const {get} = require("@irrelon/path");
+
+const obj = {
+    "myArr": [
+        "hello",
+        {
+            "bar": "goodbye"
+        }
+    ]
+};
+
+const result1 = get(obj, "myArr.0"); // hello
+const result2 = get(obj, "myArr.1.bar"); // goodbye
+``` 
+
 ### set (`obj`, `path`, `value`)
 
 |Param|Type|Required|Default|
