@@ -346,23 +346,47 @@ var get = function get(obj, path) {
 
   var pathParts = split(internalPath);
   objPart = obj;
-
-  for (var i = 0; i < pathParts.length; i++) {
-    var pathPart = pathParts[i];
-    objPart = objPart[options.transformKey(unEscape(pathPart))];
-
-    if (!objPart || (0, _typeof2["default"])(objPart) !== "object") {
-      if (i !== pathParts.length - 1) {
-        // The path terminated in the object before we reached
-        // the end node we wanted so make sure we return undefined
-        objPart = undefined;
-      }
-
-      break;
-    }
-  }
-
-  return objPart !== undefined ? objPart : defaultVal;
+	
+	var _loop2 = function _loop2 (i) {
+		var pathPart = pathParts[i];
+		objPart = objPart[options.transformKey(unEscape(pathPart))];
+		
+		if (objPart instanceof Array && options.arrayTraversal === true) {
+			// The data is an array and we have arrayTraversal enabled
+			// so loop the array items and return the first non-undefined
+			// value from any array item leaf node that matches the path
+			var result = objPart.reduce(function (result, arrItem) {
+				return get(arrItem, pathParts.slice(i + 1).join("."), defaultVal, options);
+			}, undefined);
+			return {
+				v: result !== undefined ? result : defaultVal
+			};
+		} else if (!objPart || (0, _typeof2["default"])(objPart) !== "object") {
+			if (i !== pathParts.length - 1) {
+				// The path terminated in the object before we reached
+				// the end node we wanted so make sure we return undefined
+				objPart = undefined;
+			}
+			
+			return "break";
+		}
+	};
+	
+	_loop: for (var i = 0; i < pathParts.length; i++) {
+		var _ret = _loop2(i);
+		
+		switch (_ret) {
+			case "break":
+				break _loop;
+			
+			default:
+				if ((0, _typeof2["default"])(_ret) === "object") {
+					return _ret.v;
+				}
+		}
+	}
+	
+	return objPart !== undefined ? objPart : defaultVal;
 };
 /**
  * Sets a single value on the passed object and given path. This

@@ -378,6 +378,57 @@ describe("Path", () => {
 			
 			assert.strictEqual(result, "bar", "The value is correct");
 		});
+		
+		it("Supports auto-traversing arrays when arrayTraversal is true", () => {
+			const obj = {
+				"arr": [{
+					"thing": "thought"
+				}, {
+					"otherThing": "otherThought"
+				}, {
+					"value": "bar"
+				}]
+			};
+			
+			const path = "arr.value";
+			const result = get(obj, path, undefined, {arrayTraversal: true});
+			
+			assert.strictEqual(result, "bar", "The value is correct");
+		});
+		
+		it("Correctly returns default value when arrayTraversal is true and leaf nodes produce no result", () => {
+			const obj = {
+				"arr": [{
+					"someValue": "bar"
+				}, {
+					"someValue": "ram"
+				}, {
+					"someValue": "you"
+				}]
+			};
+			
+			const path = "arr.value";
+			const result = get(obj, path, "myDefaultVal", {arrayTraversal: true});
+			
+			assert.strictEqual(result, "myDefaultVal", "The value is correct");
+		});
+		
+		it("Correctly returns undefined when arrayTraversal is true and leaf nodes produce no result and no default value is provided", () => {
+			const obj = {
+				"arr": [{
+					"someValue": "bar"
+				}, {
+					"someValue": "ram"
+				}, {
+					"someValue": "you"
+				}]
+			};
+			
+			const path = "arr.value";
+			const result = get(obj, path, undefined, {arrayTraversal: true});
+			
+			assert.strictEqual(result, undefined, "The value is correct");
+		});
 	});
 	
 	describe("set()", () => {

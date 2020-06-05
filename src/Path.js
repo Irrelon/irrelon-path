@@ -315,7 +315,16 @@ const get = (obj, path, defaultVal = undefined, options = {}) => {
 		const pathPart = pathParts[i];
 		objPart = objPart[options.transformKey(unEscape(pathPart))];
 		
-		if (!objPart || typeof objPart !== "object") {
+		if (objPart instanceof Array && options.arrayTraversal === true) {
+			// The data is an array and we have arrayTraversal enabled
+			// so loop the array items and return the first non-undefined
+			// value from any array item leaf node that matches the path
+			const result = objPart.reduce((result, arrItem) => {
+				return get(arrItem, pathParts.slice(i + 1).join("."), defaultVal, options);
+			}, undefined);
+			
+			return result !== undefined ? result : defaultVal;
+		} else if (!objPart || typeof objPart !== "object") {
 			if (i !== pathParts.length - 1) {
 				// The path terminated in the object before we reached
 				// the end node we wanted so make sure we return undefined
