@@ -442,7 +442,7 @@ const unSet = (obj, path, options = {}, tracking = {}) => {
 	
 	// Path has no dot-notation, set key/value
 	if (isNonCompositePath(internalPath)) {
-		if (newObj.hasOwnProperty(internalPath)) {
+		if (newObj.hasOwnProperty(unEscape(internalPath))) {
 			delete newObj[options.transformKey(unEscape(internalPath))];
 			return newObj;
 		}
@@ -454,7 +454,7 @@ const unSet = (obj, path, options = {}, tracking = {}) => {
 	
 	const pathParts = split(internalPath);
 	const pathPart = pathParts.shift();
-	const transformedPathPart = options.transformKey(pathPart);
+	const transformedPathPart = options.transformKey(unEscape(pathPart));
 	let childPart = newObj[transformedPathPart];
 	
 	if (!childPart) {

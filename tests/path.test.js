@@ -1,31 +1,45 @@
 const {describe, it, assert} = require("mocha-expect");
 const {
-	countLeafNodes,
-	diff,
-	down,
-	findOnePath,
-	findPath,
+	wildcardToZero,
+	numberToWildcard,
+	clean,
+	decouple,
+	split,
+	escape,
+	get,
+	set,
+	setImmutable,
+	unSet,
+	unSetImmutable,
+	pushValImmutable,
+	pushVal,
+	pullValImmutable,
+	pullVal,
+	furthest,
+	values,
 	flatten,
 	flattenValues,
-	furthest,
-	get,
-	isNotEqual,
 	join,
 	joinEscaped,
-	leafNodes,
-	match,
-	pop,
-	pullVal,
-	pushVal,
-	set,
-	shift,
-	type,
-	unSet,
 	up,
+	down,
+	push,
+	pop,
+	shift,
+	countLeafNodes,
+	hasMatchingPathsInObject,
+	countMatchingPathsInObject,
+	findOnePath,
+	findPath,
+	type,
+	match,
+	isEqual,
+	isNotEqual,
+	leafNodes,
+	diff,
 	update,
 	updateImmutable,
-	values,
-	split
+	distill
 } = require("../src/Path");
 
 describe("Path", () => {
@@ -590,6 +604,64 @@ describe("Path", () => {
 				
 				assert.strictEqual(obj.foo.bar.hasOwnProperty("2"), false, "Object does not have key");
 				assert.strictEqual(newObj, obj, "Root object is the same because nothing changed");
+			});
+		});
+
+		describe("Escape at root", () => {
+			it("Will remove the required key from an object", () => {
+				const obj = {
+					"foo@foo.com": {
+						"bar": [{
+							"moo": true,
+							"baa": "ram you"
+						}]
+					}
+				};
+
+				assert.strictEqual(obj["foo@foo.com"].bar[0].baa, "ram you", "Object has value");
+
+				const newObj = unSet(obj, `${escape("foo@foo.com")}.bar.0.baa`);
+
+				assert.strictEqual(obj["foo@foo.com"].bar[0].baa, undefined, "Object does not have value");
+				assert.strictEqual(obj["foo@foo.com"].bar[0].hasOwnProperty("baa"), false, "Object does not have key");
+				assert.strictEqual(newObj, obj, "Root object is the same");
+			});
+
+			it("Will correctly handle a path to nowhere", () => {
+				const obj = {
+					"foo@foo.com": {
+						"bar": [{
+							"moo": true,
+							"baa": "ram you"
+						}]
+					}
+				};
+
+				const newObj = unSet(obj, `${escape("foo@foo.com")}.bar.2.baa`);
+
+				assert.strictEqual(obj["foo@foo.com"].bar.hasOwnProperty("2"), false, "Object does not have key");
+				assert.strictEqual(newObj, obj, "Root object is the same");
+			});
+		});
+
+		describe("Escape in child", () => {
+			it("Will remove the required key from an object", () => {
+				const obj = {
+					"foo": {
+						"bar": [{
+							"moo": true,
+							"baa@foo.com": "ram you"
+						}]
+					}
+				};
+
+				assert.strictEqual(obj.foo.bar[0]["baa@foo.com"], "ram you", "Object has value");
+
+				const newObj = unSet(obj, `foo.bar.0.${escape("baa@foo.com")}`);
+
+				assert.strictEqual(obj.foo.bar[0]["baa@foo.com"], undefined, "Object does not have value");
+				assert.strictEqual(obj.foo.bar[0].hasOwnProperty("baa@foo.com"), false, "Object does not have key");
+				assert.strictEqual(newObj, obj, "Root object is the same");
 			});
 		});
 	});
