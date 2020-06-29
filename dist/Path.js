@@ -69,6 +69,14 @@ var _newInstance = function _newInstance(item) {
 
   return newObj;
 };
+/**
+ * Determines if the given path points to a root leaf node (has no delimiter)
+ * or contains a dot delimiter so will drill down before reaching a leaf node.
+ * If it has a delimiter, it is called a "composite" path.
+ * @param {String} path The path to evaluate.
+ * @returns {boolean} True if delimiter found, false if not.
+ */
+
 
 var isCompositePath = function isCompositePath(path) {
   var regExp = /\./g;
@@ -85,6 +93,13 @@ var isCompositePath = function isCompositePath(path) {
 
   return false;
 };
+/**
+ * Provides the opposite of `isCompositePath()`. If a delimiter is found, this
+ * function returns false.
+ * @param {String} path The path to evaluate.
+ * @returns {boolean} False if delimiter found, true if not.
+ */
+
 
 var isNonCompositePath = function isNonCompositePath(path) {
   return !isCompositePath(path);
@@ -247,7 +262,7 @@ var clean = function clean(str) {
  * Splits a path by period character, taking into account
  * escaped period characters.
  * @param {String} path The path to split into an array.
- * @return {Array} The component parts of the path, split
+ * @return {Array<String>} The component parts of the path, split
  * by period character.
  */
 
@@ -286,6 +301,13 @@ var split = function split(path) {
 var escape = function escape(str) {
   return str.replace(/\./g, "\\.");
 };
+/**
+ * Converts a string previously escaped with the `escape()`
+ * function back to its original value.
+ * @param {String} str The string to unescape.
+ * @returns {string} The unescaped string.
+ */
+
 
 var unEscape = function unEscape(str) {
   return str.replace(/\\./g, ".");
@@ -346,47 +368,45 @@ var get = function get(obj, path) {
 
   var pathParts = split(internalPath);
   objPart = obj;
-	
-	var _loop2 = function _loop2 (i) {
-		var pathPart = pathParts[i];
-		objPart = objPart[options.transformKey(unEscape(pathPart))];
-		
-		if (objPart instanceof Array && options.arrayTraversal === true) {
-			// The data is an array and we have arrayTraversal enabled
-			// so loop the array items and return the first non-undefined
-			// value from any array item leaf node that matches the path
-			var result = objPart.reduce(function (result, arrItem) {
-				return get(arrItem, pathParts.slice(i + 1).join("."), defaultVal, options);
-			}, undefined);
-			return {
-				v: result !== undefined ? result : defaultVal
-			};
-		} else if (!objPart || (0, _typeof2["default"])(objPart) !== "object") {
-			if (i !== pathParts.length - 1) {
-				// The path terminated in the object before we reached
-				// the end node we wanted so make sure we return undefined
-				objPart = undefined;
-			}
-			
-			return "break";
-		}
-	};
-	
-	_loop: for (var i = 0; i < pathParts.length; i++) {
-		var _ret = _loop2(i);
-		
-		switch (_ret) {
-			case "break":
-				break _loop;
-			
-			default:
-				if ((0, _typeof2["default"])(_ret) === "object") {
-					return _ret.v;
-				}
-		}
-	}
-	
-	return objPart !== undefined ? objPart : defaultVal;
+
+  var _loop2 = function _loop2(i) {
+    var pathPart = pathParts[i];
+    objPart = objPart[options.transformKey(unEscape(pathPart))];
+
+    if (objPart instanceof Array && options.arrayTraversal === true) {
+      // The data is an array and we have arrayTraversal enabled
+      // so loop the array items and return the first non-undefined
+      // value from any array item leaf node that matches the path
+      var result = objPart.reduce(function (result, arrItem) {
+        return get(arrItem, pathParts.slice(i + 1).join("."), defaultVal, options);
+      }, undefined);
+      return {
+        v: result !== undefined ? result : defaultVal
+      };
+    } else if (!objPart || (0, _typeof2["default"])(objPart) !== "object") {
+      if (i !== pathParts.length - 1) {
+        // The path terminated in the object before we reached
+        // the end node we wanted so make sure we return undefined
+        objPart = undefined;
+      }
+
+      return "break";
+    }
+  };
+
+  _loop: for (var i = 0; i < pathParts.length; i++) {
+    var _ret = _loop2(i);
+
+    switch (_ret) {
+      case "break":
+        break _loop;
+
+      default:
+        if ((0, _typeof2["default"])(_ret) === "object") return _ret.v;
+    }
+  }
+
+  return objPart !== undefined ? objPart : defaultVal;
 };
 /**
  * Sets a single value on the passed object and given path. This
@@ -976,6 +996,18 @@ var countLeafNodes = function countLeafNodes(obj) {
 
   return totalKeys;
 };
+/**
+ * Finds all the leaf nodes for a given object and returns an array of paths
+ * to them. This is different from `flatten()` in that it only includes leaf
+ * nodes and will not include every intermediary path traversed to get to a
+ * leaf node.
+ * @param {Object|Array} obj The object to traverse.
+ * @param {String} [parentPath=""] The path to use as a root/base path to
+ * start scanning for leaf nodes under.
+ * @param {Object} [objCache=[]] Internal usage to check for cyclic structures.
+ * @returns {[]}
+ */
+
 
 var leafNodes = function leafNodes(obj) {
   var parentPath = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : "";
@@ -1258,6 +1290,12 @@ var findOnePath = function findOnePath(source, query) {
     match: false
   };
 };
+/**
+ * Returns a deduplicated array of strings.
+ * @param {Array<String>} keys An array of strings to deduplicate.
+ * @returns {Array<String>} The deduplicated array.
+ */
+
 
 var keyDedup = function keyDedup(keys) {
   return keys.filter(function (elem, pos, arr) {
@@ -1280,7 +1318,9 @@ var keyDedup = function keyDedup(keys) {
  * path sub-trees to walk down before returning what we have found.
  * For instance, if set to 2, a diff would only check down,
  * "someFieldName.anotherField", or "user.name" and would not go
- * further down than two fields.
+ * further down than two fields. If anything in the trees further
+ * down than this level have changed, the change will not be detected
+ * and the path will not be included in the resulting diff array.
  * @param {String=""} parentPath Used internally only.
  * @returns {Array} An array of strings, each string is a path to a
  * field that holds a different value between the two objects being
@@ -1526,6 +1566,27 @@ var distill = function distill(obj, pathArr) {
     return newObj;
   }, {});
 };
+/**
+ * Chops a `path` string down to the given `level`. Given a `path` string
+ * like "foo.bar.ram.you.too", chop will remove any path parts below
+ * the given `level`. If we pass 2 as the `level` with that given `path`,
+ * the result will be "foo.bar" as foo is level 1 and bar is level 2.
+ * If the `path` is shorter than the given `level`, it is returned intact.
+ * @param {String} path The path to operate on.
+ * @param {Number} level The maximum level of a path.
+ * @returns {String} The new path string.
+ */
+
+
+var chop = function chop(path, level) {
+  var parts = split(path);
+
+  if (parts.length > level) {
+    parts.length = level;
+  }
+
+  return join.apply(void 0, (0, _toConsumableArray2["default"])(parts));
+};
 
 module.exports = {
   wildcardToZero: wildcardToZero,
@@ -1567,5 +1628,6 @@ module.exports = {
   diff: diff,
   update: update,
   updateImmutable: updateImmutable,
-  distill: distill
+  distill: distill,
+  chop: chop
 };
