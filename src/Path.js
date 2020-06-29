@@ -51,6 +51,13 @@ const _newInstance = (item, key = undefined, val = undefined) => {
 	return newObj;
 };
 
+/**
+ * Determines if the given path points to a root leaf node (has no delimiter)
+ * or contains a dot delimiter so will drill down before reaching a leaf node.
+ * If it has a delimiter, it is called a "composite" path.
+ * @param {String} path The path to evaluate.
+ * @returns {boolean} True if delimiter found, false if not.
+ */
 const isCompositePath = (path) => {
 	const regExp = /\./g;
 	let result;
@@ -67,6 +74,12 @@ const isCompositePath = (path) => {
 	return false;
 };
 
+/**
+ * Provides the opposite of `isCompositePath()`. If a delimiter is found, this
+ * function returns false.
+ * @param {String} path The path to evaluate.
+ * @returns {boolean} False if delimiter found, true if not.
+ */
 const isNonCompositePath = (path) => {
 	return !isCompositePath(path);
 };
@@ -251,6 +264,12 @@ const escape = (str) => {
 	return str.replace(/\./g, "\\.");
 };
 
+/**
+ * Converts a string previously escaped with the `escape()`
+ * function back to its original value.
+ * @param {String} str The string to unescape.
+ * @returns {string} The unescaped string.
+ */
 const unEscape = (str) => {
 	return str.replace(/\\./g, ".");
 };
@@ -913,6 +932,17 @@ const countLeafNodes = (obj, objCache = []) => {
 	return totalKeys;
 };
 
+/**
+ * Finds all the leaf nodes for a given object and returns an array of paths
+ * to them. This is different from `flatten()` in that it only includes leaf
+ * nodes and will not include every intermediary path traversed to get to a
+ * leaf node.
+ * @param {Object|Array} obj The object to traverse.
+ * @param {String} [parentPath=""] The path to use as a root/base path to
+ * start scanning for leaf nodes under.
+ * @param {Object} [objCache=[]] Internal usage to check for cyclic structures.
+ * @returns {[]}
+ */
 const leafNodes = (obj, parentPath = "", objCache = []) => {
 	const paths = [];
 	
@@ -1171,6 +1201,11 @@ const findOnePath = (source, query, options = {maxDepth: Infinity, currentDepth:
 	return {match: false};
 };
 
+/**
+ * Returns a deduplicated array of strings.
+ * @param {Array<String>} keys An array of strings to deduplicate.
+ * @returns {Array<String>} The deduplicated array.
+ */
 const keyDedup = (keys) => {
 	return keys.filter((elem, pos, arr) => {
 		return arr.indexOf(elem) === pos;
