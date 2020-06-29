@@ -226,7 +226,7 @@ const clean = (str) => {
  * Splits a path by period character, taking into account
  * escaped period characters.
  * @param {String} path The path to split into an array.
- * @return {Array} The component parts of the path, split
+ * @return {Array<String>} The component parts of the path, split
  * by period character.
  */
 const split = (path) => {
@@ -1443,6 +1443,26 @@ const distill = (obj, pathArr) => {
 	}, {});
 };
 
+/**
+ * Chops a `path` string down to the given `level`. Given a `path` string
+ * like "foo.bar.ram.you.too", chop will remove any path parts below
+ * the given `level`. If we pass 2 as the `level` with that given `path`,
+ * the result will be "foo.bar" as foo is level 1 and bar is level 2.
+ * If the `path` is shorter than the given `level`, it is returned intact.
+ * @param {String} path The path to operate on.
+ * @param {Number} level The maximum level of a path.
+ * @returns {String} The new path string.
+ */
+const chop = (path, level) => {
+	const parts = split(path);
+
+	if (parts.length > level) {
+		parts.length = level;
+	}
+
+	return join(...parts);
+};
+
 module.exports = {
 	wildcardToZero,
 	numberToWildcard,
@@ -1483,5 +1503,6 @@ module.exports = {
 	diff,
 	update,
 	updateImmutable,
-	distill
+	distill,
+	chop
 };
