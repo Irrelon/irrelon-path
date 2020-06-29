@@ -1228,7 +1228,9 @@ const keyDedup = (keys) => {
  * path sub-trees to walk down before returning what we have found.
  * For instance, if set to 2, a diff would only check down,
  * "someFieldName.anotherField", or "user.name" and would not go
- * further down than two fields.
+ * further down than two fields. If anything in the trees further
+ * down than this level have changed, the change will not be detected
+ * and the path will not be included in the resulting diff array.
  * @param {String=""} parentPath Used internally only.
  * @returns {Array} An array of strings, each string is a path to a
  * field that holds a different value between the two objects being
