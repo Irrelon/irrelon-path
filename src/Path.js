@@ -1076,7 +1076,7 @@ const match = (source, query) => {
 		return false;
 	}
 	
-	if (sourceType !== "object") {
+	if (sourceType !== "object" || source === null) {
 		// Simple test
 		return source === query;
 	}

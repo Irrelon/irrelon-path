@@ -1144,7 +1144,7 @@ var match = function match(source, query) {
     return false;
   }
 
-  if (sourceType !== "object") {
+  if (sourceType !== "object" || source === null) {
     // Simple test
     return source === query;
   } // The source is an object-like (array or object) structure
