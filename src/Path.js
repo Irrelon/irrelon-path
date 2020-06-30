@@ -1182,7 +1182,7 @@ const findOnePath = (source, query, options = {maxDepth: Infinity, currentDepth:
 	
 	options.currentDepth++;
 	
-	if (options.currentDepth <= options.maxDepth && sourceType === "object") {
+	if (options.currentDepth <= options.maxDepth && sourceType === "object" && source !== null) {
 		const entries = Object.entries(source);
 		
 		for (let i = 0; i < entries.length; i++) {

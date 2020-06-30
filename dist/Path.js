@@ -1268,7 +1268,7 @@ var findOnePath = function findOnePath(source, query) {
 
   options.currentDepth++;
 
-  if (options.currentDepth <= options.maxDepth && sourceType === "object") {
+  if (options.currentDepth <= options.maxDepth && sourceType === "object" && source !== null) {
     var entries = Object.entries(source);
 
     for (var i = 0; i < entries.length; i++) {
