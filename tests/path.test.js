@@ -125,6 +125,21 @@ describe("Path", () => {
 			
 			assert.strictEqual(result, 2, "The test value is correct");
 		});
+
+		it("Will count null value leaf nodes of an object", () => {
+			const obj = {
+				"obj": [{
+					"other": {
+						"moo": "foo",
+						"bar": null
+					}
+				}]
+			};
+
+			const result = countLeafNodes(obj);
+
+			assert.strictEqual(result, 2, "The test value is correct");
+		});
 	});
 	
 	describe("flatten()", () => {
