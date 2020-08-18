@@ -711,7 +711,7 @@ const furthest = (obj, path, options = {}) => {
 		throw new Error("Path argument must be a string");
 	}
 	
-	if (typeof obj !== "object") {
+	if (typeof obj !== "object" || obj === null) {
 		return finalPath.join(".");
 	}
 	
@@ -1128,7 +1128,7 @@ const match = (source, query) => {
  */
 
 /**
- * Finds all items that matches the structure of `query` and
+ * Finds all items in `source` that match the structure of `query` and
  * returns the path to them as an array of strings.
  * @param {*} source The source to test.
  * @param {*} query The query to match.
