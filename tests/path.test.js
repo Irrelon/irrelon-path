@@ -501,6 +501,17 @@ describe("Path", () => {
 			assert.strictEqual(newObj.foo["jim@jones.com"], false, "The value was set correctly");
 		});
 
+		it("Handles trying to set a value on a null correctly", () => {
+			const obj = {
+				"foo": null
+			};
+
+			set(obj, "foo.bar", true);
+
+			assert.strictEqual(typeof obj.foo, "object", "The value is correct");
+			assert.strictEqual(obj.foo.bar, true, "The value is correct");
+		});
+
 		it("Is not vulnerable to __proto__ pollution", () => {
 			const obj = {};
 			set(obj, '__proto__.polluted', true);

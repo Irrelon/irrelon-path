@@ -400,11 +400,13 @@ const set = (obj, path, val, options = {}) => {
 	
 	// Path has no dot-notation, set key/value
 	if (isNonCompositePath(internalPath)) {
+		const unescapedPath = unEscape(internalPath);
+
 		// Do not allow prototype pollution
-		if (internalPath === "__proto__") return obj;
+		if (unescapedPath === "__proto__") return obj;
 
 		obj = decouple(obj, options);
-		obj[options.transformKey(unEscape(internalPath))] = val;
+		obj[options.transformKey(unescapedPath)] = val;
 		return obj;
 	}
 	
@@ -418,7 +420,7 @@ const set = (obj, path, val, options = {}) => {
 
 	let childPart = newObj[transformedPathPart];
 	
-	if (typeof childPart !== "object") {
+	if (typeof childPart !== "object" || childPart === null) {
 		// Create an object or array on the path
 		if (String(parseInt(transformedPathPart, 10)) === transformedPathPart) {
 			// This is an array index
@@ -939,7 +941,7 @@ const countLeafNodes = (obj, objCache = []) => {
 	for (const i in obj) {
 		if (obj.hasOwnProperty(i)) {
 			if (obj[i] !== undefined) {
-				if (typeof obj[i] !== "object" || objCache.indexOf(obj[i]) > -1) {
+				if (obj[i] === null || typeof obj[i] !== "object" || objCache.indexOf(obj[i]) > -1) {
 					totalKeys++;
 				} else {
 					totalKeys += countLeafNodes(obj[i], objCache);
@@ -973,7 +975,7 @@ const leafNodes = (obj, parentPath = "", objCache = []) => {
 			if (obj[i] !== undefined) {
 				const currentPath = join(parentPath, i);
 				
-				if (typeof obj[i] !== "object" || objCache.indexOf(obj[i]) > -1) {
+				if (obj[i] === null || typeof obj[i] !== "object" || objCache.indexOf(obj[i]) > -1) {
 					paths.push(currentPath);
 				} else {
 					paths.push(...leafNodes(obj[i], currentPath, objCache));
