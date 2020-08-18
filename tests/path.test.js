@@ -500,6 +500,12 @@ describe("Path", () => {
 			
 			assert.strictEqual(newObj.foo["jim@jones.com"], false, "The value was set correctly");
 		});
+
+		it("Is not vulnerable to __proto__ pollution", () => {
+			const obj = {};
+			set(obj, '__proto__.polluted', true);
+			assert.strictEqual(obj.polluted, undefined, "The object prototype cannot be polluted");
+		});
 	});
 	
 	describe("setImmutable()", () => {
@@ -562,6 +568,12 @@ describe("Path", () => {
 			assert.notStrictEqual(newObj, obj, "Root object is not the same");
 			assert.strictEqual(fooType, newFooType, "Array type has not changed");
 		});
+
+		it("Is not vulnerable to __proto__ pollution", () => {
+			const obj = {};
+			setImmutable(obj, '__proto__.polluted', true);
+			assert.strictEqual(obj.polluted, undefined, "The object prototype cannot be polluted");
+		});
 	});
 	
 	describe("unSet()", () => {
@@ -599,6 +611,13 @@ describe("Path", () => {
 				
 				assert.strictEqual(obj.foo.bar.hasOwnProperty("2"), false, "Object does not have key");
 				assert.strictEqual(newObj, obj, "Root object is the same");
+			});
+
+			it("Is not vulnerable to __proto__ pollution", () => {
+				const obj = {};
+				obj.__proto__.unsetPolluted = false;
+				unSet(obj, '__proto__.unsetPolluted');
+				assert.strictEqual(obj.unsetPolluted, false, "The object prototype cannot be polluted");
 			});
 		});
 		
@@ -655,6 +674,13 @@ describe("Path", () => {
 				
 				assert.strictEqual(obj.foo.bar.hasOwnProperty("2"), false, "Object does not have key");
 				assert.strictEqual(newObj, obj, "Root object is the same because nothing changed");
+			});
+
+			it("Is not vulnerable to __proto__ pollution", () => {
+				const obj = {};
+				obj.__proto__.unsetPolluted = false;
+				unSetImmutable(obj, '__proto__.unsetPolluted');
+				assert.strictEqual(obj.unsetPolluted, false, "The object prototype cannot be polluted");
 			});
 		});
 
@@ -1985,6 +2011,13 @@ describe("Path", () => {
 			assert.strictEqual(obj.length, 1, "The array is no longer empty");
 			assert.strictEqual(obj[0], "New val", "The value is correct");
 		});
+
+		it("Is not vulnerable to __proto__ pollution", () => {
+			const obj = {};
+			obj.__proto__.pushValPolluted = [];
+			pushVal(obj, '__proto__.pushValPolluted', "newValue");
+			assert.strictEqual(obj.pushValPolluted.length, 0, "The object prototype cannot be polluted");
+		});
 	});
 	
 	describe("pullVal()", () => {
@@ -2081,6 +2114,13 @@ describe("Path", () => {
 			assert.strictEqual(obj.foo.length, 1, "The array is empty");
 			assert.strictEqual(obj.foo[0]._id, "1", "The value is correct");
 			assert.strictEqual(obj.foo[1], undefined, "The value is correct");
+		});
+
+		it("Is not vulnerable to __proto__ pollution", () => {
+			const obj = {};
+			obj.__proto__.pushValPolluted = ["myExistingValue"];
+			pullVal(obj, '__proto__.pushValPolluted', "myExistingValue");
+			assert.strictEqual(obj.pushValPolluted.length, 1, "The object prototype cannot be polluted");
 		});
 	});
 	
@@ -2188,6 +2228,12 @@ describe("Path", () => {
 			assert.strictEqual(resultObj.bar.one.two, "Three", "Value is correct for multi noted path");
 			assert.strictEqual(obj, resultObj, "The changes were made by reference");
 		});
+
+		it("Is not vulnerable to __proto__ pollution", () => {
+			const obj = {};
+			update(obj, {__proto__: {polluted: true}});
+			assert.strictEqual(obj.polluted, undefined, "The object prototype cannot be polluted");
+		});
 	});
 	
 	describe("updateImmutable()", () => {
@@ -2201,6 +2247,12 @@ describe("Path", () => {
 			assert.strictEqual(resultObj.foo, "fooVal", "Value is correct for single noted path");
 			assert.strictEqual(resultObj.bar.one.two, "Three", "Value is correct for multi noted path");
 			assert.notStrictEqual(obj, resultObj, "The changes were made by value");
+		});
+
+		it("Is not vulnerable to __proto__ pollution", () => {
+			const obj = {};
+			updateImmutable(obj, {__proto__: {polluted: true}});
+			assert.strictEqual(obj.polluted, undefined, "The object prototype cannot be polluted");
 		});
 	});
 });
