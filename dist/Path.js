@@ -451,6 +451,8 @@ var set = function set(obj, path, val) {
 
 
   if (isNonCompositePath(internalPath)) {
+    // Do not allow prototype pollution
+    if (internalPath === "__proto__") return obj;
     obj = decouple(obj, options);
     obj[options.transformKey(unEscape(internalPath))] = val;
     return obj;
@@ -459,7 +461,9 @@ var set = function set(obj, path, val) {
   var newObj = decouple(obj, options);
   var pathParts = split(internalPath);
   var pathPart = pathParts.shift();
-  var transformedPathPart = options.transformKey(pathPart);
+  var transformedPathPart = options.transformKey(pathPart); // Do not allow prototype pollution
+
+  if (transformedPathPart === "__proto__") return obj;
   var childPart = newObj[transformedPathPart];
 
   if ((0, _typeof2["default"])(childPart) !== "object") {
@@ -519,8 +523,12 @@ var unSet = function unSet(obj, path) {
   var newObj = decouple(obj, options); // Path has no dot-notation, set key/value
 
   if (isNonCompositePath(internalPath)) {
-    if (newObj.hasOwnProperty(unEscape(internalPath))) {
-      delete newObj[options.transformKey(unEscape(internalPath))];
+    var unescapedPath = unEscape(internalPath); // Do not allow prototype pollution
+
+    if (unescapedPath === "__proto__") return obj;
+
+    if (newObj.hasOwnProperty(unescapedPath)) {
+      delete newObj[options.transformKey(unescapedPath)];
       return newObj;
     }
 
@@ -530,7 +538,9 @@ var unSet = function unSet(obj, path) {
 
   var pathParts = split(internalPath);
   var pathPart = pathParts.shift();
-  var transformedPathPart = options.transformKey(unEscape(pathPart));
+  var transformedPathPart = options.transformKey(unEscape(pathPart)); // Do not allow prototype pollution
+
+  if (transformedPathPart === "__proto__") return obj;
   var childPart = newObj[transformedPathPart];
 
   if (!childPart) {
@@ -618,6 +628,7 @@ var pushVal = function pushVal(obj, path, val) {
   path = clean(path);
   var pathParts = split(path);
   var part = pathParts.shift();
+  if (part === "__proto__") return obj;
 
   if (pathParts.length) {
     // Generate the path part in the object if it does not already exist
@@ -671,6 +682,7 @@ var pullVal = function pullVal(obj, path, val) {
   path = clean(path);
   var pathParts = split(path);
   var part = pathParts.shift();
+  if (part === "__proto__") return obj;
 
   if (pathParts.length) {
     // Generate the path part in the object if it does not already exist

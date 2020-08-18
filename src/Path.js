@@ -400,6 +400,9 @@ const set = (obj, path, val, options = {}) => {
 	
 	// Path has no dot-notation, set key/value
 	if (isNonCompositePath(internalPath)) {
+		// Do not allow prototype pollution
+		if (internalPath === "__proto__") return obj;
+
 		obj = decouple(obj, options);
 		obj[options.transformKey(unEscape(internalPath))] = val;
 		return obj;
@@ -409,6 +412,10 @@ const set = (obj, path, val, options = {}) => {
 	const pathParts = split(internalPath);
 	const pathPart = pathParts.shift();
 	const transformedPathPart = options.transformKey(pathPart);
+
+	// Do not allow prototype pollution
+	if (transformedPathPart === "__proto__") return obj;
+
 	let childPart = newObj[transformedPathPart];
 	
 	if (typeof childPart !== "object") {
@@ -470,8 +477,13 @@ const unSet = (obj, path, options = {}, tracking = {}) => {
 	
 	// Path has no dot-notation, set key/value
 	if (isNonCompositePath(internalPath)) {
-		if (newObj.hasOwnProperty(unEscape(internalPath))) {
-			delete newObj[options.transformKey(unEscape(internalPath))];
+		const unescapedPath = unEscape(internalPath);
+
+		// Do not allow prototype pollution
+		if (unescapedPath === "__proto__") return obj;
+
+		if (newObj.hasOwnProperty(unescapedPath)) {
+			delete newObj[options.transformKey(unescapedPath)];
 			return newObj;
 		}
 		
@@ -479,10 +491,13 @@ const unSet = (obj, path, options = {}, tracking = {}) => {
 		return obj;
 	}
 	
-	
 	const pathParts = split(internalPath);
 	const pathPart = pathParts.shift();
 	const transformedPathPart = options.transformKey(unEscape(pathPart));
+
+	// Do not allow prototype pollution
+	if (transformedPathPart === "__proto__") return obj;
+
 	let childPart = newObj[transformedPathPart];
 	
 	if (!childPart) {
@@ -563,7 +578,9 @@ const pushVal = (obj, path, val, options = {}) => {
 	
 	const pathParts = split(path);
 	const part = pathParts.shift();
-	
+
+	if (part === "__proto__") return obj;
+
 	if (pathParts.length) {
 		// Generate the path part in the object if it does not already exist
 		obj[part] = decouple(obj[part], options) || {};
@@ -613,6 +630,8 @@ const pullVal = (obj, path, val, options = {strict: true}) => {
 	
 	const pathParts = split(path);
 	const part = pathParts.shift();
+
+	if (part === "__proto__") return obj;
 	
 	if (pathParts.length) {
 		// Generate the path part in the object if it does not already exist
