@@ -1223,19 +1223,17 @@ var findPath = function findPath(source, query) {
   options.currentDepth++;
 
   if (options.currentDepth <= options.maxDepth && sourceType === "object") {
-    var entries = Object.entries(source);
-    entries.forEach(function (_ref5) {
-      var _ref6 = (0, _slicedToArray2["default"])(_ref5, 2),
-          key = _ref6[0],
-          val = _ref6[1];
-
-      // Recurse down object to find more instances
-      var result = findPath(val, query, options, join(parentPath, key));
-
-      if (result.match) {
-        resultArr.push.apply(resultArr, (0, _toConsumableArray2["default"])(result.path));
-      }
-    });
+	  for (var key in source) {
+		  if (source.hasOwnProperty(key)) {
+			  var val = source[key]; // Recurse down object to find more instances
+			
+			  var result = findPath(val, query, options, join(parentPath, key));
+			
+			  if (result.match) {
+				  resultArr.push.apply(resultArr, (0, _toConsumableArray2["default"])(result.path));
+			  }
+		  }
+	  }
   }
 
   return {
@@ -1281,21 +1279,18 @@ var findOnePath = function findOnePath(source, query) {
   options.currentDepth++;
 
   if (options.currentDepth <= options.maxDepth && sourceType === "object" && source !== null) {
-    var entries = Object.entries(source);
-
-    for (var i = 0; i < entries.length; i++) {
-      var _entries$i = (0, _slicedToArray2["default"])(entries[i], 2),
-          key = _entries$i[0],
-          val = _entries$i[1]; // Recurse down object to find more instances
-
-
-      var subPath = join(parentPath, key);
-      var result = findOnePath(val, query, options, subPath);
-
-      if (result.match) {
-        return result;
-      }
-    }
+	  for (var key in source) {
+		  if (source.hasOwnProperty(key)) {
+			  var val = source[key]; // Recurse down object to find more instances
+			
+			  var subPath = join(parentPath, key);
+			  var result = findOnePath(val, query, options, subPath);
+			
+			  if (result.match) {
+				  return result;
+			  }
+		  }
+	  }
   }
 
   return {

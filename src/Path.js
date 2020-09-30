@@ -1155,16 +1155,18 @@ const findPath = (source, query, options = {maxDepth: Infinity, currentDepth: 0,
 	options.currentDepth++;
 	
 	if (options.currentDepth <= options.maxDepth && sourceType === "object") {
-		const entries = Object.entries(source);
-		
-		entries.forEach(([key, val]) => {
-			// Recurse down object to find more instances
-			const result = findPath(val, query, options, join(parentPath, key));
-			
-			if (result.match) {
-				resultArr.push(...result.path);
+		for (let key in source) {
+			if (source.hasOwnProperty(key)) {
+				const val = source[key];
+				
+				// Recurse down object to find more instances
+				const result = findPath(val, query, options, join(parentPath, key));
+				
+				if (result.match) {
+					resultArr.push(...result.path);
+				}
 			}
-		});
+		}
 	}
 	
 	return {match: resultArr.length > 0, path: resultArr};
@@ -1202,17 +1204,17 @@ const findOnePath = (source, query, options = {maxDepth: Infinity, currentDepth:
 	options.currentDepth++;
 	
 	if (options.currentDepth <= options.maxDepth && sourceType === "object" && source !== null) {
-		const entries = Object.entries(source);
-		
-		for (let i = 0; i < entries.length; i++) {
-			const [key, val] = entries[i];
-			
-			// Recurse down object to find more instances
-			const subPath = join(parentPath, key);
-			const result = findOnePath(val, query, options, subPath);
-			
-			if (result.match) {
-				return result;
+		for (let key in source) {
+			if (source.hasOwnProperty(key)) {
+				const val = source[key];
+				
+				// Recurse down object to find more instances
+				const subPath = join(parentPath, key);
+				const result = findOnePath(val, query, options, subPath);
+				
+				if (result.match) {
+					return result;
+				}
 			}
 		}
 	}
