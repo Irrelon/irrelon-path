@@ -1,6 +1,6 @@
 {
 	"name": "@irrelon/path",
-	"version": "4.7.1",
+	"version": "4.7.2",
 	"description": "A powerful JSON path processor. Allows you to drill into and manipulate JSON objects with a simple dot-delimited path format e.g. \"obj.name\".",
 	"main": "./src/Path.js",
 	"scripts": {
@@ -15,7 +15,11 @@
 		"dot notation",
 		"json",
 		"node",
-		"browser"
+		"browser",
+		"matching",
+		"search",
+		"find",
+		"query"
 	],
 	"author": "Rob Evans - Irrelon Software Limited",
 	"license": "MIT",

@@ -176,16 +176,18 @@ const shift = (path, levels = 1) => {
 /**
  * A function that just returns the first argument.
  * @param {*} val The argument to return.
+ * @param {*} [currentObj] The current object hierarchy.
  * @returns {*} The passed argument.
  */
-const returnWhatWasGiven = (val) => val;
+const returnWhatWasGiven = (val, currentObj) => val;
 
 /**
  * Converts any key matching the wildcard to a zero.
  * @param {String} key The key to test.
+ * @param {*} [currentObj] The current object hierarchy.
  * @returns {String} The key.
  */
-const wildcardToZero = (key) => {
+const wildcardToZero = (key, currentObj) => {
 	return key === "$" ? "0" : key;
 };
 
@@ -332,14 +334,34 @@ const get = (obj, path, defaultVal = undefined, options = {}) => {
 	
 	for (let i = 0; i < pathParts.length; i++) {
 		const pathPart = pathParts[i];
-		objPart = objPart[options.transformKey(unEscape(pathPart))];
+		const transformedKey = options.transformKey(unEscape(pathPart), objPart);
+		
+		if (transformedKey === "$" && options.expandWildcards === true && objPart instanceof Array) {
+			// Define an array to store our results in down the tree
+			options.expandedResult = options.expandedResult || [];
+			
+			// The key is a wildcard and expandWildcards is enabled
+			const result = objPart.forEach((arrItem) => {
+				const innerKey = pathParts.slice(i + 1).join(".");
+				
+				if (innerKey === "") {
+					options.expandedResult.push(arrItem);
+				} else {
+					get(arrItem, pathParts.slice(i + 1).join("."), defaultVal, options);
+				}
+			});
+			
+			return options.expandedResult.length !== 0 ? options.expandedResult : defaultVal;
+		}
+		
+		objPart = objPart[transformedKey];
 		
 		if (objPart instanceof Array && options.arrayTraversal === true) {
 			// The data is an array and we have arrayTraversal enabled
 			// so loop the array items and return the first non-undefined
 			// value from any array item leaf node that matches the path
 			const result = objPart.reduce((result, arrItem) => {
-				return get(arrItem, pathParts.slice(i + 1).join("."), defaultVal, options);
+				return result || get(arrItem, pathParts.slice(i + 1).join("."), defaultVal, options);
 			}, undefined);
 			
 			return result !== undefined ? result : defaultVal;

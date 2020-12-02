@@ -200,28 +200,30 @@ var shift = function shift(path) {
   for (var i = 0; i < levels; i++) {
     part = parts.shift();
   }
-
-  return part || "";
+	
+	return part || "";
 };
 /**
  * A function that just returns the first argument.
  * @param {*} val The argument to return.
+ * @param {*} [currentObj] The current object hierarchy.
  * @returns {*} The passed argument.
  */
 
 
-var returnWhatWasGiven = function returnWhatWasGiven(val) {
-  return val;
+var returnWhatWasGiven = function returnWhatWasGiven (val, currentObj) {
+	return val;
 };
 /**
  * Converts any key matching the wildcard to a zero.
  * @param {String} key The key to test.
+ * @param {*} [currentObj] The current object hierarchy.
  * @returns {String} The key.
  */
 
 
-var wildcardToZero = function wildcardToZero(key) {
-  return key === "$" ? "0" : key;
+var wildcardToZero = function wildcardToZero (key, currentObj) {
+	return key === "$" ? "0" : key;
 };
 /**
  * If a key is a number, will return a wildcard, otherwise
@@ -370,20 +372,41 @@ var get = function get(obj, path) {
   objPart = obj;
 
   var _loop2 = function _loop2(i) {
-    var pathPart = pathParts[i];
-    objPart = objPart[options.transformKey(unEscape(pathPart))];
-
-    if (objPart instanceof Array && options.arrayTraversal === true) {
-      // The data is an array and we have arrayTraversal enabled
-      // so loop the array items and return the first non-undefined
-      // value from any array item leaf node that matches the path
-      var result = objPart.reduce(function (result, arrItem) {
-        return get(arrItem, pathParts.slice(i + 1).join("."), defaultVal, options);
-      }, undefined);
-      return {
-        v: result !== undefined ? result : defaultVal
-      };
-    } else if (!objPart || (0, _typeof2["default"])(objPart) !== "object") {
+	  var pathPart = pathParts[i];
+	  var transformedKey = options.transformKey(unEscape(pathPart), objPart);
+	
+	  if (transformedKey === "$" && options.expandWildcards === true && objPart instanceof Array) {
+		  // Define an array to store our results in down the tree
+		  options.expandedResult = options.expandedResult || []; // The key is a wildcard and expandWildcards is enabled
+		
+		  var result = objPart.forEach(function (arrItem) {
+			  var innerKey = pathParts.slice(i + 1).join(".");
+			
+			  if (innerKey === "") {
+				  options.expandedResult.push(arrItem);
+			  } else {
+				  get(arrItem, pathParts.slice(i + 1).join("."), defaultVal, options);
+			  }
+		  });
+		  return {
+			  v: options.expandedResult.length !== 0 ? options.expandedResult : defaultVal
+		  };
+	  }
+	
+	  objPart = objPart[transformedKey];
+	
+	  if (objPart instanceof Array && options.arrayTraversal === true) {
+		  // The data is an array and we have arrayTraversal enabled
+		  // so loop the array items and return the first non-undefined
+		  // value from any array item leaf node that matches the path
+		  var _result = objPart.reduce(function (result, arrItem) {
+			  return result || get(arrItem, pathParts.slice(i + 1).join("."), defaultVal, options);
+		  }, undefined);
+		
+		  return {
+			  v: _result !== undefined ? _result : defaultVal
+		  };
+	  } else if (!objPart || (0, _typeof2["default"])(objPart) !== "object") {
       if (i !== pathParts.length - 1) {
         // The path terminated in the object before we reached
         // the end node we wanted so make sure we return undefined
