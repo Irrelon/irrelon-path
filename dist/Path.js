@@ -451,10 +451,11 @@ var set = function set(obj, path, val) {
 
 
   if (isNonCompositePath(internalPath)) {
-    // Do not allow prototype pollution
-    if (internalPath === "__proto__") return obj;
+    var unescapedPath = unEscape(internalPath); // Do not allow prototype pollution
+
+    if (unescapedPath === "__proto__") return obj;
     obj = decouple(obj, options);
-    obj[options.transformKey(unEscape(internalPath))] = val;
+    obj[options.transformKey(unescapedPath)] = val;
     return obj;
   }
 
@@ -466,7 +467,7 @@ var set = function set(obj, path, val) {
   if (transformedPathPart === "__proto__") return obj;
   var childPart = newObj[transformedPathPart];
 
-  if ((0, _typeof2["default"])(childPart) !== "object") {
+  if ((0, _typeof2["default"])(childPart) !== "object" || childPart === null) {
     // Create an object or array on the path
     if (String(parseInt(transformedPathPart, 10)) === transformedPathPart) {
       // This is an array index
@@ -755,7 +756,7 @@ var furthest = function furthest(obj, path) {
     throw new Error("Path argument must be a string");
   }
 
-  if ((0, _typeof2["default"])(obj) !== "object") {
+  if ((0, _typeof2["default"])(obj) !== "object" || obj === null) {
     return finalPath.join(".");
   } // Path has no dot-notation, return key/value
 
@@ -997,7 +998,7 @@ var countLeafNodes = function countLeafNodes(obj) {
   for (var i in obj) {
     if (obj.hasOwnProperty(i)) {
       if (obj[i] !== undefined) {
-        if ((0, _typeof2["default"])(obj[i]) !== "object" || objCache.indexOf(obj[i]) > -1) {
+        if (obj[i] === null || (0, _typeof2["default"])(obj[i]) !== "object" || objCache.indexOf(obj[i]) > -1) {
           totalKeys++;
         } else {
           totalKeys += countLeafNodes(obj[i], objCache);
@@ -1033,7 +1034,7 @@ var leafNodes = function leafNodes(obj) {
       if (obj[i] !== undefined) {
         var currentPath = join(parentPath, i);
 
-        if ((0, _typeof2["default"])(obj[i]) !== "object" || objCache.indexOf(obj[i]) > -1) {
+        if (obj[i] === null || (0, _typeof2["default"])(obj[i]) !== "object" || objCache.indexOf(obj[i]) > -1) {
           paths.push(currentPath);
         } else {
           paths.push.apply(paths, (0, _toConsumableArray2["default"])(leafNodes(obj[i], currentPath, objCache)));
@@ -1188,7 +1189,7 @@ var match = function match(source, query) {
  */
 
 /**
- * Finds all items that matches the structure of `query` and
+ * Finds all items in `source` that match the structure of `query` and
  * returns the path to them as an array of strings.
  * @param {*} source The source to test.
  * @param {*} query The query to match.
@@ -1223,19 +1224,17 @@ var findPath = function findPath(source, query) {
   options.currentDepth++;
 
   if (options.currentDepth <= options.maxDepth && sourceType === "object") {
-    var entries = Object.entries(source);
-    entries.forEach(function (_ref5) {
-      var _ref6 = (0, _slicedToArray2["default"])(_ref5, 2),
-          key = _ref6[0],
-          val = _ref6[1];
+    for (var key in source) {
+      if (source.hasOwnProperty(key)) {
+        var val = source[key]; // Recurse down object to find more instances
 
-      // Recurse down object to find more instances
-      var result = findPath(val, query, options, join(parentPath, key));
+        var result = findPath(val, query, options, join(parentPath, key));
 
-      if (result.match) {
-        resultArr.push.apply(resultArr, (0, _toConsumableArray2["default"])(result.path));
+        if (result.match) {
+          resultArr.push.apply(resultArr, (0, _toConsumableArray2["default"])(result.path));
+        }
       }
-    });
+    }
   }
 
   return {
@@ -1281,19 +1280,16 @@ var findOnePath = function findOnePath(source, query) {
   options.currentDepth++;
 
   if (options.currentDepth <= options.maxDepth && sourceType === "object" && source !== null) {
-    var entries = Object.entries(source);
+    for (var key in source) {
+      if (source.hasOwnProperty(key)) {
+        var val = source[key]; // Recurse down object to find more instances
 
-    for (var i = 0; i < entries.length; i++) {
-      var _entries$i = (0, _slicedToArray2["default"])(entries[i], 2),
-          key = _entries$i[0],
-          val = _entries$i[1]; // Recurse down object to find more instances
+        var subPath = join(parentPath, key);
+        var result = findOnePath(val, query, options, subPath);
 
-
-      var subPath = join(parentPath, key);
-      var result = findOnePath(val, query, options, subPath);
-
-      if (result.match) {
-        return result;
+        if (result.match) {
+          return result;
+        }
       }
     }
   }
@@ -1601,45 +1597,45 @@ var chop = function chop(path, level) {
 };
 
 module.exports = {
-  wildcardToZero: wildcardToZero,
-  numberToWildcard: numberToWildcard,
+  chop: chop,
   clean: clean,
-  decouple: decouple,
-  split: split,
-  escape: escape,
-  get: get,
-  set: set,
-  setImmutable: setImmutable,
-  unSet: unSet,
-  unSetImmutable: unSetImmutable,
-  pushValImmutable: pushValImmutable,
-  pushVal: pushVal,
-  pullValImmutable: pullValImmutable,
-  pullVal: pullVal,
-  furthest: furthest,
-  values: values,
-  flatten: flatten,
-  flattenValues: flattenValues,
-  join: join,
-  joinEscaped: joinEscaped,
-  up: up,
-  down: down,
-  push: push,
-  pop: pop,
-  shift: shift,
   countLeafNodes: countLeafNodes,
-  hasMatchingPathsInObject: hasMatchingPathsInObject,
   countMatchingPathsInObject: countMatchingPathsInObject,
+  decouple: decouple,
+  diff: diff,
+  distill: distill,
+  down: down,
+  escape: escape,
   findOnePath: findOnePath,
   findPath: findPath,
-  type: type,
-  match: match,
+  flatten: flatten,
+  flattenValues: flattenValues,
+  furthest: furthest,
+  get: get,
+  hasMatchingPathsInObject: hasMatchingPathsInObject,
   isEqual: isEqual,
   isNotEqual: isNotEqual,
+  join: join,
+  joinEscaped: joinEscaped,
   leafNodes: leafNodes,
-  diff: diff,
+  match: match,
+  numberToWildcard: numberToWildcard,
+  pop: pop,
+  pullVal: pullVal,
+  pullValImmutable: pullValImmutable,
+  push: push,
+  pushVal: pushVal,
+  pushValImmutable: pushValImmutable,
+  set: set,
+  setImmutable: setImmutable,
+  shift: shift,
+  split: split,
+  type: type,
+  unSet: unSet,
+  unSetImmutable: unSetImmutable,
+  up: up,
   update: update,
   updateImmutable: updateImmutable,
-  distill: distill,
-  chop: chop
+  values: values,
+  wildcardToZero: wildcardToZero
 };
