@@ -11,7 +11,7 @@ const _iterableKeys = (obj) => {
 		if (valType === "object" || valType === "array") {
 			arr.push(key);
 		}
-		
+
 		return arr;
 	}, []);
 };
@@ -29,25 +29,25 @@ const _iterableKeys = (obj) => {
  */
 const _newInstance = (item, key = undefined, val = undefined) => {
 	const objType = type(item);
-	
+
 	let newObj;
-	
+
 	if (objType === "object") {
 		newObj = {
 			...item
 		};
 	}
-	
+
 	if (objType === "array") {
 		newObj = [
 			...item
 		];
 	}
-	
+
 	if (key !== undefined) {
 		newObj[key] = val;
 	}
-	
+
 	return newObj;
 };
 
@@ -61,7 +61,7 @@ const _newInstance = (item, key = undefined, val = undefined) => {
 const isCompositePath = (path) => {
 	const regExp = /\./g;
 	let result;
-	
+
 	while (result = regExp.exec(path)) {
 		// Check if the previous character was an escape
 		// and if so, ignore this delimiter
@@ -70,7 +70,7 @@ const isCompositePath = (path) => {
 			return true;
 		}
 	}
-	
+
 	return false;
 };
 
@@ -95,11 +95,11 @@ const isNonCompositePath = (path) => {
  */
 const up = (path, levels = 1) => {
 	const parts = split(path);
-	
+
 	for (let i = 0; i < levels; i++) {
 		parts.pop();
 	}
-	
+
 	return parts.join(".");
 };
 
@@ -114,11 +114,11 @@ const up = (path, levels = 1) => {
  */
 const down = (path, levels = 1) => {
 	const parts = split(path);
-	
+
 	for (let i = 0; i < levels; i++) {
 		parts.shift();
 	}
-	
+
 	return parts.join(".");
 };
 
@@ -133,11 +133,11 @@ const down = (path, levels = 1) => {
 const pop = (path, levels = 1) => {
 	const parts = split(path);
 	let part;
-	
+
 	for (let i = 0; i < levels; i++) {
 		part = parts.pop();
 	}
-	
+
 	return part || "";
 };
 
@@ -165,11 +165,11 @@ const push = (path, val = "") => {
 const shift = (path, levels = 1) => {
 	const parts = split(path);
 	let part;
-	
+
 	for (let i = 0; i < levels; i++) {
 		part = parts.shift();
 	}
-	
+
 	return part || "";
 };
 
@@ -201,7 +201,7 @@ const numberToWildcard = (key) => {
 		// The key is a number, convert to a wildcard
 		return "$";
 	}
-	
+
 	return key;
 };
 
@@ -214,11 +214,11 @@ const clean = (str) => {
 	if (!str) {
 		return str;
 	}
-	
+
 	if (str.substr(0, 1) === ".") {
 		str = str.substr(1, str.length - 1);
 	}
-	
+
 	return str;
 };
 
@@ -234,13 +234,13 @@ const split = (path) => {
 	// temporarily
 	const escapedPath = path.replace(/\\\./g, "[--]");
 	const splitPath = escapedPath.split(".");
-	
+
 	// Loop the split path array and convert any escaped period
 	// placeholders back to their real period characters
 	for (let i = 0; i < splitPath.length; i++) {
 		splitPath[i] = splitPath[i].replace(/\[--]/g, "\\.");
 	}
-	
+
 	return splitPath;
 };
 
@@ -287,53 +287,53 @@ const unEscape = (str) => {
 const get = (obj, path, defaultVal = undefined, options = {}) => {
 	let internalPath = path,
 		objPart;
-	
+
 	if (path instanceof Array) {
 		return path.map((individualPath) => {
 			get(obj, individualPath, defaultVal, options);
 		});
 	}
-	
+
 	options = {
 		"transformRead": returnWhatWasGiven,
 		"transformKey": returnWhatWasGiven,
 		"transformWrite": returnWhatWasGiven,
 		...options
 	};
-	
+
 	// No object data, return undefined
 	if (obj === undefined || obj === null) {
 		return defaultVal;
 	}
-	
+
 	// No path string, return the base obj
 	if (!internalPath) {
 		return obj;
 	}
-	
+
 	internalPath = clean(internalPath);
-	
+
 	// Path is not a string, throw error
 	if (typeof internalPath !== "string") {
 		throw new Error("Path argument must be a string");
 	}
-	
+
 	// Path has no dot-notation, return key/value
 	if (isNonCompositePath(internalPath)) {
 		return obj[internalPath] !== undefined ? obj[internalPath] : defaultVal;
 	}
-	
+
 	if (typeof obj !== "object") {
 		return defaultVal !== undefined ? defaultVal : undefined;
 	}
-	
+
 	const pathParts = split(internalPath);
 	objPart = obj;
-	
+
 	for (let i = 0; i < pathParts.length; i++) {
 		const pathPart = pathParts[i];
 		objPart = objPart[options.transformKey(unEscape(pathPart))];
-		
+
 		if (objPart instanceof Array && options.arrayTraversal === true) {
 			// The data is an array and we have arrayTraversal enabled
 			// so loop the array items and return the first non-undefined
@@ -341,7 +341,7 @@ const get = (obj, path, defaultVal = undefined, options = {}) => {
 			const result = objPart.reduce((result, arrItem) => {
 				return get(arrItem, pathParts.slice(i + 1).join("."), defaultVal, options);
 			}, undefined);
-			
+
 			return result !== undefined ? result : defaultVal;
 		} else if (!objPart || typeof objPart !== "object") {
 			if (i !== pathParts.length - 1) {
@@ -352,7 +352,7 @@ const get = (obj, path, defaultVal = undefined, options = {}) => {
 			break;
 		}
 	}
-	
+
 	return objPart !== undefined ? objPart : defaultVal;
 };
 
@@ -369,35 +369,35 @@ const get = (obj, path, defaultVal = undefined, options = {}) => {
 const set = (obj, path, val, options = {}) => {
 	let internalPath = path,
 		objPart;
-	
+
 	options = {
 		"transformRead": returnWhatWasGiven,
 		"transformKey": returnWhatWasGiven,
 		"transformWrite": returnWhatWasGiven,
 		...options
 	};
-	
+
 	// No object data
 	if (obj === undefined || obj === null) {
 		return;
 	}
-	
+
 	// No path string
 	if (!internalPath) {
 		return;
 	}
-	
+
 	internalPath = clean(internalPath);
-	
+
 	// Path is not a string, throw error
 	if (typeof internalPath !== "string") {
 		throw new Error("Path argument must be a string");
 	}
-	
+
 	if (typeof obj !== "object") {
 		return;
 	}
-	
+
 	// Path has no dot-notation, set key/value
 	if (isNonCompositePath(internalPath)) {
 		const unescapedPath = unEscape(internalPath);
@@ -409,7 +409,7 @@ const set = (obj, path, val, options = {}) => {
 		obj[options.transformKey(unescapedPath)] = val;
 		return obj;
 	}
-	
+
 	const newObj = decouple(obj, options);
 	const pathParts = split(internalPath);
 	const pathPart = pathParts.shift();
@@ -419,7 +419,7 @@ const set = (obj, path, val, options = {}) => {
 	if (transformedPathPart === "__proto__") return obj;
 
 	let childPart = newObj[transformedPathPart];
-	
+
 	if (typeof childPart !== "object" || childPart === null) {
 		// Create an object or array on the path
 		if (String(parseInt(transformedPathPart, 10)) === transformedPathPart) {
@@ -428,12 +428,12 @@ const set = (obj, path, val, options = {}) => {
 		} else {
 			newObj[transformedPathPart] = {};
 		}
-		
+
 		objPart = newObj[transformedPathPart];
 	} else {
 		objPart = childPart;
 	}
-	
+
 	return set(newObj, transformedPathPart, set(objPart, pathParts.join('.'), val, options), options);
 };
 
@@ -446,37 +446,37 @@ const set = (obj, path, val, options = {}) => {
  */
 const unSet = (obj, path, options = {}, tracking = {}) => {
 	let internalPath = path;
-	
+
 	options = {
 		"transformRead": returnWhatWasGiven,
 		"transformKey": returnWhatWasGiven,
 		"transformWrite": returnWhatWasGiven,
 		...options
 	};
-	
+
 	// No object data
 	if (obj === undefined || obj === null) {
 		return;
 	}
-	
+
 	// No path string
 	if (!internalPath) {
 		return;
 	}
-	
+
 	internalPath = clean(internalPath);
-	
+
 	// Path is not a string, throw error
 	if (typeof internalPath !== "string") {
 		throw new Error("Path argument must be a string");
 	}
-	
+
 	if (typeof obj !== "object") {
 		return;
 	}
-	
+
 	const newObj = decouple(obj, options);
-	
+
 	// Path has no dot-notation, set key/value
 	if (isNonCompositePath(internalPath)) {
 		const unescapedPath = unEscape(internalPath);
@@ -488,11 +488,11 @@ const unSet = (obj, path, options = {}, tracking = {}) => {
 			delete newObj[options.transformKey(unescapedPath)];
 			return newObj;
 		}
-		
+
 		tracking.returnOriginal = true;
 		return obj;
 	}
-	
+
 	const pathParts = split(internalPath);
 	const pathPart = pathParts.shift();
 	const transformedPathPart = options.transformKey(unEscape(pathPart));
@@ -501,19 +501,19 @@ const unSet = (obj, path, options = {}, tracking = {}) => {
 	if (transformedPathPart === "__proto__") return obj;
 
 	let childPart = newObj[transformedPathPart];
-	
+
 	if (!childPart) {
 		// No child part available, nothing to unset!
 		tracking.returnOriginal = true;
 		return obj;
 	}
-	
+
 	newObj[transformedPathPart] = unSet(childPart, pathParts.join('.'), options, tracking);
-	
+
 	if (tracking.returnOriginal) {
 		return obj;
 	}
-	
+
 	return newObj;
 };
 
@@ -532,14 +532,14 @@ const unSet = (obj, path, options = {}, tracking = {}) => {
  */
 const update = (obj, updateData, options = {}) => {
 	let newObj = obj;
-	
+
 	for (let path in updateData) {
 		if (updateData.hasOwnProperty(path)) {
 			const data = updateData[path];
 			newObj = set(newObj, path, data, options);
 		}
 	}
-	
+
 	return newObj;
 };
 
@@ -557,7 +557,7 @@ const decouple = (obj, options = {}) => {
 	if (!options.immutable) {
 		return obj;
 	}
-	
+
 	return _newInstance(obj);
 };
 
@@ -574,10 +574,10 @@ const pushVal = (obj, path, val, options = {}) => {
 	if (obj === undefined || obj === null || path === undefined) {
 		return obj;
 	}
-	
+
 	// Clean the path
 	path = clean(path);
-	
+
 	const pathParts = split(path);
 	const part = pathParts.shift();
 
@@ -586,29 +586,29 @@ const pushVal = (obj, path, val, options = {}) => {
 	if (pathParts.length) {
 		// Generate the path part in the object if it does not already exist
 		obj[part] = decouple(obj[part], options) || {};
-		
+
 		// Recurse
 		pushVal(obj[part], pathParts.join("."), val, options);
 	} else if (part) {
 		// We have found the target array, push the value
 		obj[part] = decouple(obj[part], options) || [];
-		
+
 		if (!(obj[part] instanceof Array)) {
 			throw("Cannot push to a path whose leaf node is not an array!");
 		}
-		
+
 		obj[part].push(val);
 	} else {
 		// We have found the target array, push the value
 		obj = decouple(obj, options) || [];
-		
+
 		if (!(obj instanceof Array)) {
 			throw("Cannot push to a path whose leaf node is not an array!");
 		}
-		
+
 		obj.push(val);
 	}
-	
+
 	return decouple(obj, options);
 };
 
@@ -626,39 +626,39 @@ const pullVal = (obj, path, val, options = {strict: true}) => {
 	if (obj === undefined || obj === null || path === undefined) {
 		return obj;
 	}
-	
+
 	// Clean the path
 	path = clean(path);
-	
+
 	const pathParts = split(path);
 	const part = pathParts.shift();
 
 	if (part === "__proto__") return obj;
-	
+
 	if (pathParts.length) {
 		// Generate the path part in the object if it does not already exist
 		obj[part] = decouple(obj[part], options) || {};
-		
+
 		// Recurse - we don't need to assign obj[part] the result of this call because
 		// we are modifying by reference since we haven't reached the furthest path
 		// part (leaf) node yet
 		pullVal(obj[part], pathParts.join("."), val, options);
 	} else if (part) {
 		obj[part] = decouple(obj[part], options) || [];
-		
+
 		// Recurse - this is the leaf node so assign the response to obj[part] in
 		// case it is set to an immutable response
 		obj[part] = pullVal(obj[part], "", val, options);
 	} else {
 		// The target array is the root object, pull the value
 		obj = decouple(obj, options) || [];
-		
+
 		if (!(obj instanceof Array)) {
 			throw("Cannot pull from a path whose leaf node is not an array!");
 		}
-		
+
 		let index = -1;
-		
+
 		// Find the index of the passed value
 		if (options.strict === true) {
 			index = obj.indexOf(val);
@@ -668,13 +668,13 @@ const pullVal = (obj, path, val, options = {strict: true}) => {
 				return match(item, val);
 			});
 		}
-		
+
 		if (index > -1) {
 			// Remove the item from the array
 			obj.splice(index, 1);
 		}
 	}
-	
+
 	return decouple(obj, options);
 };
 
@@ -689,55 +689,55 @@ const pullVal = (obj, path, val, options = {strict: true}) => {
 const furthest = (obj, path, options = {}) => {
 	let internalPath = path,
 		objPart;
-	
+
 	options = {
 		"transformRead": returnWhatWasGiven,
 		"transformKey": wildcardToZero, // Any path that has a wildcard will essentially check the first array item to continue down the tree
 		"transformWrite": returnWhatWasGiven,
 		...options
 	};
-	
+
 	const finalPath = [];
-	
+
 	// No path string, return the base obj
 	if (!internalPath) {
 		return finalPath.join(".");
 	}
-	
+
 	internalPath = clean(internalPath);
-	
+
 	// Path is not a string, throw error
 	if (typeof internalPath !== "string") {
 		throw new Error("Path argument must be a string");
 	}
-	
+
 	if (typeof obj !== "object" || obj === null) {
 		return finalPath.join(".");
 	}
-	
+
 	// Path has no dot-notation, return key/value
 	if (isNonCompositePath(internalPath)) {
 		if (obj[internalPath] !== undefined) {
 			return internalPath;
 		}
-		
+
 		return finalPath.join(".");
 	}
-	
+
 	const pathParts = split(internalPath);
 	objPart = obj;
-	
+
 	for (let i = 0; i < pathParts.length; i++) {
 		const pathPart = pathParts[i];
 		objPart = objPart[options.transformKey(unEscape(pathPart))];
-		
+
 		if (objPart === undefined) {
 			break;
 		}
-		
+
 		finalPath.push(pathPart);
 	}
-	
+
 	return finalPath.join(".");
 };
 
@@ -757,23 +757,23 @@ const values = (obj, path, options = {}) => {
 	const pathParts = split(internalPath);
 	const currentPath = [];
 	const valueData = {};
-	
+
 	options = {
 		"transformRead": returnWhatWasGiven,
 		"transformKey": returnWhatWasGiven,
 		"transformWrite": returnWhatWasGiven,
 		...options
 	};
-	
+
 	for (let i = 0; i < pathParts.length; i++) {
 		const pathPart = options.transformKey(pathParts[i]);
 		currentPath.push(pathPart);
-		
+
 		const tmpPath = currentPath.join(".");
-		
+
 		valueData[tmpPath] = get(obj, tmpPath);
 	}
-	
+
 	return valueData;
 };
 
@@ -795,36 +795,36 @@ const flatten = (obj, finalArr = [], parentPath = "", options = {}, objCache = [
 		"transformWrite": returnWhatWasGiven,
 		...options
 	};
-	
+
 	const transformedObj = options.transformRead(obj);
-	
+
 	// Check that we haven't visited this object before (avoid infinite recursion)
 	if (objCache.indexOf(transformedObj) > -1) {
 		return finalArr;
 	}
-	
+
 	// Add object to cache to make sure we don't traverse it twice
 	objCache.push(transformedObj);
-	
+
 	const currentPath = (i) => {
 		const tKey = options.transformKey(i);
 		return parentPath ? parentPath + "." + tKey : tKey;
 	};
-	
+
 	for (const i in transformedObj) {
 		if (transformedObj.hasOwnProperty(i)) {
 			if (options.ignore && options.ignore.test(i)) {
 				continue;
 			}
-			
+
 			if (typeof transformedObj[i] === "object" && transformedObj[i] !== null) {
 				flatten(transformedObj[i], finalArr, currentPath(i), options, objCache);
 			}
-			
+
 			finalArr.push(currentPath(i));
 		}
 	}
-	
+
 	return finalArr;
 };
 
@@ -846,22 +846,22 @@ const flattenValues = (obj, finalObj = {}, parentPath = "", options = {}, objCac
 		"transformWrite": returnWhatWasGiven,
 		...options
 	};
-	
+
 	const transformedObj = options.transformRead(obj);
-	
+
 	// Check that we haven't visited this object before (avoid infinite recursion)
 	if (objCache.indexOf(transformedObj) > -1) {
 		return finalObj;
 	}
-	
+
 	// Add object to cache to make sure we don't traverse it twice
 	objCache.push(transformedObj);
-	
+
 	const currentPath = (i, info) => {
 		const tKey = options.transformKey(i, info);
 		return parentPath ? parentPath + "." + tKey : tKey;
 	};
-	
+
 	for (const i in transformedObj) {
 		if (transformedObj.hasOwnProperty(i)) {
 			const type = typeof transformedObj[i];
@@ -870,9 +870,9 @@ const flattenValues = (obj, finalObj = {}, parentPath = "", options = {}, objCac
 				isArrayIndex: Array.isArray(transformedObj),
 				isFlat: type !== "object" || transformedObj[i] instanceof Date || transformedObj[i] instanceof RegExp
 			};
-			
+
 			const pathKey = currentPath(i, info);
-			
+
 			if (!info.isFlat) {
 				if (transformedObj[i] !== null) {
 					flattenValues(transformedObj[i], finalObj, pathKey, options, objCache);
@@ -881,13 +881,13 @@ const flattenValues = (obj, finalObj = {}, parentPath = "", options = {}, objCac
 				// Found leaf node!
 				finalObj[pathKey] = options.transformWrite(transformedObj[i]);
 			}
-			
+
 			if (!options.leavesOnly) {
 				finalObj[pathKey] = options.transformWrite(transformedObj[i]);
 			}
 		}
 	}
-	
+
 	return finalObj;
 };
 
@@ -904,7 +904,7 @@ const join = (...args) => {
 		if (item !== undefined && String(item)) {
 			arr.push(item);
 		}
-		
+
 		return arr;
 	}, []).join(".");
 };
@@ -921,7 +921,7 @@ const joinEscaped = (...args) => {
 	const escapedArgs = args.map((item) => {
 		return escape(item);
 	});
-	
+
 	return join(...escapedArgs);
 };
 
@@ -934,10 +934,10 @@ const joinEscaped = (...args) => {
  */
 const countLeafNodes = (obj, objCache = []) => {
 	let totalKeys = 0;
-	
+
 	// Add object to cache to make sure we don't traverse it twice
 	objCache.push(obj);
-	
+
 	for (const i in obj) {
 		if (obj.hasOwnProperty(i)) {
 			if (obj[i] !== undefined) {
@@ -949,7 +949,7 @@ const countLeafNodes = (obj, objCache = []) => {
 			}
 		}
 	}
-	
+
 	return totalKeys;
 };
 
@@ -966,15 +966,15 @@ const countLeafNodes = (obj, objCache = []) => {
  */
 const leafNodes = (obj, parentPath = "", objCache = []) => {
 	const paths = [];
-	
+
 	// Add object to cache to make sure we don't traverse it twice
 	objCache.push(obj);
-	
+
 	for (const i in obj) {
 		if (obj.hasOwnProperty(i)) {
 			if (obj[i] !== undefined) {
 				const currentPath = join(parentPath, i);
-				
+
 				if (obj[i] === null || typeof obj[i] !== "object" || objCache.indexOf(obj[i]) > -1) {
 					paths.push(currentPath);
 				} else {
@@ -983,7 +983,7 @@ const leafNodes = (obj, parentPath = "", objCache = []) => {
 			}
 		}
 	}
-	
+
 	return paths;
 };
 
@@ -996,17 +996,17 @@ const leafNodes = (obj, parentPath = "", objCache = []) => {
  */
 const hasMatchingPathsInObject = function (testKeys, testObj) {
 	let result = true;
-	
+
 	for (const i in testKeys) {
 		if (testKeys.hasOwnProperty(i)) {
 			if (testObj[i] === undefined) {
 				return false;
 			}
-			
+
 			if (typeof testKeys[i] === "object" && testKeys[i] !== null) {
 				// Recurse object
 				result = hasMatchingPathsInObject(testKeys[i], testObj[i]);
-				
+
 				// Should we exit early?
 				if (!result) {
 					return false;
@@ -1014,7 +1014,7 @@ const hasMatchingPathsInObject = function (testKeys, testObj) {
 			}
 		}
 	}
-	
+
 	return result;
 };
 
@@ -1028,24 +1028,24 @@ const hasMatchingPathsInObject = function (testKeys, testObj) {
  */
 const countMatchingPathsInObject = (testKeys, testObj) => {
 	const matchedKeys = {};
-	
+
 	let matchData,
 		matchedKeyCount = 0,
 		totalKeyCount = 0;
-	
+
 	for (const i in testObj) {
 		if (testObj.hasOwnProperty(i)) {
 			if (typeof testObj[i] === "object" && testObj[i] !== null) {
 				// The test / query object key is an object, recurse
 				matchData = countMatchingPathsInObject(testKeys[i], testObj[i]);
-				
+
 				matchedKeys[i] = matchData.matchedKeys;
 				totalKeyCount += matchData.totalKeyCount;
 				matchedKeyCount += matchData.matchedKeyCount;
 			} else {
 				// The test / query object has a property that is not an object so add it as a key
 				totalKeyCount++;
-				
+
 				// Check if the test keys also have this key and it is also not an object
 				if (testKeys && testKeys[i] && (typeof testKeys[i] !== "object" || testKeys[i] === null)) {
 					matchedKeys[i] = true;
@@ -1056,7 +1056,7 @@ const countMatchingPathsInObject = (testKeys, testObj) => {
 			}
 		}
 	}
-	
+
 	return {
 		matchedKeys,
 		matchedKeyCount,
@@ -1078,7 +1078,7 @@ const type = (item) => {
 	if (Array.isArray(item)) {
 		return 'array';
 	}
-	
+
 	return typeof item;
 };
 
@@ -1092,28 +1092,28 @@ const type = (item) => {
 const match = (source, query) => {
 	const sourceType = typeof source;
 	const queryType = typeof query;
-	
+
 	if (sourceType !== queryType) {
 		return false;
 	}
-	
+
 	if (sourceType !== "object" || source === null) {
 		// Simple test
 		return source === query;
 	}
-	
+
 	// The source is an object-like (array or object) structure
 	const entries = Object.entries(query);
-	
+
 	const foundNonMatch = entries.find(([key, val]) => {
 		// Recurse if type is array or object
 		if (typeof val === "object" && val !== null) {
 			return !match(source[key], val);
 		}
-		
+
 		return source[key] !== val;
 	});
-	
+
 	return !foundNonMatch;
 };
 
@@ -1140,35 +1140,35 @@ const match = (source, query) => {
 const findPath = (source, query, options = {maxDepth: Infinity, currentDepth: 0, includeRoot: true}, parentPath = "") => {
 	const resultArr = [];
 	const sourceType = typeof source;
-	
+
 	options = {
 		maxDepth: Infinity,
 		currentDepth: 0,
 		includeRoot: true,
 		...options
 	};
-	
+
 	if (options.currentDepth !== 0 || (options.currentDepth === 0 && options.includeRoot)) {
 		if (match(source, query)) {
 			resultArr.push(parentPath);
 		}
 	}
-	
+
 	options.currentDepth++;
-	
+
 	if (options.currentDepth <= options.maxDepth && sourceType === "object") {
 		const entries = Object.entries(source);
-		
+
 		entries.forEach(([key, val]) => {
 			// Recurse down object to find more instances
 			const result = findPath(val, query, options, join(parentPath, key));
-			
+
 			if (result.match) {
 				resultArr.push(...result.path);
 			}
 		});
 	}
-	
+
 	return {match: resultArr.length > 0, path: resultArr};
 };
 
@@ -1184,14 +1184,14 @@ const findPath = (source, query, options = {maxDepth: Infinity, currentDepth: 0,
  */
 const findOnePath = (source, query, options = {maxDepth: Infinity, currentDepth: 0, includeRoot: true}, parentPath = "") => {
 	const sourceType = typeof source;
-	
+
 	options = {
 		maxDepth: Infinity,
 		currentDepth: 0,
 		includeRoot: true,
 		...options
 	};
-	
+
 	if (options.currentDepth !== 0 || (options.currentDepth === 0 && options.includeRoot)) {
 		if (match(source, query)) {
 			return {
@@ -1200,25 +1200,25 @@ const findOnePath = (source, query, options = {maxDepth: Infinity, currentDepth:
 			};
 		}
 	}
-	
+
 	options.currentDepth++;
-	
+
 	if (options.currentDepth <= options.maxDepth && sourceType === "object" && source !== null) {
 		const entries = Object.entries(source);
-		
+
 		for (let i = 0; i < entries.length; i++) {
 			const [key, val] = entries[i];
-			
+
 			// Recurse down object to find more instances
 			const subPath = join(parentPath, key);
 			const result = findOnePath(val, query, options, subPath);
-			
+
 			if (result.match) {
 				return result;
 			}
 		}
 	}
-	
+
 	return {match: false};
 };
 
@@ -1259,7 +1259,7 @@ const keyDedup = (keys) => {
  */
 const diff = (obj1, obj2, basePath = "", strict = false, maxDepth = Infinity, parentPath = "", objCache = []) => {
 	const paths = [];
-	
+
 	if (basePath instanceof Array) {
 		// We were given an array of paths, check each path
 		return basePath.reduce((arr, individualPath) => {
@@ -1271,17 +1271,17 @@ const diff = (obj1, obj2, basePath = "", strict = false, maxDepth = Infinity, pa
 			if (result && result.length) {
 				arr.push(...result);
 			}
-			
+
 			return arr;
 		}, []);
 	}
-	
+
 	const currentPath = join(parentPath, basePath);
 	const val1 = get(obj1, basePath);
 	const val2 = get(obj2, basePath);
 	const type1 = type(val1);
 	const type2 = type(val2);
-	
+
 	if (type1 !== type2) {
 		// Difference in source and comparison types
 		paths.push(currentPath);
@@ -1289,38 +1289,38 @@ const diff = (obj1, obj2, basePath = "", strict = false, maxDepth = Infinity, pa
 		// Difference in source and comparison types
 		paths.push(currentPath);
 	}
-	
+
 	const pathParts = currentPath.split(".");
 	const hasParts = pathParts[0] !== "";
-	
+
 	if ((!hasParts || pathParts.length < maxDepth) && typeof val1 === "object" && val1 !== null) {
 		// Check that we haven't visited this object before (avoid infinite recursion)
 		if (objCache.indexOf(val1) > -1 || objCache.indexOf(val2) > -1) {
 			return paths;
 		}
-		
+
 		objCache.push(val1);
 		objCache.push(val2);
-		
+
 		// Grab composite of all keys on val1 and val2
 		const val1Keys = Object.keys(val1);
 		const val2Keys = (typeof val2 === "object" && val2 !== null) ? Object.keys(val2) : [];
 		const compositeKeys = keyDedup(val1Keys.concat(val2Keys));
-		
+
 		return compositeKeys.reduce((arr, key) => {
 			const result = diff(val1, val2, key, strict, maxDepth, currentPath, objCache);
 			if (result && result.length) {
 				arr.push(...result);
 			}
-			
+
 			return arr;
 		}, paths);
 	}
-	
+
 	if ((strict && val1 !== val2) || (!strict && val1 != val2)) {
 		paths.push(currentPath);
 	}
-	
+
 	return keyDedup(paths);
 };
 
@@ -1349,10 +1349,10 @@ const isEqual = (obj1, obj2, path, deep = false, strict = false) => {
 			return isNotEqual(obj1, obj2, individualPath, deep, strict);
 		}) === -1;
 	}
-	
+
 	const val1 = get(obj1, path);
 	const val2 = get(obj2, path);
-	
+
 	if (deep) {
 		if (typeof val1 === "object" && val1 !== null) {
 			// TODO: This probably needs a composite key array of val1 and val2 keys
@@ -1362,7 +1362,7 @@ const isEqual = (obj1, obj2, path, deep = false, strict = false) => {
 			}) === -1;
 		}
 	}
-	
+
 	return (strict && val1 === val2) || (!strict && val1 == val2);
 };
 
