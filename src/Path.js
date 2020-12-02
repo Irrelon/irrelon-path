@@ -341,7 +341,7 @@ const get = (obj, path, defaultVal = undefined, options = {}) => {
 			options.expandedResult = options.expandedResult || [];
 			
 			// The key is a wildcard and expandWildcards is enabled
-			const result = objPart.forEach((arrItem) => {
+			objPart.forEach((arrItem) => {
 				const innerKey = pathParts.slice(i + 1).join(".");
 				
 				if (innerKey === "") {
