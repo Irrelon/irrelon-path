@@ -11,7 +11,7 @@ const _iterableKeys = (obj) => {
 		if (valType === "object" || valType === "array") {
 			arr.push(key);
 		}
-		
+
 		return arr;
 	}, []);
 };
@@ -29,25 +29,25 @@ const _iterableKeys = (obj) => {
  */
 const _newInstance = (item, key = undefined, val = undefined) => {
 	const objType = type(item);
-	
+
 	let newObj;
-	
+
 	if (objType === "object") {
 		newObj = {
 			...item
 		};
 	}
-	
+
 	if (objType === "array") {
 		newObj = [
 			...item
 		];
 	}
-	
+
 	if (key !== undefined) {
 		newObj[key] = val;
 	}
-	
+
 	return newObj;
 };
 
@@ -422,11 +422,15 @@ const set = (obj, path, val, options = {}) => {
 	
 	// Path has no dot-notation, set key/value
 	if (isNonCompositePath(internalPath)) {
+		const unescapedPath = unEscape(internalPath);
+		
 		// Do not allow prototype pollution
-		if (internalPath === "__proto__") return obj;
-
+		if (unescapedPath === "__proto__") {
+			return obj;
+		}
+		
 		obj = decouple(obj, options);
-		obj[options.transformKey(unEscape(internalPath))] = val;
+		obj[options.transformKey(unescapedPath)] = val;
 		return obj;
 	}
 	
@@ -434,13 +438,15 @@ const set = (obj, path, val, options = {}) => {
 	const pathParts = split(internalPath);
 	const pathPart = pathParts.shift();
 	const transformedPathPart = options.transformKey(pathPart);
-
+	
 	// Do not allow prototype pollution
-	if (transformedPathPart === "__proto__") return obj;
-
+	if (transformedPathPart === "__proto__") {
+		return obj;
+	}
+	
 	let childPart = newObj[transformedPathPart];
 	
-	if (typeof childPart !== "object") {
+	if (typeof childPart !== "object" || childPart === null) {
 		// Create an object or array on the path
 		if (String(parseInt(transformedPathPart, 10)) === transformedPathPart) {
 			// This is an array index
@@ -731,7 +737,7 @@ const furthest = (obj, path, options = {}) => {
 		throw new Error("Path argument must be a string");
 	}
 	
-	if (typeof obj !== "object") {
+	if (typeof obj !== "object" || obj === null) {
 		return finalPath.join(".");
 	}
 	
@@ -961,7 +967,7 @@ const countLeafNodes = (obj, objCache = []) => {
 	for (const i in obj) {
 		if (obj.hasOwnProperty(i)) {
 			if (obj[i] !== undefined) {
-				if (typeof obj[i] !== "object" || objCache.indexOf(obj[i]) > -1) {
+				if (obj[i] === null || typeof obj[i] !== "object" || objCache.indexOf(obj[i]) > -1) {
 					totalKeys++;
 				} else {
 					totalKeys += countLeafNodes(obj[i], objCache);
@@ -995,7 +1001,7 @@ const leafNodes = (obj, parentPath = "", objCache = []) => {
 			if (obj[i] !== undefined) {
 				const currentPath = join(parentPath, i);
 				
-				if (typeof obj[i] !== "object" || objCache.indexOf(obj[i]) > -1) {
+				if (obj[i] === null || typeof obj[i] !== "object" || objCache.indexOf(obj[i]) > -1) {
 					paths.push(currentPath);
 				} else {
 					paths.push(...leafNodes(obj[i], currentPath, objCache));
@@ -1148,7 +1154,7 @@ const match = (source, query) => {
  */
 
 /**
- * Finds all items that matches the structure of `query` and
+ * Finds all items in `source` that match the structure of `query` and
  * returns the path to them as an array of strings.
  * @param {*} source The source to test.
  * @param {*} query The query to match.
@@ -1507,45 +1513,45 @@ const chop = (path, level) => {
 };
 
 module.exports = {
-	wildcardToZero,
-	numberToWildcard,
+	chop,
 	clean,
-	decouple,
-	split,
-	escape,
-	get,
-	set,
-	setImmutable,
-	unSet,
-	unSetImmutable,
-	pushValImmutable,
-	pushVal,
-	pullValImmutable,
-	pullVal,
-	furthest,
-	values,
-	flatten,
-	flattenValues,
-	join,
-	joinEscaped,
-	up,
-	down,
-	push,
-	pop,
-	shift,
 	countLeafNodes,
-	hasMatchingPathsInObject,
 	countMatchingPathsInObject,
+	decouple,
+	diff,
+	distill,
+	down,
+	escape,
 	findOnePath,
 	findPath,
-	type,
-	match,
+	flatten,
+	flattenValues,
+	furthest,
+	get,
+	hasMatchingPathsInObject,
 	isEqual,
 	isNotEqual,
+	join,
+	joinEscaped,
 	leafNodes,
-	diff,
+	match,
+	numberToWildcard,
+	pop,
+	pullVal,
+	pullValImmutable,
+	push,
+	pushVal,
+	pushValImmutable,
+	set,
+	setImmutable,
+	shift,
+	split,
+	type,
+	unSet,
+	unSetImmutable,
+	up,
 	update,
 	updateImmutable,
-	distill,
-	chop
+	values,
+	wildcardToZero
 };

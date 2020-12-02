@@ -471,39 +471,44 @@ var set = function set(obj, path, val) {
   if ((0, _typeof2["default"])(obj) !== "object") {
     return;
   } // Path has no dot-notation, set key/value
-
-
-  if (isNonCompositePath(internalPath)) {
-    // Do not allow prototype pollution
-    if (internalPath === "__proto__") return obj;
-    obj = decouple(obj, options);
-    obj[options.transformKey(unEscape(internalPath))] = val;
-    return obj;
-  }
-
-  var newObj = decouple(obj, options);
-  var pathParts = split(internalPath);
-  var pathPart = pathParts.shift();
-  var transformedPathPart = options.transformKey(pathPart); // Do not allow prototype pollution
-
-  if (transformedPathPart === "__proto__") return obj;
-  var childPart = newObj[transformedPathPart];
-
-  if ((0, _typeof2["default"])(childPart) !== "object") {
-    // Create an object or array on the path
-    if (String(parseInt(transformedPathPart, 10)) === transformedPathPart) {
-      // This is an array index
-      newObj[transformedPathPart] = [];
-    } else {
-      newObj[transformedPathPart] = {};
-    }
-
-    objPart = newObj[transformedPathPart];
-  } else {
-    objPart = childPart;
-  }
-
-  return set(newObj, transformedPathPart, set(objPart, pathParts.join('.'), val, options), options);
+	
+	
+	if (isNonCompositePath(internalPath)) {
+		var unescapedPath = unEscape(internalPath); // Do not allow prototype pollution
+		
+		if (unescapedPath === "__proto__") {
+			return obj;
+		}
+		obj = decouple(obj, options);
+		obj[options.transformKey(unescapedPath)] = val;
+		return obj;
+	}
+	
+	var newObj = decouple(obj, options);
+	var pathParts = split(internalPath);
+	var pathPart = pathParts.shift();
+	var transformedPathPart = options.transformKey(pathPart); // Do not allow prototype pollution
+	
+	if (transformedPathPart === "__proto__") {
+		return obj;
+	}
+	var childPart = newObj[transformedPathPart];
+	
+	if ((0, _typeof2["default"])(childPart) !== "object" || childPart === null) {
+		// Create an object or array on the path
+		if (String(parseInt(transformedPathPart, 10)) === transformedPathPart) {
+			// This is an array index
+			newObj[transformedPathPart] = [];
+		} else {
+			newObj[transformedPathPart] = {};
+		}
+		
+		objPart = newObj[transformedPathPart];
+	} else {
+		objPart = childPart;
+	}
+	
+	return set(newObj, transformedPathPart, set(objPart, pathParts.join("."), val, options), options);
 };
 /**
  * Deletes a key from an object by the given path.
@@ -767,29 +772,29 @@ var furthest = function furthest(obj, path) {
     "transformWrite": returnWhatWasGiven
   }, options);
   var finalPath = []; // No path string, return the base obj
-
-  if (!internalPath) {
-    return finalPath.join(".");
-  }
-
-  internalPath = clean(internalPath); // Path is not a string, throw error
-
-  if (typeof internalPath !== "string") {
-    throw new Error("Path argument must be a string");
-  }
-
-  if ((0, _typeof2["default"])(obj) !== "object") {
-    return finalPath.join(".");
-  } // Path has no dot-notation, return key/value
-
-
-  if (isNonCompositePath(internalPath)) {
-    if (obj[internalPath] !== undefined) {
-      return internalPath;
-    }
-
-    return finalPath.join(".");
-  }
+	
+	if (!internalPath) {
+		return finalPath.join(".");
+	}
+	
+	internalPath = clean(internalPath); // Path is not a string, throw error
+	
+	if (typeof internalPath !== "string") {
+		throw new Error("Path argument must be a string");
+	}
+	
+	if ((0, _typeof2["default"])(obj) !== "object" || obj === null) {
+		return finalPath.join(".");
+	} // Path has no dot-notation, return key/value
+	
+	
+	if (isNonCompositePath(internalPath)) {
+		if (obj[internalPath] !== undefined) {
+			return internalPath;
+		}
+		
+		return finalPath.join(".");
+	}
 
   var pathParts = split(internalPath);
   objPart = obj;
@@ -1020,12 +1025,12 @@ var countLeafNodes = function countLeafNodes(obj) {
   for (var i in obj) {
     if (obj.hasOwnProperty(i)) {
       if (obj[i] !== undefined) {
-        if ((0, _typeof2["default"])(obj[i]) !== "object" || objCache.indexOf(obj[i]) > -1) {
-          totalKeys++;
-        } else {
-          totalKeys += countLeafNodes(obj[i], objCache);
-        }
-      }
+		  if (obj[i] === null || (0, _typeof2["default"])(obj[i]) !== "object" || objCache.indexOf(obj[i]) > -1) {
+			  totalKeys++;
+		  } else {
+			  totalKeys += countLeafNodes(obj[i], objCache);
+		  }
+	  }
     }
   }
 
@@ -1054,14 +1059,14 @@ var leafNodes = function leafNodes(obj) {
   for (var i in obj) {
     if (obj.hasOwnProperty(i)) {
       if (obj[i] !== undefined) {
-        var currentPath = join(parentPath, i);
-
-        if ((0, _typeof2["default"])(obj[i]) !== "object" || objCache.indexOf(obj[i]) > -1) {
-          paths.push(currentPath);
-        } else {
-          paths.push.apply(paths, (0, _toConsumableArray2["default"])(leafNodes(obj[i], currentPath, objCache)));
-        }
-      }
+		  var currentPath = join(parentPath, i);
+	
+		  if (obj[i] === null || (0, _typeof2["default"])(obj[i]) !== "object" || objCache.indexOf(obj[i]) > -1) {
+			  paths.push(currentPath);
+		  } else {
+			  paths.push.apply(paths, (0, _toConsumableArray2["default"])(leafNodes(obj[i], currentPath, objCache)));
+		  }
+	  }
     }
   }
 
@@ -1211,7 +1216,7 @@ var match = function match(source, query) {
  */
 
 /**
- * Finds all items that matches the structure of `query` and
+ * Finds all items in `source` that match the structure of `query` and
  * returns the path to them as an array of strings.
  * @param {*} source The source to test.
  * @param {*} query The query to match.
@@ -1619,45 +1624,45 @@ var chop = function chop(path, level) {
 };
 
 module.exports = {
-  wildcardToZero: wildcardToZero,
-  numberToWildcard: numberToWildcard,
-  clean: clean,
-  decouple: decouple,
-  split: split,
-  escape: escape,
-  get: get,
-  set: set,
-  setImmutable: setImmutable,
-  unSet: unSet,
-  unSetImmutable: unSetImmutable,
-  pushValImmutable: pushValImmutable,
-  pushVal: pushVal,
-  pullValImmutable: pullValImmutable,
-  pullVal: pullVal,
-  furthest: furthest,
-  values: values,
-  flatten: flatten,
-  flattenValues: flattenValues,
-  join: join,
-  joinEscaped: joinEscaped,
-  up: up,
-  down: down,
-  push: push,
-  pop: pop,
-  shift: shift,
-  countLeafNodes: countLeafNodes,
-  hasMatchingPathsInObject: hasMatchingPathsInObject,
-  countMatchingPathsInObject: countMatchingPathsInObject,
-  findOnePath: findOnePath,
-  findPath: findPath,
-  type: type,
-  match: match,
-  isEqual: isEqual,
-  isNotEqual: isNotEqual,
-  leafNodes: leafNodes,
-  diff: diff,
-  update: update,
-  updateImmutable: updateImmutable,
-  distill: distill,
-  chop: chop
+	chop: chop,
+	clean: clean,
+	countLeafNodes: countLeafNodes,
+	countMatchingPathsInObject: countMatchingPathsInObject,
+	decouple: decouple,
+	diff: diff,
+	distill: distill,
+	down: down,
+	escape: escape,
+	findOnePath: findOnePath,
+	findPath: findPath,
+	flatten: flatten,
+	flattenValues: flattenValues,
+	furthest: furthest,
+	get: get,
+	hasMatchingPathsInObject: hasMatchingPathsInObject,
+	isEqual: isEqual,
+	isNotEqual: isNotEqual,
+	join: join,
+	joinEscaped: joinEscaped,
+	leafNodes: leafNodes,
+	match: match,
+	numberToWildcard: numberToWildcard,
+	pop: pop,
+	pullVal: pullVal,
+	pullValImmutable: pullValImmutable,
+	push: push,
+	pushVal: pushVal,
+	pushValImmutable: pushValImmutable,
+	set: set,
+	setImmutable: setImmutable,
+	shift: shift,
+	split: split,
+	type: type,
+	unSet: unSet,
+	unSetImmutable: unSetImmutable,
+	up: up,
+	update: update,
+	updateImmutable: updateImmutable,
+	values: values,
+	wildcardToZero: wildcardToZero
 };

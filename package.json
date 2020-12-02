@@ -42,5 +42,6 @@
 		"type": "git",
 		"url": "git://github.com/irrelon/irrelon-path.git"
 	},
-	"private": false
+	"private": false,
+	"dependencies": {}
 }

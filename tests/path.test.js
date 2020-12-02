@@ -49,14 +49,14 @@ describe("Path", () => {
 			assert.strictEqual(result, "test1.test2", "Path is correct");
 		});
 	});
-	
+
 	describe("joinEscape()", () => {
 		it("Will join multiple paths together escaped", () => {
 			const result = joinEscaped("test1.com", "test2.com");
 			assert.strictEqual(result, "test1\\.com.test2\\.com", "Path is correct");
 		});
 	});
-	
+
 	describe("values()", () => {
 		it("Will traverse the tree and find all values for each part of the path", () => {
 			const obj = {
@@ -120,6 +120,21 @@ describe("Path", () => {
 			
 			// Create an infinite recursion
 			obj.obj[0].other.obj = obj;
+			
+			const result = countLeafNodes(obj);
+			
+			assert.strictEqual(result, 2, "The test value is correct");
+		});
+		
+		it("Will count null value leaf nodes of an object", () => {
+			const obj = {
+				"obj": [{
+					"other": {
+						"moo": "foo",
+						"bar": null
+					}
+				}]
+			};
 			
 			const result = countLeafNodes(obj);
 			
@@ -542,10 +557,21 @@ describe("Path", () => {
 			
 			assert.strictEqual(newObj.foo["jim@jones.com"], false, "The value was set correctly");
 		});
-
+		
+		it("Handles trying to set a value on a null correctly", () => {
+			const obj = {
+				"foo": null
+			};
+			
+			set(obj, "foo.bar", true);
+			
+			assert.strictEqual(typeof obj.foo, "object", "The value is correct");
+			assert.strictEqual(obj.foo.bar, true, "The value is correct");
+		});
+		
 		it("Is not vulnerable to __proto__ pollution", () => {
 			const obj = {};
-			set(obj, '__proto__.polluted', true);
+			set(obj, "__proto__.polluted", true);
 			assert.strictEqual(obj.polluted, undefined, "The object prototype cannot be polluted");
 		});
 	});
