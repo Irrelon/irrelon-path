@@ -360,8 +360,8 @@ const get = (obj, path, defaultVal = undefined, options = {}) => {
 			// The data is an array and we have arrayTraversal enabled
 			// so loop the array items and return the first non-undefined
 			// value from any array item leaf node that matches the path
-			const result = objPart.reduce((result, arrItem) => {
-				return result || get(arrItem, pathParts.slice(i + 1).join("."), defaultVal, options);
+			const result = objPart.reduce((innerResult, arrItem) => {
+				return innerResult || get(arrItem, pathParts.slice(i + 1).join("."), defaultVal, options);
 			}, undefined);
 			
 			return result !== undefined ? result : defaultVal;
