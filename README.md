@@ -15,6 +15,61 @@ remove data from an object at locations specified via a path string.
 npm i @irrelon/path
 ```
 
+# Quick Reference
+* [Simple Usage](#simple-usage)
+* [Escaping Fields with Periods](#escaping-fields-with-periods)
+* [Behaviour](#behaviour)
+* [Default Values](#default-values)
+* Most Common
+    * [get()](#get-obj-path-defaultvalue)
+    * [set()](#set-obj-path-value)
+    * [pushVal()]()
+    * [pullVal()]()
+    * [update()](#update-obj-updatedata-options)
+    * [diff()](#diff-obj1-obj2-path-strict-maxdepth)
+* All Functions (Alphabetically)
+    * [chop()](#chop-path-level)
+    * [clean()](#clean-path)
+    * [countLeafNodes()](#countleafnodes-obj)
+    * [countMatchingPathsInObject()](#countmatchingpathsinobject-testkeys-testobj)
+	* [decouple()](#decouple-obj-options--)
+	* [diff()](#diff-obj1-obj2-path-strict-maxdepth)
+	* [distill()]()
+	* [down()]()
+	* [escape()]()
+	* [findOnePath()](#findonepath-source-query)
+	* [findPath()]()
+	* [flatten()]()
+	* [flattenValues()]()
+	* [furthest()]()
+	* [get()](#get-obj-path-defaultvalue)
+	* [hasMatchingPathsInObject()]()
+	* [isEqual()]()
+	* [isNotEqual()]()
+	* [join()]()
+	* [joinEscaped()]()
+	* [leafNodes()]()
+	* [match()]()
+	* [numberToWildcard()]()
+	* [pop()]()
+	* [pullVal()]()
+	* [pullValImmutable()]()
+	* [push()]()
+	* [pushVal()]()
+	* [pushValImmutable()]()
+	* [set()](#set-obj-path-value)
+	* [setImmutable()](#setimmutable-obj-path-value)
+	* [shift()]()
+	* [split()]()
+	* [type()]()
+	* [unSet()](#unset-obj-path)
+	* [unSetImmutable()]()
+	* [up()]()
+	* [update()](#update-obj-updatedata-options)
+	* [updateImmutable()]()
+	* [values()]()
+    * [wildcardToZero()]()
+
 ## Simple Usage
 ```js
 const {get} = require("@irrelon/path");
@@ -94,6 +149,460 @@ console.log(result); // Logs: My Default Value
 ```
 
 ## Methods
+### chop (`path`, `level`)
+
+|Param|Type|Required|Default|
+|---|---|---|---|
+|path|String|true|none|
+|level|Number|true|none|
+
+Chops a `path` string down to the given `level`. Given a `path` string
+like "foo.bar.ram.you.too", chop will remove any path parts below
+the given `level`. If we pass 2 as the `level` with that given `path`,
+the result will be "foo.bar" as foo is level 1 and bar is level 2.
+
+If the `path` is shorter than the given `level`, it is returned intact.
+
+```js
+const {chop} = require("@irrelon/path");
+
+const result = chop("foo.bar.one", 2);
+
+console.log(result); // Logs: foo.bar
+```
+
+### clean (`path`)
+
+|Param|Type|Required|Default|
+|---|---|---|---|
+|path|String|true|none|
+
+Removes leading period (.) from string and returns new string.
+
+```js
+const {clean} = require("@irrelon/path");
+
+const result = clean(".foo.bar.one");
+
+console.log(result); // Logs: foo.bar.one
+```
+
+### countLeafNodes (`obj`)
+
+|Param|Type|Required|Default|
+|---|---|---|---|
+|obj|Object or Array|true|none|
+
+Counts the total number of key leaf nodes in the passed object.
+Leaf nodes are any key that does not have a value of object or
+array.
+
+```js
+const {countLeafNodes} = require("@irrelon/path");
+
+const result = countLeafNodes({"foo": {"bar": null}, "moo": true});
+
+console.log(result); // Logs: 2
+```
+
+### countMatchingPathsInObject (`testKeys`, `testObj`)
+
+|Param|Type|Required|Default|
+|---|---|---|---|
+|testKeys|Object or Array|true|none|
+|testObj|Object or Array|true|none|
+
+Tests if the passed object has the paths that are specified and that
+a value exists in those paths and if so returns the number matched.
+The output includes `matchedKeys` with an object where the same structure
+exists as the `testObj` where each leaf node key will be a boolean that
+describes if the leaf node exists in the `testKeys` object.
+
+>MAY NOT BE INFINITE RECURSION SAFE.
+
+```js
+const {countMatchingPathsInObject} = require("@irrelon/path");
+
+const result = countMatchingPathsInObject({
+    "moo": true
+}, {
+   "foo": {
+       "bar": null
+   },
+   "moo": true
+});
+
+console.log(result);
+```
+
+Outputs:
+```json
+{
+  "matchedKeyCount": 1,
+  "matchedKeys": {
+    "foo": {
+      "bar": false
+    },
+    "moo": true
+  },
+  "totalKeyCount": 2
+}
+```
+
+### decouple (`obj`, `options` = {})
+
+|Param|Type|Required|Default|
+|---|---|---|---|
+|obj|Object or Array|true|none|
+|options|Object|false|{}|
+
+If options.immutable === true then return a new de-referenced
+instance of the passed object/array. If immutable is false
+then simply return the same `obj` that was passed. The returned
+instance is NOT deeply immutably cloned because we recurse through
+object trees and only immutably clone when making changes. This is
+useful so you can instantly compare two states with a strict
+equality check such as when using [setImmutable()](#setimmutable-obj-path-value). 
+
+```js
+const {decouple} = require("@irrelon/path");
+
+const obj = {"foo": true};
+const result = decouple(obj);
+
+console.log(result);
+console.log(result === obj);
+```
+
+Outputs:
+```json
+{"foo":  true}
+```
+```
+false
+```
+
+### diff (`obj1`, `obj2`, `path`, `strict`, `maxDepth`)
+
+|Param|Type|Required|Default|
+|---|---|---|---|
+|obj1|Object or Array|true|none|
+|obj2|Object or Array|true|none|
+|path|String|false|""|
+|strict|Boolean|false|false|
+|maxDepth|Number|false|Infinity|
+
+Compares two objects / arrays and returns the differences as an
+array of paths to the different fields.
+
+Fields are considered "different" if they do not contain equal
+values. The equality check is either strict or non-strict based
+on the `strict` argument.
+
+> It is important to understand that this function detects differences
+between field values, not differences between object structures. For
+instance if a field in obj1 contains `undefined` and obj2 does not contain
+that field at all, it's value in obj2 will also be `undefined` so there
+would be no difference detected.
+
+```js
+const {diff} = require("@irrelon/path");
+
+const obj1 = {
+	"user": {
+		"_id": 1,
+		"firstName": "Jimbo",
+		"lastName": "Jetson"
+  	}
+};
+
+const obj2 = {
+	"user": {
+		"_id": "1", // Notice string instead of numerical _id
+		"firstName": "James", // We also changed the name from "Jimbo" to "James"
+		"lastName": "Jetson"
+  	}
+};
+
+const resultArr1 = diff(obj1, obj2, "", false); // Non-strict equality check
+const resultArr2 = diff(obj1, obj2, "", true); // Strict equality check
+
+console.log(resultArr1); // Logs: ["user.firstName"]
+console.log(resultArr2); // Logs: ["user._id", "user.firstName"]
+```
+
+### distill (`obj`, `pathArr`)
+
+|Param|Type|Required|Default|
+|---|---|---|---|
+|obj|Object or Array|true|none|
+|pathArr|Array<String>|true|none|
+
+Gets the values of the paths in pathArr and returns them as an object
+with each key matching the path and the value matching the value from
+obj that was at that path.
+
+```js
+const {distill} = require("@irrelon/path");
+
+const obj = {
+    "user": {
+        "firstName": "Jim",
+        "lastName": "Jones",
+        "age": 22
+    }
+};
+
+const result = distill(obj, [
+    "user.firstName",
+    "user.lastName"
+]);
+
+console.log(result);
+```
+
+Outputs:
+```json
+{
+  "user.firstName": "Jim",
+  "user.lastName": "Jones"
+}
+```
+
+### down (`path`, `levels` = 1)
+
+|Param|Type|Required|Default|
+|---|---|---|---|
+|path|String|true|none|
+|levels|Number|false|1|
+
+Returns the given path after removing the first leaf from the
+path. E.g. "foo.bar.thing" becomes "bar.thing".
+
+```js
+const {down} = require("@irrelon/path");
+
+const result = down("user.friends.0.firstName");
+
+console.log(result);
+```
+
+Outputs:
+```json
+"friends.0.firstName"
+```
+
+> See also [up()](), [pop()](), [shift()]()
+
+### escape (`path`)
+
+|Param|Type|Required|Default|
+|---|---|---|---|
+|path|String|true|none|
+
+Escapes any periods in the passed string so they will
+not be identified as part of a path. Useful if you have
+a path like "domains.www.google.com.data" where the
+"www.google.com" should not be considered part of the
+traversal as it is actually in an object like:
+
+```json
+{"domains": {"www.google.com": {"data": "foo"}}}
+```
+
+Usage:
+
+```js
+const {escape} = require("@irrelon/path");
+
+const result = escape("www.google.com");
+
+console.log(result);
+```
+
+Outputs:
+```json
+"www\\.google\\.com"
+```
+
+### findOnePath (`source`, `query`)
+Finds the first item that matches the structure of `query`
+and returns the path to it
+
+```js
+const {findOnePath} = require("@irrelon/path");
+
+const myDataArray = [{
+  "profile": {
+  	"id": 1,
+  	"name": "Ron Swanson"
+  }
+}, {
+ "profile": {
+	"id": 2,
+	"name": "April Ludgate"
+ }
+}];
+
+// Find the object that has a key "profile"
+// with a object that has a key "_id" that 
+// has a value 1, and return the path to it
+const result1 = findOnePath(myDataArray, {
+	profile: {
+		_id: 1
+	}
+});
+
+console.log(result1); // Logs: "0"
+
+// Find the object that has a key "_id" that 
+// has a value 1, and return the path to it
+const result2 = findOnePath(myDataArray, {
+	_id: 1
+});
+
+console.log(result2); // Logs: "0.profile"
+```
+
+> See the unit tests for findOnePath() for many more examples
+ of usage.
+
+### findPath (`source`, `query`)
+
+|Param|Type|Required|Default|Description|
+|---|---|---|---|---|
+|source|*|true|none|The source to test.|
+|query|*|true|none|The query to match.|
+
+Finds all items in `source` that match the structure of `query` and
+returns the path to them as an array of strings.
+
+```js
+const {findPath} = require("@irrelon/path");
+
+const myData = {
+  "profile": {
+  	"id": 1,
+  	"name": "Ron Swanson",
+    "data": {
+        "mobile": "+001293284732"
+    }
+  }
+};
+
+const result = findPath(myData, {
+	data: {
+        "mobile": "+001293284732"
+    }
+});
+
+console.log(result);
+```
+
+Output: 
+
+```json
+{"match": true, "path": ["profile"]}
+```
+
+### flatten (`obj`)
+
+|Param|Type|Required|Default|Description|
+|---|---|---|---|---|
+|obj|Object or Array|true|none|The object to scan.|
+
+Takes an object and finds all paths, then returns the paths as an array
+of strings.
+
+```js
+const {flatten} = require("@irrelon/path");
+
+const myData = {
+  "profile": {
+  	"id": 1,
+  	"name": "Ron Swanson"
+  }
+};
+
+const result = flatten(myData);
+
+console.log(result);
+```
+
+Output:
+
+```json
+["profile.id", "profile.name", "profile"]
+```
+
+### flattenValues (`obj`)
+
+|Param|Type|Required|Default|Description|
+|---|---|---|---|---|
+|obj|Object or Array|true|none|The object to scan.|
+
+Takes an object and finds all paths, then returns the paths as keys
+and the values of each path as the values.
+
+```js
+const {flattenValues} = require("@irrelon/path");
+
+const myData = {
+  "profile": {
+  	"id": 1,
+  	"name": "Ron Swanson"
+  }
+};
+
+const result = flattenValues(myData);
+
+console.log(result);
+```
+
+Output:
+
+```json
+{
+  "profile": {
+    "id": 1,
+    "name": "Ron Swanson"
+  },
+  "profile.id": 1,
+  "profile.name": "Ron Swanson"
+}
+```
+
+### furthest (`obj`, `path`)
+
+|Param|Type|Required|Default|Description|
+|---|---|---|---|---|
+|obj|Object or Array|true|none|The object to operate on.|
+|path|String|true|none|The object to operate on.|
+
+Given object `obj` and a `path`, determines the outermost leaf node
+that can be reached where the leaf value is not undefined.
+
+```js
+const {furthest} = require("@irrelon/path");
+
+const myData = {
+  "profile": {
+  	"id": 1,
+  	"name": "Ron Swanson"
+  }
+};
+
+const result = furthest(myData, "profile.id.bson");
+
+console.log(result);
+```
+
+Output:
+
+```json
+"profile.id"
+```
+
 ### get (`obj`, `path`, `defaultValue`)
 
 |Param|Type|Required|Default|
@@ -136,7 +645,7 @@ const obj = {
 
 const result1 = get(obj, "myArr.0"); // hello
 const result2 = get(obj, "myArr.1.bar"); // goodbye
-``` 
+```
 
 ### set (`obj`, `path`, `value`)
 
@@ -276,125 +785,6 @@ update(obj, {
 
 console.log(obj.foo.bar[0].baa); // Logs: hello I've been updated
 console.log(obj.and.so); // Logs: have I!
-```
-
-### clean (`str`)
-Removes leading period (.) from string and returns new string.
-
-### countLeafNodes (`obj`)
-Counts the total number of key leaf nodes in the passed `obj`.
-Leaf nodes are values in the object tree that cannot contain
-other key/values (so are not objects or arrays).
-
-```js
-const {countLeafNodes} = require("@irrelon/path");
-
-const obj = {
-  "foo": {
-  	"bar": "goodbye",
-  	"subBar": {
-  		"somethingElse": true
-  	}
-  },
-  "otherObj": {
-  	"enabled": true
-  }
-};
-
-const result = countLeafNodes(obj);
-
-console.log(result); // Logs: 3 (foo.bar, foo.subBar.somthingElse, otherObj.enabled)
-```
-
-### findOnePath (`source`, `query`)
-Finds the first item that matches the structure of `query`
-and returns the path to it
-
-```js
-const {findOnePath} = require("@irrelon/path");
-
-const myDataArray = [{
-  "profile": {
-  	"id": 1,
-  	"name": "Ron Swanson"
-  }
-}, {
- "profile": {
-	"id": 2,
-	"name": "April Ludgate"
- }
-}];
-
-// Find the object that has a key "profile"
-// with a object that has a key "_id" that 
-// has a value 1, and return the path to it
-const result1 = findOnePath(myDataArray, {
-	profile: {
-		_id: 1
-	}
-});
-
-console.log(result1); // Logs: "0"
-
-// Find the object that has a key "_id" that 
-// has a value 1, and return the path to it
-const result2 = findOnePath(myDataArray, {
-	_id: 1
-});
-
-console.log(result2); // Logs: "0.profile"
-```
-
-> See the unit tests for findOnePath() for many more examples
- of usage.
-
-### diff (`obj1`, `obj2`, `path`, `strict`, `maxDepth`)
-
-|Param|Type|Required|Default|
-|---|---|---|---|
-|obj1|Object or Array|true|none|
-|obj2|Object or Array|true|none|
-|path|String|false|""|
-|strict|Boolean|false|false|
-|maxDepth|Number|false|Infinity|
-
-Compares two objects / arrays and returns the differences as an
-array of paths to the different fields.
-
-Fields are considered "different" if they do not contain equal
-values. The equality check is either strict or non-strict based
-on the `strict` argument.
-
-> It is important to understand that this function detects differences
-between field values, not differences between object structures. For
-instance if a field in obj1 contains `undefined` and obj2 does not contain
-that field at all, it's value in obj2 will also be `undefined` so there
-would be no difference detected.
-
-```js
-const {diff} = require("@irrelon/path");
-
-const obj1 = {
-	"user": {
-		"_id": 1,
-		"firstName": "Jimbo",
-		"lastName": "Jetson"
-  	}
-};
-
-const obj2 = {
-	"user": {
-		"_id": "1", // Notice string instead of numerical _id
-		"firstName": "James", // We also changed the name from "Jimbo" to "James"
-		"lastName": "Jetson"
-  	}
-};
-
-const resultArr1 = diff(obj1, obj2, "", false); // Non-strict equality check
-const resultArr2 = diff(obj1, obj2, "", true); // Strict equality check
-
-console.log(resultArr1); // Logs: ["user.firstName"]
-console.log(resultArr2); // Logs: ["user._id", "user.firstName"]
 ```
 
 ## Version 3.x Breaking Changes
