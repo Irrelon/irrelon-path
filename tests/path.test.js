@@ -486,6 +486,48 @@ describe("Path", () => {
 			
 			assert.deepStrictEqual(result, expected, "The value is correct");
 		});
+		
+		it("Correctly expands result when a wildcard is used with arrayTraversal enabled", () => {
+			const obj = {
+				"arr": [{
+					"subArr": [{
+						"label": "thought",
+						"subSubArr": [{
+							"label": "one"
+						}]
+					}]
+				}, {
+					"subArr": [{
+						"label": "is",
+						"subSubArr": [{
+							"label": "two"
+						}]
+					}]
+				}, {
+					"subArr": [{
+						"label": "good",
+						"subSubArr": [{
+							"label": "three"
+						}]
+					}]
+				}]
+			};
+			
+			// Meaning get me all docs in subSubArr from all docs in
+			// subArr from all docs in arr
+			const path = "arr.$.subArr.$.subSubArr.$";
+			const result = get(obj, path, undefined, {arrayTraversal: true, expandWildcards: true});
+			
+			const expected = [{
+				"label": "one"
+			}, {
+				"label": "two"
+			}, {
+				"label": "three"
+			}];
+			
+			assert.deepStrictEqual(result, expected, "The value is correct");
+		});
 	});
 	
 	describe("set()", () => {

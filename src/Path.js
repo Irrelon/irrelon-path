@@ -335,28 +335,31 @@ const get = (obj, path, defaultVal = undefined, options = {}) => {
 	for (let i = 0; i < pathParts.length; i++) {
 		const pathPart = pathParts[i];
 		const transformedKey = options.transformKey(unEscape(pathPart), objPart);
+		const nextKey = options.transformKey(unEscape(pathParts[i + 1] || ""), objPart);
 		
-		if (transformedKey === "$" && options.expandWildcards === true && objPart instanceof Array) {
+		objPart = objPart[transformedKey];
+		
+		const isPartAnArray = objPart instanceof Array;
+		
+		if (nextKey === "$" && isPartAnArray === true && options.expandWildcards === true) {
 			// Define an array to store our results in down the tree
 			options.expandedResult = options.expandedResult || [];
 			
 			// The key is a wildcard and expandWildcards is enabled
 			objPart.forEach((arrItem) => {
-				const innerKey = pathParts.slice(i + 1).join(".");
+				const innerKey = pathParts.slice(i + 2).join(".");
 				
 				if (innerKey === "") {
 					options.expandedResult.push(arrItem);
 				} else {
-					get(arrItem, pathParts.slice(i + 1).join("."), defaultVal, options);
+					get(arrItem, innerKey, defaultVal, options);
 				}
 			});
 			
 			return options.expandedResult.length !== 0 ? options.expandedResult : defaultVal;
 		}
 		
-		objPart = objPart[transformedKey];
-		
-		if (objPart instanceof Array && options.arrayTraversal === true) {
+		if (isPartAnArray && options.arrayTraversal === true) {
 			// The data is an array and we have arrayTraversal enabled
 			// so loop the array items and return the first non-undefined
 			// value from any array item leaf node that matches the path
