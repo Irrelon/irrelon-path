@@ -340,14 +340,14 @@ const get = (obj, path, defaultVal = undefined, options = {}) => {
 		
 		const isPartAnArray = objPart instanceof Array;
 		
-		if (isPartAnArray === true && options.expandWildcards === true) {
+		if (isPartAnArray === true && options.wildcardExpansion === true) {
 			const nextKey = options.transformKey(unEscape(pathParts[i + 1] || ""), objPart);
 			
 			if (nextKey === "$") {
 				// Define an array to store our results in down the tree
 				options.expandedResult = options.expandedResult || [];
 				
-				// The key is a wildcard and expandWildcards is enabled
+				// The key is a wildcard and wildcardExpansion is enabled
 				objPart.forEach((arrItem) => {
 					const innerKey = pathParts.slice(i + 2).join(".");
 					
@@ -395,19 +395,32 @@ const get = (obj, path, defaultVal = undefined, options = {}) => {
 
 /**
  * Gets multiple values from the passed arr and given path.
- * @param {Array} arr The array to operate on.
+ * @param {Object|Array} data The array or object to operate on.
  * @param {String} path The path to retrieve data from.
  * @param {*=} defaultVal Optional default to return if the
  * value retrieved from the given object and path equals undefined.
  * @param {Object=} options Optional options object.
  * @returns {Array}
  */
-const getMany = (arr, path, defaultVal = undefined, options = {}) => {
+const getMany = (data, path, defaultVal = undefined, options = {}) => {
+	const isDataAnArray = data instanceof Array;
+	
+	if (!isDataAnArray) {
+		const innerResult = get(data, path, defaultVal, options);
+		const isInnerResultAnArray = innerResult instanceof Array;
+		
+		if (isInnerResultAnArray) return innerResult;
+		if (innerResult === undefined && defaultVal === undefined) return [];
+		if (innerResult === undefined && defaultVal !== undefined) return [defaultVal];
+		
+		return [innerResult];
+	}
+	
 	const parts = split(path);
 	const firstPart = parts[0];
 	const pathRemainder = parts.slice(1).join(".");
 	
-	return arr.reduce((innerResult, arrItem) => {
+	const resultArr = data.reduce((innerResult, arrItem) => {
 		const isArrItemAnArray = arrItem[firstPart] instanceof Array;
 		
 		if (isArrItemAnArray) {
@@ -422,6 +435,9 @@ const getMany = (arr, path, defaultVal = undefined, options = {}) => {
 		
 		return innerResult;
 	}, []);
+	
+	if (resultArr.length === 0 && defaultVal !== undefined) return [defaultVal];
+	return resultArr;
 };
 
 /**
@@ -1575,6 +1591,7 @@ module.exports = {
 	flattenValues,
 	furthest,
 	get,
+	getMany,
 	hasMatchingPathsInObject,
 	isEqual,
 	isNotEqual,

@@ -377,12 +377,12 @@ var get = function get(obj, path) {
     objPart = objPart[transformedKey];
     var isPartAnArray = objPart instanceof Array;
 
-    if (isPartAnArray === true && options.expandWildcards === true) {
+    if (isPartAnArray === true && options.wildcardExpansion === true) {
       var nextKey = options.transformKey(unEscape(pathParts[i + 1] || ""), objPart);
 
       if (nextKey === "$") {
         // Define an array to store our results in down the tree
-        options.expandedResult = options.expandedResult || []; // The key is a wildcard and expandWildcards is enabled
+        options.expandedResult = options.expandedResult || []; // The key is a wildcard and wildcardExpansion is enabled
 
         objPart.forEach(function (arrItem) {
           var innerKey = pathParts.slice(i + 2).join(".");
@@ -444,7 +444,7 @@ var get = function get(obj, path) {
 };
 /**
  * Gets multiple values from the passed arr and given path.
- * @param {Array} arr The array to operate on.
+ * @param {Object|Array} data The array or object to operate on.
  * @param {String} path The path to retrieve data from.
  * @param {*=} defaultVal Optional default to return if the
  * value retrieved from the given object and path equals undefined.
@@ -453,13 +453,24 @@ var get = function get(obj, path) {
  */
 
 
-var getMany = function getMany(arr, path) {
+var getMany = function getMany(data, path) {
   var defaultVal = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : undefined;
   var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+  var isDataAnArray = data instanceof Array;
+
+  if (!isDataAnArray) {
+    var innerResult = get(data, path, defaultVal, options);
+    var isInnerResultAnArray = innerResult instanceof Array;
+    if (isInnerResultAnArray) return innerResult;
+    if (innerResult === undefined && defaultVal === undefined) return [];
+    if (innerResult === undefined && defaultVal !== undefined) return [defaultVal];
+    return [innerResult];
+  }
+
   var parts = split(path);
   var firstPart = parts[0];
   var pathRemainder = parts.slice(1).join(".");
-  return arr.reduce(function (innerResult, arrItem) {
+  var resultArr = data.reduce(function (innerResult, arrItem) {
     var isArrItemAnArray = arrItem[firstPart] instanceof Array;
 
     if (isArrItemAnArray) {
@@ -472,6 +483,8 @@ var getMany = function getMany(arr, path) {
     if (val !== undefined) innerResult.push(val);
     return innerResult;
   }, []);
+  if (resultArr.length === 0 && defaultVal !== undefined) return [defaultVal];
+  return resultArr;
 };
 /**
  * Sets a single value on the passed object and given path. This
@@ -1685,6 +1698,7 @@ module.exports = {
   flattenValues: flattenValues,
   furthest: furthest,
   get: get,
+  getMany: getMany,
   hasMatchingPathsInObject: hasMatchingPathsInObject,
   isEqual: isEqual,
   isNotEqual: isNotEqual,

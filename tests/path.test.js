@@ -7,6 +7,7 @@ const {
 	split,
 	escape,
 	get,
+	getMany,
 	set,
 	setImmutable,
 	unSet,
@@ -325,6 +326,252 @@ describe("Path", () => {
 		});
 	});
 	
+	describe("getMany()", () => {
+		it("Can get a field value from an object path", () => {
+			const obj = {
+				"obj": {
+					"val": "foo"
+				}
+			};
+			
+			const result = getMany(obj, "obj.val");
+			assert.deepStrictEqual(result, ["foo"], "The value was retrieved correctly");
+		});
+		
+		it("Can get a field value from an array path", () => {
+			const obj = {
+				"arr": [{
+					"val": "foo"
+				}]
+			};
+			
+			const result = getMany(obj, "arr.0.val");
+			assert.deepStrictEqual(result, ["foo"], "The value was retrieved correctly");
+		});
+		
+		it("Can return the default value when a path does not exist", () => {
+			const obj = {
+				"arr": [{
+					"val": "foo"
+				}]
+			};
+			
+			const result = getMany(obj, "arr.0.nonExistent", "defaultVal");
+			assert.deepStrictEqual(result, ["defaultVal"], "The value was retrieved correctly");
+		});
+		
+		it("Can return the default value when a sub-path does not exist", () => {
+			const obj = {
+				"arr": [{
+					"val": "foo"
+				}]
+			};
+			
+			const result = getMany(obj, "arr.3.nonExistent", "defaultVal");
+			assert.deepStrictEqual(result, ["defaultVal"], "The value was retrieved correctly");
+		});
+		
+		it("Will return undefined when the full path is non-existent", () => {
+			const obj = {
+				"obj": {
+					"val": null
+				}
+			};
+			
+			const result = getMany(obj, "obj.val.roo.foo.moo");
+			assert.deepStrictEqual(result, [], "The value was retrieved correctly");
+		});
+		
+		it("Supports escaped paths to get data correctly", () => {
+			const obj = {
+				"foo": {
+					"jim@jones.com": "bar"
+				}
+			};
+			
+			const path = joinEscaped("foo", "jim@jones.com");
+			const result = getMany(obj, path);
+			
+			assert.deepStrictEqual(result, ["bar"], "The value is correct");
+		});
+		
+		it("Supports auto-expanding arrays when arrayExpansion is true and root is not an array", () => {
+			const obj = {
+				"innerObj": {
+					"arr": [{
+						"thing": "thought"
+					}, {
+						"otherThing": "otherThought"
+					}, {
+						"subArr": [{
+							"value": "bar"
+						}, {
+							"value": "ram"
+						}]
+					}, {
+						"subArr": [{
+							"value": "you"
+						}, {
+							"value": undefined
+						}]
+					}, {
+						"subArr": [{
+							"value": "too"
+						}]
+					}]
+				}
+			};
+			
+			const path = "innerObj.arr.subArr.value";
+			const result = getMany(obj, path, undefined, {arrayTraversal: true, arrayExpansion: true});
+			
+			assert.deepStrictEqual(result, ["bar", "ram", "you", "too"], "The value is correct");
+		});
+		
+		it("Correctly returns undefined when arrayTraversal is true and leaf nodes produce no result and no default value is provided", () => {
+			const obj = {
+				"arr": [{
+					"someValue": "bar"
+				}, {
+					"someValue": "ram"
+				}, {
+					"someValue": "you"
+				}]
+			};
+			
+			const path = "arr.value";
+			const result = getMany(obj, path, undefined, {arrayTraversal: true});
+			
+			assert.deepStrictEqual(result, [], "The value is correct");
+		});
+		
+		it("Correctly expands result when a wildcard is used", () => {
+			const obj = {
+				"arr": [{
+					"subArr": [{
+						"label": "thought",
+						"subSubArr": [{
+							"label": "one"
+						}]
+					}]
+				}, {
+					"subArr": [{
+						"label": "is",
+						"subSubArr": [{
+							"label": "two"
+						}]
+					}]
+				}, {
+					"subArr": [{
+						"label": "good",
+						"subSubArr": [{
+							"label": "three"
+						}]
+					}]
+				}]
+			};
+			
+			// Meaning get me all docs in subSubArr from all docs in
+			// subArr from all docs in arr
+			const path = "arr.$.subArr.$.subSubArr.$";
+			const result = getMany(obj, path, undefined, {arrayTraversal: false, wildcardExpansion: true});
+			
+			const expected = [{
+				"label": "one"
+			}, {
+				"label": "two"
+			}, {
+				"label": "three"
+			}];
+			
+			assert.deepStrictEqual(result, expected, "The value is correct");
+		});
+		
+		it("Correctly expands result when a wildcard is used with arrayTraversal enabled and a sub-document positional terminator", () => {
+			const obj = {
+				"arr": [{
+					"subArr": [{
+						"label": "thought",
+						"subSubArr": [{
+							"label": "one"
+						}]
+					}]
+				}, {
+					"subArr": [{
+						"label": "is",
+						"subSubArr": [{
+							"label": "two"
+						}]
+					}]
+				}, {
+					"subArr": [{
+						"label": "good",
+						"subSubArr": [{
+							"label": "three"
+						}]
+					}]
+				}]
+			};
+			
+			// Meaning get me all docs in subSubArr from all docs in
+			// subArr from all docs in arr
+			const path = "arr.$.subArr.$.subSubArr.$";
+			const result = getMany(obj, path, undefined, {arrayTraversal: true, wildcardExpansion: true});
+			
+			const expected = [{
+				"label": "one"
+			}, {
+				"label": "two"
+			}, {
+				"label": "three"
+			}];
+			
+			assert.deepStrictEqual(result, expected, "The value is correct");
+		});
+		
+		it("Correctly expands result when a wildcard is used with arrayTraversal enabled and a non-positional terminator", () => {
+			const obj = {
+				"arr": [{
+					"subArr": [{
+						"label": "thought",
+						"subSubArr": [{
+							"label": "one"
+						}]
+					}]
+				}, {
+					"subArr": [{
+						"label": "is",
+						"subSubArr": [{
+							"label": "two"
+						}]
+					}]
+				}, {
+					"subArr": [{
+						"label": "good",
+						"subSubArr": [{
+							"label": "three"
+						}]
+					}]
+				}]
+			};
+			
+			// Meaning get me all subSubArr from all docs in
+			// subArr from all docs in arr
+			const path = "arr.$.subArr.$.subSubArr";
+			const result = getMany(obj, path, undefined, {arrayTraversal: true, wildcardExpansion: true});
+			
+			const expected = [[{
+				"label": "one"
+			}], [{
+				"label": "two"
+			}], [{
+				"label": "three"
+			}]];
+			
+			assert.deepStrictEqual(result, expected, "The value is correct");
+		});
+	});
+	
 	describe("get()", () => {
 		it("Can get a field value from an object path", () => {
 			const obj = {
@@ -534,7 +781,7 @@ describe("Path", () => {
 			// Meaning get me all docs in subSubArr from all docs in
 			// subArr from all docs in arr
 			const path = "arr.$.subArr.$.subSubArr.$";
-			const result = get(obj, path, undefined, {arrayTraversal: false, expandWildcards: true});
+			const result = get(obj, path, undefined, {arrayTraversal: false, wildcardExpansion: true});
 			
 			const expected = [{
 				"label": "one"
@@ -576,7 +823,7 @@ describe("Path", () => {
 			// Meaning get me all docs in subSubArr from all docs in
 			// subArr from all docs in arr
 			const path = "arr.$.subArr.$.subSubArr.$";
-			const result = get(obj, path, undefined, {arrayTraversal: true, expandWildcards: true});
+			const result = get(obj, path, undefined, {arrayTraversal: true, wildcardExpansion: true});
 			
 			const expected = [{
 				"label": "one"
@@ -618,7 +865,7 @@ describe("Path", () => {
 			// Meaning get me all subSubArr from all docs in
 			// subArr from all docs in arr
 			const path = "arr.$.subArr.$.subSubArr";
-			const result = get(obj, path, undefined, {arrayTraversal: true, expandWildcards: true});
+			const result = get(obj, path, undefined, {arrayTraversal: true, wildcardExpansion: true});
 			
 			const expected = [[{
 				"label": "one"
