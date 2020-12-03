@@ -352,7 +352,10 @@ const get = (obj, path, defaultVal = undefined, options = {}) => {
 				if (innerKey === "") {
 					options.expandedResult.push(arrItem);
 				} else {
-					get(arrItem, innerKey, defaultVal, options);
+					const innerResult = get(arrItem, innerKey, defaultVal, options);
+					if (innerKey.indexOf(".$") === -1) {
+						options.expandedResult.push(innerResult);
+					}
 				}
 			});
 			

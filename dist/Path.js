@@ -388,7 +388,11 @@ var get = function get(obj, path) {
         if (innerKey === "") {
           options.expandedResult.push(arrItem);
         } else {
-          get(arrItem, innerKey, defaultVal, options);
+          var innerResult = get(arrItem, innerKey, defaultVal, options);
+
+          if (innerKey.indexOf(".$") === -1) {
+            options.expandedResult.push(innerResult);
+          }
         }
       });
       return {
