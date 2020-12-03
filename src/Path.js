@@ -364,7 +364,8 @@ const get = (obj, path, defaultVal = undefined, options = {}) => {
 			// so loop the array items and return the first non-undefined
 			// value from any array item leaf node that matches the path
 			const result = objPart.reduce((innerResult, arrItem) => {
-				return innerResult || get(arrItem, pathParts.slice(i + 1).join("."), defaultVal, options);
+				if (innerResult !== undefined) return innerResult;
+				return get(arrItem, pathParts.slice(i + 1).join("."), defaultVal, options);
 			}, undefined);
 			
 			return result !== undefined ? result : defaultVal;
