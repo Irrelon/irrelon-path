@@ -335,54 +335,93 @@ const get = (obj, path, defaultVal = undefined, options = {}) => {
 	for (let i = 0; i < pathParts.length; i++) {
 		const pathPart = pathParts[i];
 		const transformedKey = options.transformKey(unEscape(pathPart), objPart);
-		const nextKey = options.transformKey(unEscape(pathParts[i + 1] || ""), objPart);
 		
 		objPart = objPart[transformedKey];
 		
 		const isPartAnArray = objPart instanceof Array;
 		
-		if (nextKey === "$" && isPartAnArray === true && options.expandWildcards === true) {
-			// Define an array to store our results in down the tree
-			options.expandedResult = options.expandedResult || [];
+		if (isPartAnArray === true && options.expandWildcards === true) {
+			const nextKey = options.transformKey(unEscape(pathParts[i + 1] || ""), objPart);
 			
-			// The key is a wildcard and expandWildcards is enabled
-			objPart.forEach((arrItem) => {
-				const innerKey = pathParts.slice(i + 2).join(".");
+			if (nextKey === "$") {
+				// Define an array to store our results in down the tree
+				options.expandedResult = options.expandedResult || [];
 				
-				if (innerKey === "") {
-					options.expandedResult.push(arrItem);
-				} else {
-					const innerResult = get(arrItem, innerKey, defaultVal, options);
-					if (innerKey.indexOf(".$") === -1) {
-						options.expandedResult.push(innerResult);
+				// The key is a wildcard and expandWildcards is enabled
+				objPart.forEach((arrItem) => {
+					const innerKey = pathParts.slice(i + 2).join(".");
+					
+					if (innerKey === "") {
+						options.expandedResult.push(arrItem);
+					} else {
+						const innerResult = get(arrItem, innerKey, defaultVal, options);
+						if (innerKey.indexOf(".$") === -1) {
+							options.expandedResult.push(innerResult);
+						}
 					}
-				}
-			});
-			
-			return options.expandedResult.length !== 0 ? options.expandedResult : defaultVal;
+				});
+				
+				return options.expandedResult.length !== 0 ? options.expandedResult : defaultVal;
+			}
 		}
 		
 		if (isPartAnArray && options.arrayTraversal === true) {
 			// The data is an array and we have arrayTraversal enabled
-			// so loop the array items and return the first non-undefined
-			// value from any array item leaf node that matches the path
-			const result = objPart.reduce((innerResult, arrItem) => {
-				if (innerResult !== undefined) return innerResult;
-				return get(arrItem, pathParts.slice(i + 1).join("."), defaultVal, options);
-			}, undefined);
 			
-			return result !== undefined ? result : defaultVal;
-		} else if (!objPart || typeof objPart !== "object") {
-			if (i !== pathParts.length - 1) {
-				// The path terminated in the object before we reached
-				// the end node we wanted so make sure we return undefined
-				objPart = undefined;
+			// Check for auto-expansion
+			if (options.arrayExpansion === true) {
+				return getMany(objPart, pathParts.slice(i + 1).join("."), defaultVal, options);
 			}
-			break;
+			
+			// Loop the array items and return the first non-undefined
+			// value from any array item leaf node that matches the path
+			for (let objPartIndex = 0; objPartIndex < objPart.length; objPartIndex++) {
+				const arrItem = objPart[objPartIndex];
+				const innerResult = get(arrItem, pathParts.slice(i + 1).join("."), defaultVal, options);
+				
+				if (innerResult !== undefined) return innerResult;
+			}
+			
+			return defaultVal;
+		} else if ((!objPart || typeof objPart !== "object") && i !== pathParts.length - 1) {
+			// The path terminated in the object before we reached
+			// the end node we wanted so make sure we return undefined
+			return defaultVal;
 		}
 	}
 	
 	return objPart !== undefined ? objPart : defaultVal;
+};
+
+/**
+ * Gets multiple values from the passed arr and given path.
+ * @param {Array} arr The array to operate on.
+ * @param {String} path The path to retrieve data from.
+ * @param {*=} defaultVal Optional default to return if the
+ * value retrieved from the given object and path equals undefined.
+ * @param {Object=} options Optional options object.
+ * @returns {Array}
+ */
+const getMany = (arr, path, defaultVal = undefined, options = {}) => {
+	const parts = split(path);
+	const firstPart = parts[0];
+	const pathRemainder = parts.slice(1).join(".");
+	
+	return arr.reduce((innerResult, arrItem) => {
+		const isArrItemAnArray = arrItem[firstPart] instanceof Array;
+		
+		if (isArrItemAnArray) {
+			const recurseResult = getMany(arrItem[firstPart], pathRemainder, defaultVal, options);
+			
+			innerResult.push(...recurseResult);
+			return innerResult;
+		}
+		
+		const val = get(arrItem, path, defaultVal, options);
+		if (val !== undefined) innerResult.push(val);
+		
+		return innerResult;
+	}, []);
 };
 
 /**
@@ -1120,9 +1159,10 @@ const type = (item) => {
  * data. Will recurse into arrays and objects to find query.
  * @param {*} source The source data to check.
  * @param {*} query The query data to find.
+ * @param {Object} [options] An options object.
  * @returns {Boolean} True if query was matched, false if not.
  */
-const match = (source, query) => {
+const match = (source, query, options = {}) => {
 	const sourceType = typeof source;
 	const queryType = typeof query;
 	

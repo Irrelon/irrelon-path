@@ -402,6 +402,10 @@ describe("Path", () => {
 					"otherThing": "otherThought"
 				}, {
 					"value": "bar"
+				}, {
+					"value": "ram"
+				}, {
+					"value": "you"
 				}]
 			};
 			
@@ -409,6 +413,62 @@ describe("Path", () => {
 			const result = get(obj, path, undefined, {arrayTraversal: true});
 			
 			assert.strictEqual(result, "bar", "The value is correct");
+		});
+		
+		it("Supports auto-expanding arrays when arrayExpansion is true", () => {
+			const obj = {
+				"arr": [{
+					"thing": "thought"
+				}, {
+					"otherThing": "otherThought"
+				}, {
+					"value": "bar"
+				}, {
+					"value": "ram"
+				}, {
+					"value": "you"
+				}, {
+					"value": undefined
+				}, {
+					"value": "too"
+				}]
+			};
+			
+			const path = "arr.value";
+			const result = get(obj, path, undefined, {arrayTraversal: true, arrayExpansion: true});
+			
+			assert.deepStrictEqual(result, ["bar", "ram", "you", "too"], "The value is correct");
+		});
+		
+		it("Supports nested auto-expanding arrays when arrayExpansion is true", () => {
+			const obj = {
+				"arr": [{
+					"thing": "thought"
+				}, {
+					"otherThing": "otherThought"
+				}, {
+					"subArr": [{
+						"value": "bar"
+					}, {
+						"value": "ram"
+					}]
+				}, {
+					"subArr": [{
+						"value": "you"
+					}, {
+						"value": undefined
+					}]
+				}, {
+					"subArr": [{
+						"value": "too"
+					}]
+				}]
+			};
+			
+			const path = "arr.subArr.value";
+			const result = get(obj, path, undefined, {arrayTraversal: true, arrayExpansion: true});
+			
+			assert.deepStrictEqual(result, ["bar", "ram", "you", "too"], "The value is correct");
 		});
 		
 		it("Correctly returns default value when arrayTraversal is true and leaf nodes produce no result", () => {
@@ -555,7 +615,7 @@ describe("Path", () => {
 				}]
 			};
 			
-			// Meaning get me all docs in subSubArr from all docs in
+			// Meaning get me all subSubArr from all docs in
 			// subArr from all docs in arr
 			const path = "arr.$.subArr.$.subSubArr";
 			const result = get(obj, path, undefined, {arrayTraversal: true, expandWildcards: true});
