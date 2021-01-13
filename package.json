@@ -15,7 +15,11 @@
 		"dot notation",
 		"json",
 		"node",
-		"browser"
+		"browser",
+		"matching",
+		"search",
+		"find",
+		"query"
 	],
 	"author": "Rob Evans - Irrelon Software Limited",
 	"license": "MIT",

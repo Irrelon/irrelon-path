@@ -206,21 +206,23 @@ var shift = function shift(path) {
 /**
  * A function that just returns the first argument.
  * @param {*} val The argument to return.
+ * @param {*} [currentObj] The current object hierarchy.
  * @returns {*} The passed argument.
  */
 
 
-var returnWhatWasGiven = function returnWhatWasGiven(val) {
+var returnWhatWasGiven = function returnWhatWasGiven(val, currentObj) {
   return val;
 };
 /**
  * Converts any key matching the wildcard to a zero.
  * @param {String} key The key to test.
+ * @param {*} [currentObj] The current object hierarchy.
  * @returns {String} The key.
  */
 
 
-var wildcardToZero = function wildcardToZero(key) {
+var wildcardToZero = function wildcardToZero(key, currentObj) {
   return key === "$" ? "0" : key;
 };
 /**
@@ -369,44 +371,120 @@ var get = function get(obj, path) {
   var pathParts = split(internalPath);
   objPart = obj;
 
-  var _loop2 = function _loop2(i) {
+  var _loop = function _loop(i) {
     var pathPart = pathParts[i];
-    objPart = objPart[options.transformKey(unEscape(pathPart))];
+    var transformedKey = options.transformKey(unEscape(pathPart), objPart);
+    objPart = objPart[transformedKey];
+    var isPartAnArray = objPart instanceof Array;
 
-    if (objPart instanceof Array && options.arrayTraversal === true) {
+    if (isPartAnArray === true && options.wildcardExpansion === true) {
+      var nextKey = options.transformKey(unEscape(pathParts[i + 1] || ""), objPart);
+
+      if (nextKey === "$") {
+        // Define an array to store our results in down the tree
+        options.expandedResult = options.expandedResult || []; // The key is a wildcard and wildcardExpansion is enabled
+
+        objPart.forEach(function (arrItem) {
+          var innerKey = pathParts.slice(i + 2).join(".");
+
+          if (innerKey === "") {
+            options.expandedResult.push(arrItem);
+          } else {
+            var innerResult = get(arrItem, innerKey, defaultVal, options);
+
+            if (innerKey.indexOf(".$") === -1) {
+              options.expandedResult.push(innerResult);
+            }
+          }
+        });
+        return {
+          v: options.expandedResult.length !== 0 ? options.expandedResult : defaultVal
+        };
+      }
+    }
+
+    if (isPartAnArray && options.arrayTraversal === true) {
       // The data is an array and we have arrayTraversal enabled
-      // so loop the array items and return the first non-undefined
+      // Check for auto-expansion
+      if (options.arrayExpansion === true) {
+        return {
+          v: getMany(objPart, pathParts.slice(i + 1).join("."), defaultVal, options)
+        };
+      } // Loop the array items and return the first non-undefined
       // value from any array item leaf node that matches the path
-      var result = objPart.reduce(function (result, arrItem) {
-        return get(arrItem, pathParts.slice(i + 1).join("."), defaultVal, options);
-      }, undefined);
-      return {
-        v: result !== undefined ? result : defaultVal
-      };
-    } else if (!objPart || (0, _typeof2["default"])(objPart) !== "object") {
-      if (i !== pathParts.length - 1) {
-        // The path terminated in the object before we reached
-        // the end node we wanted so make sure we return undefined
-        objPart = undefined;
+
+
+      for (var objPartIndex = 0; objPartIndex < objPart.length; objPartIndex++) {
+        var arrItem = objPart[objPartIndex];
+        var innerResult = get(arrItem, pathParts.slice(i + 1).join("."), defaultVal, options);
+        if (innerResult !== undefined) return {
+          v: innerResult
+        };
       }
 
-      return "break";
+      return {
+        v: defaultVal
+      };
+    } else if ((!objPart || (0, _typeof2["default"])(objPart) !== "object") && i !== pathParts.length - 1) {
+      // The path terminated in the object before we reached
+      // the end node we wanted so make sure we return undefined
+      return {
+        v: defaultVal
+      };
     }
   };
 
-  _loop: for (var i = 0; i < pathParts.length; i++) {
-    var _ret = _loop2(i);
+  for (var i = 0; i < pathParts.length; i++) {
+    var _ret = _loop(i);
 
-    switch (_ret) {
-      case "break":
-        break _loop;
-
-      default:
-        if ((0, _typeof2["default"])(_ret) === "object") return _ret.v;
-    }
+    if ((0, _typeof2["default"])(_ret) === "object") return _ret.v;
   }
 
   return objPart !== undefined ? objPart : defaultVal;
+};
+/**
+ * Gets multiple values from the passed arr and given path.
+ * @param {Object|Array} data The array or object to operate on.
+ * @param {String} path The path to retrieve data from.
+ * @param {*=} defaultVal Optional default to return if the
+ * value retrieved from the given object and path equals undefined.
+ * @param {Object=} options Optional options object.
+ * @returns {Array}
+ */
+
+
+var getMany = function getMany(data, path) {
+  var defaultVal = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : undefined;
+  var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+  var isDataAnArray = data instanceof Array;
+
+  if (!isDataAnArray) {
+    var innerResult = get(data, path, defaultVal, options);
+    var isInnerResultAnArray = innerResult instanceof Array;
+    if (isInnerResultAnArray) return innerResult;
+    if (innerResult === undefined && defaultVal === undefined) return [];
+    if (innerResult === undefined && defaultVal !== undefined) return [defaultVal];
+    return [innerResult];
+  }
+
+  var parts = split(path);
+  var firstPart = parts[0];
+  var pathRemainder = parts.slice(1).join(".");
+  var resultArr = data.reduce(function (innerResult, arrItem) {
+    var isArrItemAnArray = arrItem[firstPart] instanceof Array;
+
+    if (isArrItemAnArray) {
+      var recurseResult = getMany(arrItem[firstPart], pathRemainder, defaultVal, options);
+      innerResult.push.apply(innerResult, (0, _toConsumableArray2["default"])(recurseResult));
+      return innerResult;
+    }
+
+    var val = get(arrItem, path, defaultVal, options);
+    if (val !== undefined) innerResult.push(val);
+    return innerResult;
+  }, []);
+  if (resultArr.length === 0 && defaultVal !== undefined) return [defaultVal];
+  return resultArr;
 };
 /**
  * Sets a single value on the passed object and given path. This
@@ -453,7 +531,10 @@ var set = function set(obj, path, val) {
   if (isNonCompositePath(internalPath)) {
     var unescapedPath = unEscape(internalPath); // Do not allow prototype pollution
 
-    if (unescapedPath === "__proto__") return obj;
+    if (unescapedPath === "__proto__") {
+      return obj;
+    }
+
     obj = decouple(obj, options);
     obj[options.transformKey(unescapedPath)] = val;
     return obj;
@@ -464,7 +545,10 @@ var set = function set(obj, path, val) {
   var pathPart = pathParts.shift();
   var transformedPathPart = options.transformKey(pathPart); // Do not allow prototype pollution
 
-  if (transformedPathPart === "__proto__") return obj;
+  if (transformedPathPart === "__proto__") {
+    return obj;
+  }
+
   var childPart = newObj[transformedPathPart];
 
   if ((0, _typeof2["default"])(childPart) !== "object" || childPart === null) {
@@ -1172,11 +1256,13 @@ var type = function type(item) {
  * data. Will recurse into arrays and objects to find query.
  * @param {*} source The source data to check.
  * @param {*} query The query data to find.
+ * @param {Object} [options] An options object.
  * @returns {Boolean} True if query was matched, false if not.
  */
 
 
 var match = function match(source, query) {
+  var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
   var sourceType = (0, _typeof2["default"])(source);
   var queryType = (0, _typeof2["default"])(query);
 
@@ -1623,6 +1709,7 @@ module.exports = {
   flattenValues: flattenValues,
   furthest: furthest,
   get: get,
+  getMany: getMany,
   hasMatchingPathsInObject: hasMatchingPathsInObject,
   isEqual: isEqual,
   isNotEqual: isNotEqual,
