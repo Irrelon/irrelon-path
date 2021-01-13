@@ -761,7 +761,7 @@ console.log(obj.foo.bar[0].baa); // Logs: undefined
 console.log(obj.foo.bar[0].hasOwnProperty("baa")); // Logs: false
 ```
 
-### update (`obj`, `updateData`, `options`)
+### update (`obj`, `basePath`, `updateData`, `options`)
 Sets a single value on the passed object and given path. This
 will directly modify the "obj" object. If you need immutable
 updates, use updateImmutable() instead.
@@ -778,7 +778,10 @@ const obj = {
 
 console.log(obj.foo.bar[0].baa); // Logs: ram you
 
-update(obj, {
+// Calling this function with a basePath as an empty string
+// will operate directly on the passed `obj` instead of a 
+// sub-object of `obj`.
+update(obj, "", {
 	"foo.bar.0.baa": "hello I've been updated",
 	"and.so": "have I!"
 });
@@ -786,6 +789,34 @@ update(obj, {
 console.log(obj.foo.bar[0].baa); // Logs: hello I've been updated
 console.log(obj.and.so); // Logs: have I!
 ```
+
+## Version 5.x Breaking Changes
+The update() and updateImmutable() functions have their signature changed
+to include a base path in the arguments. If migrating from a previous
+version you can simply add an empty string as the basePath argument to
+have the functions operate in the same way as before e.g.
+
+#### Before Version 5.x
+```js
+update(obj, updateObj);
+updateImmutable(obj, updateObj);
+```
+
+#### After Version 5.x
+```js
+update(obj, "", updateObj);
+updateImmutable(obj, "", updateObj);
+```
+
+The basePath argument was added so that you can target a path within
+the passed `obj` to receive the update e.g.
+
+```js
+const obj = {subObj: {}};
+update(obj, "subObj", {"foo": true});
+```
+
+The update above will modify `obj.subObj.foo` to equal `true`.
 
 ## Version 3.x Breaking Changes
 There was a bug in the get() function that would return an incorrect value

@@ -2245,7 +2245,7 @@ describe("Path", () => {
 	describe("update()", () => {
 		it("Applies the correct values to multiple paths", () => {
 			const obj = {};
-			const resultObj = update(obj, {
+			const resultObj = update(obj, "", {
 				"foo": "fooVal",
 				"bar.one.two": "Three"
 			});
@@ -2253,6 +2253,21 @@ describe("Path", () => {
 			assert.strictEqual(resultObj.foo, "fooVal", "Value is correct for single noted path");
 			assert.strictEqual(resultObj.bar.one.two, "Three", "Value is correct for multi noted path");
 			assert.strictEqual(obj, resultObj, "The changes were made by reference");
+		});
+
+		it("Applies the correct values to multiple paths with a basePath", () => {
+			const obj = {
+				"subObj": {}
+			};
+			const resultObj = update(obj, "subObj", {
+				"foo": "fooVal",
+				"bar.one.two": "Three"
+			});
+
+			assert.strictEqual(resultObj.subObj.foo, "fooVal", "Value is correct for single noted path");
+			assert.strictEqual(resultObj.subObj.bar.one.two, "Three", "Value is correct for multi noted path");
+			assert.strictEqual(obj, resultObj, "The changes were made by reference");
+			assert.strictEqual(obj.subObj, resultObj.subObj, "The changes were made by reference");
 		});
 
 		it("Is not vulnerable to __proto__ pollution", () => {
@@ -2265,7 +2280,7 @@ describe("Path", () => {
 	describe("updateImmutable()", () => {
 		it("Applies the correct values to multiple paths", () => {
 			const obj = {};
-			const resultObj = updateImmutable(obj, {
+			const resultObj = updateImmutable(obj, "", {
 				"foo": "fooVal",
 				"bar.one.two": "Three"
 			});
@@ -2273,6 +2288,21 @@ describe("Path", () => {
 			assert.strictEqual(resultObj.foo, "fooVal", "Value is correct for single noted path");
 			assert.strictEqual(resultObj.bar.one.two, "Three", "Value is correct for multi noted path");
 			assert.notStrictEqual(obj, resultObj, "The changes were made by value");
+		});
+
+		it("Applies the correct values to multiple paths with a basePath", () => {
+			const obj = {
+				"subObj": {}
+			};
+			const resultObj = updateImmutable(obj, "subObj", {
+				"foo": "fooVal",
+				"bar.one.two": "Three"
+			});
+
+			assert.strictEqual(resultObj.subObj.foo, "fooVal", "Value is correct for single noted path");
+			assert.strictEqual(resultObj.subObj.bar.one.two, "Three", "Value is correct for multi noted path");
+			assert.notStrictEqual(obj, resultObj, "The changes were made by value");
+			assert.notStrictEqual(obj.subObj, resultObj.subObj, "The changes were made by value");
 		});
 
 		it("Is not vulnerable to __proto__ pollution", () => {

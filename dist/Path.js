@@ -566,6 +566,9 @@ var unSet = function unSet(obj, path) {
  * modify the "obj" object. If you need immutable updates, use
  * updateImmutable() instead.
  * @param {Object|Array} obj The object to operate on.
+ * @param {String} [basePath=""] The path to the object to operate on relative
+ * to the `obj`. If `obj` is the object to be directly operated on, leave
+ * `basePath` as an empty string.
  * @param {Object|Array} updateData The update data to apply with
  * keys as string paths.
  * @param {Object=} options The options object.
@@ -573,18 +576,42 @@ var unSet = function unSet(obj, path) {
  */
 
 
-var update = function update(obj, updateData) {
-  var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+var update = function update(obj) {
+  var basePath = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : "";
+  var updateData = arguments.length > 2 ? arguments[2] : undefined;
+  var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
   var newObj = obj;
 
   for (var path in updateData) {
     if (updateData.hasOwnProperty(path)) {
       var data = updateData[path];
-      newObj = set(newObj, path, data, options);
+      newObj = set(newObj, join(basePath, path), data, options);
     }
   }
 
   return newObj;
+};
+/**
+ * Same as update() but will not change or modify the existing `obj`.
+ * References to objects that were not modified remain the same.
+ * @param {Object|Array} obj The object to operate on.
+ * @param {String} [basePath=""] The path to the object to operate on relative
+ * to the `obj`. If `obj` is the object to be directly operated on, leave
+ * `basePath` as an empty string.
+ * @param {Object|Array} updateData The update data to apply with
+ * keys as string paths.
+ * @param {Object=} options The options object.
+ * @returns {*} The new object with the modified data.
+ */
+
+
+var updateImmutable = function updateImmutable(obj) {
+  var basePath = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : "";
+  var updateData = arguments.length > 2 ? arguments[2] : undefined;
+  var options = arguments.length > 3 ? arguments[3] : undefined;
+  return update(obj, basePath, updateData, _objectSpread(_objectSpread({}, options), {}, {
+    immutable: true
+  }));
 };
 /**
  * If options.immutable === true then return a new de-referenced
@@ -1539,22 +1566,6 @@ var pullValImmutable = function pullValImmutable(obj, path, val) {
 var unSetImmutable = function unSetImmutable(obj, path) {
   var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
   return unSet(obj, path, _objectSpread(_objectSpread({}, options), {}, {
-    immutable: true
-  }));
-};
-/**
- * Same as update() but will not change or modify the existing `obj`.
- * References to objects that were not modified remain the same.
- * @param {Object|Array} obj The object to operate on.
- * @param {Object|Array} updateData The update data to apply with
- * keys as string paths.
- * @param {Object=} options The options object.
- * @returns {*} The new object with the modified data.
- */
-
-
-var updateImmutable = function updateImmutable(obj, updateData, options) {
-  return update(obj, updateData, _objectSpread(_objectSpread({}, options), {}, {
     immutable: true
   }));
 };

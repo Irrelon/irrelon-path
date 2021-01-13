@@ -525,22 +525,41 @@ const unSet = (obj, path, options = {}, tracking = {}) => {
  * modify the "obj" object. If you need immutable updates, use
  * updateImmutable() instead.
  * @param {Object|Array} obj The object to operate on.
+ * @param {String} [basePath=""] The path to the object to operate on relative
+ * to the `obj`. If `obj` is the object to be directly operated on, leave
+ * `basePath` as an empty string.
  * @param {Object|Array} updateData The update data to apply with
  * keys as string paths.
  * @param {Object=} options The options object.
  * @returns {*} The object with the modified data.
  */
-const update = (obj, updateData, options = {}) => {
+const update = (obj, basePath = "", updateData, options = {}) => {
 	let newObj = obj;
 
 	for (let path in updateData) {
 		if (updateData.hasOwnProperty(path)) {
 			const data = updateData[path];
-			newObj = set(newObj, path, data, options);
+			newObj = set(newObj, join(basePath, path), data, options);
 		}
 	}
 
 	return newObj;
+};
+
+/**
+ * Same as update() but will not change or modify the existing `obj`.
+ * References to objects that were not modified remain the same.
+ * @param {Object|Array} obj The object to operate on.
+ * @param {String} [basePath=""] The path to the object to operate on relative
+ * to the `obj`. If `obj` is the object to be directly operated on, leave
+ * `basePath` as an empty string.
+ * @param {Object|Array} updateData The update data to apply with
+ * keys as string paths.
+ * @param {Object=} options The options object.
+ * @returns {*} The new object with the modified data.
+ */
+const updateImmutable = (obj, basePath = "", updateData, options) => {
+	return update(obj, basePath, updateData, {...options, immutable: true});
 };
 
 /**
@@ -1436,19 +1455,6 @@ const pullValImmutable = (obj, path, val, options = {}) => {
  */
 const unSetImmutable = (obj, path, options = {}) => {
 	return unSet(obj, path, {...options, immutable: true});
-};
-
-/**
- * Same as update() but will not change or modify the existing `obj`.
- * References to objects that were not modified remain the same.
- * @param {Object|Array} obj The object to operate on.
- * @param {Object|Array} updateData The update data to apply with
- * keys as string paths.
- * @param {Object=} options The options object.
- * @returns {*} The new object with the modified data.
- */
-const updateImmutable = (obj, updateData, options) => {
-	return update(obj, updateData, {...options, immutable: true});
 };
 
 /**
