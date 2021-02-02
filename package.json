@@ -3,10 +3,11 @@
 	"version": "5.0.0",
 	"description": "A powerful JSON path processor. Allows you to drill into and manipulate JSON objects with a simple dot-delimited path format e.g. \"obj.name\".",
 	"main": "./src/Path.js",
+	"types": "./dist/Path.d.ts",
 	"scripts": {
 		"test": "NODE_ENV=test mocha ./tests/**/**.test.js",
 		"testMon": "nodemon --watch src --watch tests --exec \"NODE_ENV=test BABEL_DISABLE_CACHE=1 mocha ./tests/**/**.test.js\"",
-		"build": "npm test && rimraf dist && babel ./src/*.js --out-dir dist",
+		"build": "npm test && rimraf dist && babel ./src/*.js --out-dir dist && tsc",
 		"eslint": "eslint ./src/**.js ./tests/**.js ./dist/Path.js",
 		"eslint-fix": "eslint --fix ./src/**.js ./tests/**.js"
 	},
@@ -35,8 +36,9 @@
 		"eslint-config-irrelon": "^1.0.2",
 		"mocha": "^6.2.2",
 		"mocha-expect": "^1.0.3",
+		"nodemon": "^2.0.3",
 		"rimraf": "^2.7.1",
-		"nodemon": "^2.0.3"
+		"typescript": "^4.1.3"
 	},
 	"repository": {
 		"type": "git",
