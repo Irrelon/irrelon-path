@@ -48,7 +48,6 @@ local.properties
 [Dd]ebug/
 [Rr]elease/
 x64/
-build/
 [Bb]in/
 [Oo]bj/
 
@@ -194,7 +193,6 @@ $RECYCLE.BIN/
 # Packages
 *.egg
 *.egg-info
-build/
 eggs/
 parts/
 var/
