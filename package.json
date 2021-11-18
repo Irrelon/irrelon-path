@@ -1,13 +1,13 @@
 {
 	"name": "@irrelon/path",
-	"version": "5.0.0",
+	"version": "6.0.0",
 	"description": "A powerful JSON path processor. Allows you to drill into and manipulate JSON objects with a simple dot-delimited path format e.g. \"obj.name\".",
-	"main": "./src/Path.js",
-	"types": "./dist/Path.d.ts",
+	"main": "./build/path.js",
+	"types": "./build/path.d.ts",
 	"scripts": {
 		"test": "NODE_ENV=test mocha ./tests/**/**.test.js",
 		"testMon": "nodemon --watch src --watch tests --exec \"NODE_ENV=test BABEL_DISABLE_CACHE=1 mocha ./tests/**/**.test.js\"",
-		"build": "npm test && rimraf dist && babel ./src/*.js --out-dir dist && tsc",
+		"build": "tsc",
 		"eslint": "eslint ./src/**.js ./tests/**.js ./dist/Path.js",
 		"eslint-fix": "eslint --fix ./src/**.js ./tests/**.js"
 	},
@@ -25,6 +25,7 @@
 	"author": "Rob Evans - Irrelon Software Limited",
 	"license": "MIT",
 	"devDependencies": {
+		"@types/node": "^16.11.6",
 		"@babel/cli": "^7.8.7",
 		"@babel/core": "^7.8.7",
 		"@babel/plugin-proposal-class-properties": "^7.8.7",
@@ -38,7 +39,8 @@
 		"mocha-expect": "^1.0.3",
 		"nodemon": "^2.0.3",
 		"rimraf": "^2.7.1",
-		"typescript": "^4.1.3"
+		"ts-node": "^10.4.0",
+		"typescript": "^4.4.4"
 	},
 	"repository": {
 		"type": "git",
