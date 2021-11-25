@@ -657,7 +657,7 @@ export const unSet = (obj: ObjectType, path: string, options: SetOptionsType = {
  * `basePath` as an empty string.
  * @param {ObjectType} updateData The update data to apply with
  * keys as string paths.
- * @param {OptionsType} [options] The options object.
+ * @param options The options object.
  * @returns {*} The object with the modified data.
  */
 export const update = (obj: ObjectType, basePath: string = "", updateData: ObjectType, options: SetOptionsType = {}): any => {
