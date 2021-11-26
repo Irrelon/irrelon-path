@@ -549,7 +549,7 @@ exports.unSet = unSet;
  * `basePath` as an empty string.
  * @param {ObjectType} updateData The update data to apply with
  * keys as string paths.
- * @param {OptionsType} [options] The options object.
+ * @param options The options object.
  * @returns {*} The object with the modified data.
  */
 const update = (obj, basePath = "", updateData, options = {}) => {
@@ -576,7 +576,7 @@ exports.update = update;
  * @param {SetOptionsType} [options] The options object.
  * @returns {*} The new object with the modified data.
  */
-const updateImmutable = (obj, basePath = "", updateData, options) => {
+const updateImmutable = (obj, basePath = "", updateData, options = {}) => {
     return (0, exports.update)(obj, basePath, updateData, Object.assign(Object.assign({}, options), { immutable: true }));
 };
 exports.updateImmutable = updateImmutable;

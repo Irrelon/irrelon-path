@@ -200,7 +200,7 @@ export declare const unSet: (obj: ObjectType, path: string, options?: SetOptions
  * `basePath` as an empty string.
  * @param {ObjectType} updateData The update data to apply with
  * keys as string paths.
- * @param {OptionsType} [options] The options object.
+ * @param options The options object.
  * @returns {*} The object with the modified data.
  */
 export declare const update: (obj: ObjectType, basePath: string | undefined, updateData: ObjectType, options?: SetOptionsType) => any;
@@ -216,7 +216,7 @@ export declare const update: (obj: ObjectType, basePath: string | undefined, upd
  * @param {SetOptionsType} [options] The options object.
  * @returns {*} The new object with the modified data.
  */
-export declare const updateImmutable: (obj: ObjectType, basePath: string | undefined, updateData: ObjectType, options: SetOptionsType) => any;
+export declare const updateImmutable: (obj: ObjectType, basePath: string | undefined, updateData: ObjectType, options?: SetOptionsType) => any;
 /**
  * If options.immutable === true then return a new de-referenced
  * instance of the passed object/array. If immutable is false
@@ -562,7 +562,7 @@ declare const _default: {
     unSetImmutable: (obj: ObjectType, path: string, options?: SetOptionsType) => any;
     up: (path: string, levels?: number) => string;
     update: (obj: ObjectType, basePath: string | undefined, updateData: ObjectType, options?: SetOptionsType) => any;
-    updateImmutable: (obj: ObjectType, basePath: string | undefined, updateData: ObjectType, options: SetOptionsType) => any;
+    updateImmutable: (obj: ObjectType, basePath: string | undefined, updateData: ObjectType, options?: SetOptionsType) => any;
     values: (obj: ObjectType, path: string, options?: OptionsType) => ObjectType;
     wildcardToZero: (key: string, currentObj: any) => string;
 };

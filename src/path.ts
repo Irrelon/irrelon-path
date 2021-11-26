@@ -686,7 +686,7 @@ export const update = (obj: ObjectType, basePath: string = "", updateData: Objec
  * @param {SetOptionsType} [options] The options object.
  * @returns {*} The new object with the modified data.
  */
-export const updateImmutable = (obj: ObjectType, basePath: string = "", updateData: ObjectType, options: SetOptionsType): any => {
+export const updateImmutable = (obj: ObjectType, basePath: string = "", updateData: ObjectType, options: SetOptionsType = {}): any => {
 	return update(obj, basePath, updateData, {...options, immutable: true});
 };
 
