@@ -1628,47 +1628,12 @@ export const chop = (path: string, level: number): string => {
 	return join(...parts);
 };
 
-export default {
-	chop,
-	clean,
-	countLeafNodes,
-	countMatchingPathsInObject,
-	decouple,
-	diff,
-	distill,
-	down,
-	escape,
-	findOnePath,
-	findPath,
-	flatten,
-	flattenValues,
-	furthest,
-	get,
-	getMany,
-	hasMatchingPathsInObject,
-	isEqual,
-	isNotEqual,
-	join,
-	joinEscaped,
-	leafNodes,
-	match,
-	numberToWildcard,
-	pop,
-	pullVal,
-	pullValImmutable,
-	push,
-	pushVal,
-	pushValImmutable,
-	set,
-	setImmutable,
-	shift,
-	split,
-	type,
-	unSet,
-	unSetImmutable,
-	up,
-	update,
-	updateImmutable,
-	values,
-	wildcardToZero
-};
+/**
+ * NOTE: This function is not currently operational.
+ * Merges two objects like a "deep spread".
+ * @param {Object} obj1
+ * @param {Object} obj2
+ */
+export const merge = (obj1: object, obj2: object) => {
+	// TODO: Write this function
+}
