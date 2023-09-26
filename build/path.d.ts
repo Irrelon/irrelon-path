@@ -516,54 +516,11 @@ export declare const distill: (obj: object, pathArr: string[]) => any;
  * @returns {String} The new path string.
  */
 export declare const chop: (path: string, level: number) => string;
-declare const _default: {
-    chop: (path: string, level: number) => string;
-    clean: (str: string) => any;
-    countLeafNodes: (obj: ObjectType, objCache?: any[] | undefined) => number;
-    countMatchingPathsInObject: (testKeys: ObjectType, testObj: ObjectType) => {
-        matchedKeys: ObjectType;
-        matchedKeyCount: number;
-        totalKeyCount: number;
-    };
-    decouple: (obj: any, options?: SetOptionsType) => any;
-    diff: (obj1: ObjectType, obj2: ObjectType, basePath?: string | string[], strict?: boolean, maxDepth?: number, parentPath?: string, objCache?: never[]) => any[];
-    distill: (obj: object, pathArr: string[]) => any;
-    down: (path: string, levels?: number) => string;
-    escape: (str: string) => string;
-    findOnePath: (source: any, query: any, options?: FindOptionsType, parentPath?: string) => object;
-    findPath: (source: any, query: any, options?: FindOptionsType, parentPath?: string) => object;
-    flatten: (obj: ObjectType, finalArr?: any[] | undefined, parentPath?: string | undefined, options?: SetOptionsType, objCache?: never[]) => string[];
-    flattenValues: (obj: ObjectType, finalObj?: object | undefined, parentPath?: string | undefined, options?: OptionsType, objCache?: never[]) => ObjectType;
-    furthest: (obj: ObjectType, path: string, options?: OptionsType) => string;
-    get: (obj: ObjectType, path: string | any[], defaultVal?: any, options?: GetOptionsType) => any;
-    getMany: (data: ObjectType, path: string, defaultVal?: any, options?: object | undefined) => any[];
-    hasMatchingPathsInObject: (testKeys: ObjectType, testObj: ObjectType) => boolean;
-    isEqual: (obj1: any, obj2: any, path: string | string[], deep?: boolean, strict?: boolean) => boolean;
-    isNotEqual: (obj1: any, obj2: any, path: string | string[], deep?: boolean, strict?: boolean) => boolean;
-    join: (...args: string[]) => string;
-    joinEscaped: (...args: string[]) => string;
-    leafNodes: (obj: ObjectType, parentPath?: string, objCache?: any[]) => any[];
-    match: (source: any, query: any, options?: OptionsType) => boolean;
-    numberToWildcard: (key: string) => string;
-    pop: (path: string, levels?: number) => string;
-    pullVal: (obj: ObjectType, path: string, val: any, options?: SetOptionsType) => ObjectType;
-    pullValImmutable: (obj: ObjectType, path: string, val: any, options?: OptionsType) => any;
-    push: (path: string, val?: string) => string;
-    pushVal: (obj: ObjectType, path: string, val: any, options?: SetOptionsType) => ObjectType;
-    pushValImmutable: (obj: ObjectType, path: string, val: any, options?: OptionsType) => any;
-    set: (obj: ObjectType, path: string, val: any, options?: SetOptionsType) => any;
-    setImmutable: (obj: ObjectType, path: string, val: any, options?: SetOptionsType) => any;
-    shift: (path: string, levels?: number) => string;
-    split: (path: string) => string[];
-    type: (item: any) => any;
-    unSet: (obj: ObjectType, path: string, options?: SetOptionsType, tracking?: {
-        returnOriginal?: boolean | undefined;
-    }) => any;
-    unSetImmutable: (obj: ObjectType, path: string, options?: SetOptionsType) => any;
-    up: (path: string, levels?: number) => string;
-    update: (obj: ObjectType, basePath: string | undefined, updateData: ObjectType, options?: SetOptionsType) => any;
-    updateImmutable: (obj: ObjectType, basePath: string | undefined, updateData: ObjectType, options?: SetOptionsType) => any;
-    values: (obj: ObjectType, path: string, options?: OptionsType) => ObjectType;
-    wildcardToZero: (key: string, currentObj: any) => string;
-};
-export default _default;
+/**
+ * NOTE: This function is not currently operational.
+ * Merges two objects like a "deep spread".
+ * @param {Object} obj1
+ * @param {Object} obj2
+ */
+export declare const merge: (obj1: object, obj2: object) => void;
+export {};

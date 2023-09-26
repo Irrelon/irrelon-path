@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.chop = exports.distill = exports.unSetImmutable = exports.pullValImmutable = exports.pushValImmutable = exports.setImmutable = exports.isNotEqual = exports.isEqual = exports.diff = exports.keyDedup = exports.findOnePath = exports.findPath = exports.match = exports.type = exports.countMatchingPathsInObject = exports.hasMatchingPathsInObject = exports.leafNodes = exports.countLeafNodes = exports.joinEscaped = exports.join = exports.flattenValues = exports.flatten = exports.values = exports.furthest = exports.pullVal = exports.pushVal = exports.decouple = exports.updateImmutable = exports.update = exports.unSet = exports.set = exports.getMany = exports.get = exports.unEscape = exports.escape = exports.split = exports.clean = exports.numberToWildcard = exports.wildcardToZero = exports.returnWhatWasGiven = exports.shift = exports.push = exports.pop = exports.down = exports.up = exports.isNonCompositePath = exports.isCompositePath = void 0;
+exports.merge = exports.chop = exports.distill = exports.unSetImmutable = exports.pullValImmutable = exports.pushValImmutable = exports.setImmutable = exports.isNotEqual = exports.isEqual = exports.diff = exports.keyDedup = exports.findOnePath = exports.findPath = exports.match = exports.type = exports.countMatchingPathsInObject = exports.hasMatchingPathsInObject = exports.leafNodes = exports.countLeafNodes = exports.joinEscaped = exports.join = exports.flattenValues = exports.flatten = exports.values = exports.furthest = exports.pullVal = exports.pushVal = exports.decouple = exports.updateImmutable = exports.update = exports.unSet = exports.set = exports.getMany = exports.get = exports.unEscape = exports.escape = exports.split = exports.clean = exports.numberToWildcard = exports.wildcardToZero = exports.returnWhatWasGiven = exports.shift = exports.push = exports.pop = exports.down = exports.up = exports.isNonCompositePath = exports.isCompositePath = void 0;
 /**
  * @typedef {object} FindOptionsType
  * @property {number} [maxDepth=Infinity] The maximum depth to scan inside
@@ -458,7 +458,7 @@ const set = (obj, path, val, options = {}) => {
     let childPart = newObj[transformedPathPart];
     if (typeof childPart !== "object" || childPart === null) {
         // Create an object or array on the path
-        if (String(parseInt(transformedPathPart, 10)) === transformedPathPart) {
+        if (String(parseInt(transformedPathPart, 10)) === transformedPathPart || (pathParts.length > 0 && String(parseInt(pathParts[0], 10)) === pathParts[0])) {
             // This is an array index
             newObj[transformedPathPart] = [];
         }
@@ -1405,47 +1405,13 @@ const chop = (path, level) => {
     return (0, exports.join)(...parts);
 };
 exports.chop = chop;
-exports.default = {
-    chop: exports.chop,
-    clean: exports.clean,
-    countLeafNodes: exports.countLeafNodes,
-    countMatchingPathsInObject: exports.countMatchingPathsInObject,
-    decouple: exports.decouple,
-    diff: exports.diff,
-    distill: exports.distill,
-    down: exports.down,
-    escape: exports.escape,
-    findOnePath: exports.findOnePath,
-    findPath: exports.findPath,
-    flatten: exports.flatten,
-    flattenValues: exports.flattenValues,
-    furthest: exports.furthest,
-    get: exports.get,
-    getMany: exports.getMany,
-    hasMatchingPathsInObject: exports.hasMatchingPathsInObject,
-    isEqual: exports.isEqual,
-    isNotEqual: exports.isNotEqual,
-    join: exports.join,
-    joinEscaped: exports.joinEscaped,
-    leafNodes: exports.leafNodes,
-    match: exports.match,
-    numberToWildcard: exports.numberToWildcard,
-    pop: exports.pop,
-    pullVal: exports.pullVal,
-    pullValImmutable: exports.pullValImmutable,
-    push: exports.push,
-    pushVal: exports.pushVal,
-    pushValImmutable: exports.pushValImmutable,
-    set: exports.set,
-    setImmutable: exports.setImmutable,
-    shift: exports.shift,
-    split: exports.split,
-    type: exports.type,
-    unSet: exports.unSet,
-    unSetImmutable: exports.unSetImmutable,
-    up: exports.up,
-    update: exports.update,
-    updateImmutable: exports.updateImmutable,
-    values: exports.values,
-    wildcardToZero: exports.wildcardToZero
+/**
+ * NOTE: This function is not currently operational.
+ * Merges two objects like a "deep spread".
+ * @param {Object} obj1
+ * @param {Object} obj2
+ */
+const merge = (obj1, obj2) => {
+    // TODO: Write this function
 };
+exports.merge = merge;
