@@ -550,7 +550,7 @@ export const set = (obj: ObjectType, path: string, val: any, options: SetOptions
 
 	if (typeof childPart !== "object" || childPart === null) {
 		// Create an object or array on the path
-		if (String(parseInt(transformedPathPart, 10)) === transformedPathPart) {
+		if (String(parseInt(transformedPathPart, 10)) === transformedPathPart || (pathParts.length > 0 && String(parseInt(pathParts[0], 10)) === pathParts[0])) {
 			// This is an array index
 			newObj[transformedPathPart] = [];
 		} else {
