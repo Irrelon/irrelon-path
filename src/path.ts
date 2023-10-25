@@ -1540,12 +1540,15 @@ export const diffValues = (obj1: ObjectType, obj2: ObjectType, basePath: string|
 	const type1 = type(val1);
 	const type2 = type(val2);
 
-	if (strict && (type1 !== type2)) {
-		// Difference in source and comparison types
-		paths[currentPath] = {val1, val2, type1, type2, difference: "type"};
-	} else if (type1 === "array" && val1.length !== val2.length) {
+	if (type1 !== type2) {
+		if (strict && val1 != val2) {
+			// Difference in source and comparison types
+			paths[currentPath] = {val1, val2, type1, type2, difference: "type"};
+		}
+	}
+	else if (type1 === "array" && type2 === "array" && val1.length !== val2.length) {
 		// Difference in source and comparison content
-		paths[currentPath] = {val1, val2, type1, type2, difference: "value"};
+		paths[currentPath] = { val1, val2, type1, type2, difference: "value" };
 	}
 
 	const pathParts = currentPath.split(".");

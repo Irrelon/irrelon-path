@@ -313,7 +313,7 @@ const get = (obj, path, defaultVal = undefined, options = {}) => {
         // @ts-ignore
         objPart = objPart[transformedKey];
         const isPartAnArray = objPart instanceof Array;
-        if (isPartAnArray === true && options.wildcardExpansion === true) {
+        if (isPartAnArray && options.wildcardExpansion === true) {
             const nextKey = options.transformKey((0, exports.unEscape)(pathParts[i + 1] || ""), objPart);
             if (nextKey === "$") {
                 // Define an array to store our results in down the tree
@@ -686,7 +686,7 @@ const pullVal = (obj, path, val, options = { strict: true }) => {
         if (!(obj instanceof Array)) {
             throw ("Cannot pull from a path whose leaf node is not an array!");
         }
-        let index = -1;
+        let index;
         // Find the index of the passed value
         if (options.strict === true) {
             index = obj.indexOf(val);
@@ -1310,11 +1310,13 @@ const diffValues = (obj1, obj2, basePath = "", strict = false, maxDepth = Infini
     const val2 = (0, exports.get)(obj2, basePath);
     const type1 = (0, exports.type)(val1);
     const type2 = (0, exports.type)(val2);
-    if (strict && (type1 !== type2)) {
-        // Difference in source and comparison types
-        paths[currentPath] = { val1, val2, type1, type2, difference: "type" };
+    if (type1 !== type2) {
+        if (strict && val1 != val2) {
+            // Difference in source and comparison types
+            paths[currentPath] = { val1, val2, type1, type2, difference: "type" };
+        }
     }
-    else if (type1 === "array" && val1.length !== val2.length) {
+    else if (type1 === "array" && type2 === "array" && val1.length !== val2.length) {
         // Difference in source and comparison content
         paths[currentPath] = { val1, val2, type1, type2, difference: "value" };
     }
