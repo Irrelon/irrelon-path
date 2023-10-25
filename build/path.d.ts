@@ -23,18 +23,25 @@ export interface FindOptionsType extends OptionsType {
     currentDepth?: number;
     includeRoot?: boolean;
 }
+export interface DiffValue {
+    val1: unknown;
+    val2: unknown;
+    type1: string;
+    type2: string;
+    difference: "value" | "type" | "both";
+}
 /**
  * Determines if the given path points to a root leaf node (has no delimiter)
  * or contains a dot delimiter so will drill down before reaching a leaf node.
  * If it has a delimiter, it is called a "composite" path.
- * @param {String} path The path to evaluate.
+ * @param {string} path The path to evaluate.
  * @returns {boolean} True if delimiter found, false if not.
  */
 export declare const isCompositePath: (path: string) => boolean;
 /**
  * Provides the opposite of `isCompositePath()`. If a delimiter is found, this
  * function returns false.
- * @param {String} path The path to evaluate.
+ * @param {string} path The path to evaluate.
  * @returns {boolean} False if delimiter found, true if not.
  */
 export declare const isNonCompositePath: (path: string) => boolean;
@@ -42,48 +49,48 @@ export declare const isNonCompositePath: (path: string) => boolean;
  * Returns the given path after removing the last
  * leaf from the path. E.g. "foo.bar.thing" becomes
  * "foo.bar".
- * @param {String} path The path to operate on.
- * @param {Number=} levels The number of levels to
+ * @param {string} path The path to operate on.
+ * @param {number} [levels=1] The number of levels to
  * move up.
- * @returns {String} The new path string.
+ * @returns {string} The new path string.
  */
 export declare const up: (path: string, levels?: number) => string;
 /**
  * Returns the given path after removing the first
  * leaf from the path. E.g. "foo.bar.thing" becomes
  * "bar.thing".
- * @param {String} path The path to operate on.
- * @param {Number=} levels The number of levels to
+ * @param {string} path The path to operate on.
+ * @param {number} [levels] The number of levels to
  * move down.
- * @returns {String} The new path string.
+ * @returns {string} The new path string.
  */
 export declare const down: (path: string, levels?: number) => string;
 /**
  * Returns the last leaf from the path. E.g.
  * "foo.bar.thing" returns "thing".
- * @param {String} path The path to operate on.
- * @param {Number=} levels The number of levels to
+ * @param {string} path The path to operate on.
+ * @param {number} [levels] The number of levels to
  * pop.
- * @returns {String} The new path string.
+ * @returns {string} The new path string.
  */
 export declare const pop: (path: string, levels?: number) => string;
 /**
  * Adds a leaf to the end of the path. E.g.
  * pushing "goo" to path "foo.bar.thing" returns
  * "foo.bar.thing.goo".
- * @param {String} path The path to operate on.
- * @param {String} val The string value to push
+ * @param {string} path The path to operate on.
+ * @param {string} val The string value to push
  * to the end of the path.
- * @returns {String} The new path string.
+ * @returns {string} The new path string.
  */
 export declare const push: (path: string, val?: string) => string;
 /**
  * Returns the first leaf from the path. E.g.
  * "foo.bar.thing" returns "foo".
- * @param {String} path The path to operate on.
- * @param {Number=} levels The number of levels to
+ * @param {string} path The path to operate on.
+ * @param {number} [levels=1] The number of levels to
  * shift.
- * @returns {String} The new path string.
+ * @returns {string} The new path string.
  */
 export declare const shift: (path: string, levels?: number) => string;
 /**
@@ -95,29 +102,29 @@ export declare const shift: (path: string, levels?: number) => string;
 export declare const returnWhatWasGiven: (val: any, currentObj: any) => any;
 /**
  * Converts any key matching the wildcard to a zero.
- * @param {String} key The key to test.
+ * @param {string} key The key to test.
  * @param {*} [currentObj] The current object hierarchy.
- * @returns {String} The key.
+ * @returns {string} The key.
  */
 export declare const wildcardToZero: (key: string, currentObj: any) => string;
 /**
  * If a key is a number, will return a wildcard, otherwise
  * will return the originally passed key.
- * @param {String} key The key to test.
- * @returns {String} The original key or a wildcard.
+ * @param {string} key The key to test.
+ * @returns {string} The original key or a wildcard.
  */
 export declare const numberToWildcard: (key: string) => string;
 /**
  * Removes leading period (.) from string and returns new string.
- * @param {String} str The string to clean.
+ * @param {string} str The string to clean.
  * @returns {*} The cleaned string.
  */
 export declare const clean: (str: string) => any;
 /**
  * Splits a path by period character, taking into account
  * escaped period characters.
- * @param {String} path The path to split into an array.
- * @return {Array<String>} The component parts of the path, split
+ * @param {string} path The path to split into an array.
+ * @return {Array<string>} The component parts of the path, split
  * by period character.
  */
 export declare const split: (path: string) => Array<string>;
@@ -134,21 +141,21 @@ export declare const split: (path: string) => Array<string>;
  * 		}
  * 	}
  * }
- * @param {String} str The string to escape periods in.
- * @return {String} The escaped string.
+ * @param {string} str The string to escape periods in.
+ * @return {string} The escaped string.
  */
 export declare const escape: (str: string) => string;
 /**
  * Converts a string previously escaped with the `escape()`
  * function back to its original value.
- * @param {String} str The string to unescape.
+ * @param {string} str The string to unescape.
  * @returns {string} The unescaped string.
  */
 export declare const unEscape: (str: string) => string;
 /**
  * Gets a single value from the passed object and given path.
  * @param {ObjectType} obj The object to operate on.
- * @param {String} path The path to retrieve data from.
+ * @param {string} path The path to retrieve data from.
  * @param {*=} defaultVal Optional default to return if the
  * value retrieved from the given object and path equals undefined.
  * @param {OptionsType} [options] Optional options object.
@@ -159,7 +166,7 @@ export declare const get: (obj: ObjectType, path: string | any[], defaultVal?: a
 /**
  * Gets multiple values from the passed arr and given path.
  * @param {ObjectType} data The array or object to operate on.
- * @param {String} path The path to retrieve data from.
+ * @param {string} path The path to retrieve data from.
  * @param {*=} defaultVal Optional default to return if the
  * value retrieved from the given object and path equals undefined.
  * @param {OptionsType} [options] Optional options object.
@@ -171,7 +178,7 @@ export declare const getMany: (data: ObjectType, path: string, defaultVal?: any 
  * will directly modify the "obj" object. If you need immutable
  * updates, use setImmutable() instead.
  * @param {ObjectType} obj The object to operate on.
- * @param {String} path The path to set data on.
+ * @param {string} path The path to set data on.
  * @param {*} val The value to assign to the obj at the path.
  * @param {SetOptionsType} [options] The options object.
  * @returns {*} Nothing.
@@ -180,7 +187,7 @@ export declare const set: (obj: ObjectType, path: string, val: any, options?: Se
 /**
  * Deletes a key from an object by the given path.
  * @param {ObjectType} obj The object to operate on.
- * @param {String} path The path to delete.
+ * @param {string} path The path to delete.
  * @param {SetOptionsType} [options] The options object.
  * @param {Object=} tracking Do not use.
  */
@@ -195,7 +202,7 @@ export declare const unSet: (obj: ObjectType, path: string, options?: SetOptions
  * modify the "obj" object. If you need immutable updates, use
  * updateImmutable() instead.
  * @param {ObjectType} obj The object to operate on.
- * @param {String} [basePath=""] The path to the object to operate on relative
+ * @param {string} [basePath=""] The path to the object to operate on relative
  * to the `obj`. If `obj` is the object to be directly operated on, leave
  * `basePath` as an empty string.
  * @param {ObjectType} updateData The update data to apply with
@@ -208,7 +215,7 @@ export declare const update: (obj: ObjectType, basePath: string | undefined, upd
  * Same as update() but will not change or modify the existing `obj`.
  * References to objects that were not modified remain the same.
  * @param {ObjectType} obj The object to operate on.
- * @param {String} [basePath=""] The path to the object to operate on relative
+ * @param {string} [basePath=""] The path to the object to operate on relative
  * to the `obj`. If `obj` is the object to be directly operated on, leave
  * `basePath` as an empty string.
  * @param {ObjectType} updateData The update data to apply with
@@ -231,7 +238,7 @@ export declare const decouple: (obj: any, options?: SetOptionsType) => any;
 /**
  * Push a value to an array on an object for the specified path.
  * @param {ObjectType} obj The object to update.
- * @param {String} path The path to the array to push to.
+ * @param {string} path The path to the array to push to.
  * @param {*} val The value to push to the array at the object path.
  * @param {OptionsType} [options] An options object.
  * @returns {ObjectType} The original object passed in "obj" but with
@@ -242,7 +249,7 @@ export declare const pushVal: (obj: ObjectType, path: string, val: any, options?
  * Pull a value to from an array at the specified path. Removes the first
  * matching value, not every matching value.
  * @param {ObjectType} obj The object to update.
- * @param {String} path The path to the array to pull from.
+ * @param {string} path The path to the array to pull from.
  * @param {*} val The value to pull from the array.
  * @param {OptionsType} [options] An options object.
  * @returns {ObjectType} The original object passed in "obj" but with
@@ -253,9 +260,9 @@ export declare const pullVal: (obj: ObjectType, path: string, val: any, options?
  * Given a path and an object, determines the outermost leaf node
  * that can be reached where the leaf value is not undefined.
  * @param {ObjectType} obj The object to operate on.
- * @param {String} path The path to retrieve data from.
+ * @param {string} path The path to retrieve data from.
  * @param {OptionsType} [options] Optional options object.
- * @returns {String} The path to the furthest non-undefined value.
+ * @returns {string} The path to the furthest non-undefined value.
  */
 export declare const furthest: (obj: ObjectType, path: string, options?: OptionsType) => string;
 /**
@@ -265,7 +272,7 @@ export declare const furthest: (obj: ObjectType, path: string, options?: Options
  * essentially providing all available paths in an object and all the
  * values for each path.
  * @param {ObjectType} obj The object to operate on.
- * @param {String} path The path to retrieve data from.
+ * @param {string} path The path to retrieve data from.
  * @param {OptionsType} [options] Optional options object.
  * @returns {ObjectType} The result of the traversal.
  */
@@ -276,11 +283,11 @@ export declare const values: (obj: ObjectType, path: string, options?: OptionsTy
  * @param {ObjectType} obj The object to scan.
  * @param {Array=} finalArr An object used to collect the path keys.
  * (Do not pass this in directly - use undefined).
- * @param {String=} parentPath The path of the parent object. (Do not
+ * @param {string=} parentPath The path of the parent object. (Do not
  * pass this in directly - use undefined).
  * @param {OptionsType} [options] An options object.
  * @param {any[]} [objCache] Internal, do not use.
- * @returns {Array<String>} An array containing path strings.
+ * @returns {Array<string>} An array containing path strings.
  */
 export declare const flatten: (obj: ObjectType, finalArr?: any[] | undefined, parentPath?: string | undefined, options?: SetOptionsType, objCache?: never[]) => string[];
 /**
@@ -289,7 +296,7 @@ export declare const flatten: (obj: ObjectType, finalArr?: any[] | undefined, pa
  * @param {ObjectType} obj The object to scan.
  * @param {Object=} finalObj An object used to collect the path keys.
  * (Do not pass this in directly).
- * @param {String=} parentPath The path of the parent object. (Do not
+ * @param {string=} parentPath The path of the parent object. (Do not
  * pass this in directly).
  * @param {OptionsType} [options] An options object.
  * @param {any[]} [objCache] Internal, do not use.
@@ -301,8 +308,8 @@ export declare const flattenValues: (obj: ObjectType, finalObj?: object | undefi
  * Ignores blank or undefined path parts and also ensures
  * that each part is escaped so passing "foo.bar" will
  * result in an escaped version.
- * @param {...String} args args Path to join.
- * @returns {String} A final path string.
+ * @param {...string} args args Path to join.
+ * @returns {string} A final path string.
  */
 export declare const join: (...args: string[]) => string;
 /**
@@ -310,8 +317,8 @@ export declare const join: (...args: string[]) => string;
  * Ignores blank or undefined path parts and also ensures
  * that each part is escaped so passing "foo.bar" will
  * result in an escaped version.
- * @param {...String} args Path to join.
- * @returns {String} A final path string.
+ * @param {...string} args Path to join.
+ * @returns {string} A final path string.
  */
 export declare const joinEscaped: (...args: string[]) => string;
 /**
@@ -319,7 +326,7 @@ export declare const joinEscaped: (...args: string[]) => string;
  * @param {ObjectType} obj The object to count key leaf nodes for.
  * @param {Array=} objCache Do not use. Internal array to track
  * visited leafs.
- * @returns {Number} The number of keys.
+ * @returns {number} The number of keys.
  */
 export declare const countLeafNodes: (obj: ObjectType, objCache?: Array<any> | undefined) => number;
 /**
@@ -328,7 +335,7 @@ export declare const countLeafNodes: (obj: ObjectType, objCache?: Array<any> | u
  * nodes and will not include every intermediary path traversed to get to a
  * leaf node.
  * @param {ObjectType} obj The object to traverse.
- * @param {String} [parentPath=""] The path to use as a root/base path to
+ * @param {string} [parentPath=""] The path to use as a root/base path to
  * start scanning for leaf nodes under.
  * @param {any[]} [objCache=[]] Internal usage to check for cyclic structures.
  * @returns {[]}
@@ -339,7 +346,7 @@ export declare const leafNodes: (obj: ObjectType, parentPath?: string, objCache?
  * a value exists in those paths. MAY NOT BE INFINITE RECURSION SAFE.
  * @param {ObjectType} testKeys The object describing the paths to test for.
  * @param {ObjectType} testObj The object to test paths against.
- * @returns {Boolean} True if the object paths exist.
+ * @returns {boolean} True if the object paths exist.
  */
 export declare const hasMatchingPathsInObject: (testKeys: ObjectType, testObj: ObjectType) => boolean;
 /**
@@ -360,16 +367,16 @@ export declare const countMatchingPathsInObject: (testKeys: ObjectType, testObj:
  * built-in typeof except it will distinguish between arrays, nulls
  * and objects as well.
  * @param {*} item The item to get the type of.
- * @returns {any}
+ * @returns {string}
  */
-export declare const type: (item: any) => any;
+export declare const type: (item: any) => string;
 /**
  * Determines if the query data exists anywhere inside the source
  * data. Will recurse into arrays and objects to find query.
  * @param {*} source The source data to check.
  * @param {*} query The query data to find.
  * @param {OptionsType} [options] An options object.
- * @returns {Boolean} True if query was matched, false if not.
+ * @returns {boolean} True if query was matched, false if not.
  */
 export declare const match: (source: any, query: any, options?: OptionsType) => boolean;
 /**
@@ -378,7 +385,7 @@ export declare const match: (source: any, query: any, options?: OptionsType) => 
  * @param {*} source The source to test.
  * @param {*} query The query to match.
  * @param {FindOptionsType} [options] Options object.
- * @param {String=""} parentPath Do not use. The aggregated
+ * @param {string=""} parentPath Do not use. The aggregated
  * path to the current structure in source.
  * @returns {Object} Contains match<Boolean> and path<Array>.
  */
@@ -389,9 +396,9 @@ export declare const findPath: (source: any, query: any, options?: FindOptionsTy
  * @param {*} source The source to test.
  * @param {*} query The query to match.
  * @param {FindOptionsType} [options] Options object.
- * @param {String=""} parentPath Do not use. The aggregated
+ * @param {string=""} parentPath Do not use. The aggregated
  * path to the current structure in source.
- * @returns {Object} Contains match<Boolean> and path<String>.
+ * @returns {Object} Contains match<boolean> and path<string>.
  */
 export declare const findOnePath: (source: any, query: any, options?: FindOptionsType, parentPath?: string) => object;
 /**
@@ -405,40 +412,67 @@ export declare const keyDedup: (keys: string[]) => string[];
  * dot-notation paths to the fields that hold different values.
  * @param {ObjectType} obj1 The first object / array to compare.
  * @param {ObjectType} obj2 The second object / array to compare.
- * @param {String=""|string[]} basePath The base path from which to check for
+ * @param {string=""|string[]} basePath The base path from which to check for
  * differences. Differences outside the base path will not be
  * returned as part of the array of differences. Leave blank to check
  * for all differences between the two objects to compare.
- * @param {Boolean=false} strict If strict is true, diff uses strict
+ * @param {boolean=false} strict If strict is true, diff uses strict
  * equality to determine difference rather than non-strict equality;
  * effectively (=== is strict, == is non-strict).
- * @param {Number=Infinity} maxDepth Specifies the maximum number of
+ * @param {number=Infinity} maxDepth Specifies the maximum number of
  * path sub-trees to walk down before returning what we have found.
  * For instance, if set to 2, a diff would only check down,
  * "someFieldName.anotherField", or "user.name" and would not go
  * further down than two fields. If anything in the trees further
  * down than this level have changed, the change will not be detected
  * and the path will not be included in the resulting diff array.
- * @param {String=""} parentPath Used internally only.
- * @param {any[]} [objCache=[]] Internal usage to check for cyclic structures.
+ * @param {string=""} parentPath Used internally only.
+ * @param {never[]} [objCache=[]] Internal usage to check for cyclic structures.
  * @returns {Array} An array of strings, each string is a path to a
  * field that holds a different value between the two objects being
  * compared.
  */
-export declare const diff: (obj1: ObjectType, obj2: ObjectType, basePath?: string | string[], strict?: boolean, maxDepth?: number, parentPath?: string, objCache?: never[]) => Array<any>;
+export declare const diff: (obj1: ObjectType, obj2: ObjectType, basePath?: string | string[], strict?: boolean, maxDepth?: number, parentPath?: string, objCache?: never[]) => Array<string>;
+/**
+ * Compares two provided objects / arrays and returns details of any
+ * differences including the values and types that are different.
+ * @param {ObjectType} obj1 The first object / array to compare.
+ * @param {ObjectType} obj2 The second object / array to compare.
+ * @param {string=""|string[]} basePath The base path from which to check for
+ * differences. Differences outside the base path will not be
+ * returned as part of the array of differences. Leave blank to check
+ * for all differences between the two objects to compare.
+ * @param {boolean=false} strict If strict is true, diff uses strict
+ * equality to determine difference rather than non-strict equality;
+ * effectively (=== is strict, == is non-strict).
+ * @param {number=Infinity} maxDepth Specifies the maximum number of
+ * path sub-trees to walk down before returning what we have found.
+ * For instance, if set to 2, a diff would only check down,
+ * "someFieldName.anotherField", or "user.name" and would not go
+ * further down than two fields. If anything in the trees further
+ * down than this level have changed, the change will not be detected
+ * and the path will not be included in the resulting diff array.
+ * @param {string=""} parentPath Used internally only.
+ * @param {never[]} [objCache=[]] Internal usage to check for cyclic structures.
+ * @returns {Record<string, DiffValue>} An object where each key is a path to a
+ * field that holds a different value between the two objects being
+ * compared and the value of each key is an object holding details of
+ * the difference.
+ */
+export declare const diffValues: (obj1: ObjectType, obj2: ObjectType, basePath?: string | string[], strict?: boolean, maxDepth?: number, parentPath?: string, objCache?: never[]) => Record<string, DiffValue>;
 /**
  * A boolean check to see if the values at the given path or paths
  * are the same in both given objects.
  * @param {*} obj1 The first object to check values in.
  * @param {*} obj2 The second object to check values in.
- * @param {Array<String>|String}path A path or array of paths to check
+ * @param {Array<string>|string}path A path or array of paths to check
  * values in. If this is an array, all values at the paths in the array
  * must be the same for the function to provide a true result.
- * @param {Boolean} deep If true will traverse all objects and arrays
+ * @param {boolean} deep If true will traverse all objects and arrays
  * to check for equality. Defaults to false.
- * @param {Boolean} strict If true, values must be strict-equal.
+ * @param {boolean} strict If true, values must be strict-equal.
  * Defaults to false.
- * @returns {Boolean} True if path values match, false if not.
+ * @returns {boolean} True if path values match, false if not.
  */
 export declare const isEqual: (obj1: any, obj2: any, path: string[] | string, deep?: boolean, strict?: boolean) => boolean;
 /**
@@ -446,22 +480,22 @@ export declare const isEqual: (obj1: any, obj2: any, path: string[] | string, de
  * are different in both given objects.
  * @param {*} obj1 The first object to check values in.
  * @param {*} obj2 The second object to check values in.
- * @param {Array<String>|String}path A path or array of paths to
+ * @param {Array<string>|string}path A path or array of paths to
  * check values in. If this is an array, all values at the paths
  * in the array must be different for the function to provide a
  * true result.
- * @param {Boolean} deep If true will traverse all objects and arrays
+ * @param {boolean} deep If true will traverse all objects and arrays
  * to check for inequality. Defaults to false.
- * @param {Boolean} strict If true, values must be strict-not-equal.
+ * @param {boolean} strict If true, values must be strict-not-equal.
  * Defaults to false.
- * @returns {Boolean} True if path values differ, false if not.
+ * @returns {boolean} True if path values differ, false if not.
  */
 export declare const isNotEqual: (obj1: any, obj2: any, path: string[] | string, deep?: boolean, strict?: boolean) => boolean;
 /**
  * Same as set() but will not change or modify the existing `obj`.
  * References to objects that were not modified remain the same.
  * @param {ObjectType} obj The object to operate on.
- * @param {String} path The path to operate on.
+ * @param {string} path The path to operate on.
  * @param {*} val The value to use for the operation.
  * @param {SetOptionsType} [options] The options object.
  * @returns {*} The new object with the modified data.
@@ -471,7 +505,7 @@ export declare const setImmutable: (obj: ObjectType, path: string, val: any, opt
  * Same as pushVal() but will not change or modify the existing `obj`.
  * References to objects that were not modified remain the same.
  * @param {ObjectType} obj The object to operate on.
- * @param {String} path The path to operate on.
+ * @param {string} path The path to operate on.
  * @param {*} val The value to use for the operation.
  * @param {OptionsType} [options] The options object.
  * @returns {*} The new object with the modified data.
@@ -481,7 +515,7 @@ export declare const pushValImmutable: (obj: ObjectType, path: string, val: any,
  * Same as pullVal() but will not change or modify the existing `obj`.
  * References to objects that were not modified remain the same.
  * @param {ObjectType} obj The object to operate on.
- * @param {String} path The path to operate on.
+ * @param {string} path The path to operate on.
  * @param {*} val The value to use for the operation.
  * @param {OptionsType} [options] The options object.
  * @returns {*} The new object with the modified data.
@@ -491,7 +525,7 @@ export declare const pullValImmutable: (obj: ObjectType, path: string, val: any,
  * Same as unSet() but will not change or modify the existing `obj`.
  * References to objects that were not modified remain the same.
  * @param {ObjectType} obj The object to operate on.
- * @param {String} path The path to operate on.
+ * @param {string} path The path to operate on.
  * @param {SetOptionsType} [options] The options object.
  * @returns {*} The new object with the modified data.
  */
@@ -501,7 +535,7 @@ export declare const unSetImmutable: (obj: ObjectType, path: string, options?: S
  * with each key matching the path and the value matching the value from
  * obj that was at that path.
  * @param {Object} obj The object to operate on.
- * @param {Array<String>} pathArr Array of path strings.
+ * @param {Array<string>} pathArr Array of path strings.
  * @returns {*} The new object.
  */
 export declare const distill: (obj: object, pathArr: string[]) => any;
@@ -511,9 +545,9 @@ export declare const distill: (obj: object, pathArr: string[]) => any;
  * the given `level`. If we pass 2 as the `level` with that given `path`,
  * the result will be "foo.bar" as foo is level 1 and bar is level 2.
  * If the `path` is shorter than the given `level`, it is returned intact.
- * @param {String} path The path to operate on.
- * @param {Number} level The maximum level of a path.
- * @returns {String} The new path string.
+ * @param {string} path The path to operate on.
+ * @param {number} level The maximum level of a path.
+ * @returns {string} The new path string.
  */
 export declare const chop: (path: string, level: number) => string;
 /**

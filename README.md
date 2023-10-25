@@ -27,6 +27,7 @@ npm i @irrelon/path
     * [pullVal()]()
     * [update()](#update-obj-updatedata-options)
     * [diff()](#diff-obj1-obj2-path-strict-maxdepth)
+	* [diffValues()](#diffValues-obj1-obj2-path-strict-maxdepth)
 * All Functions (Alphabetically)
     * [chop()](#chop-path-level)
     * [clean()](#clean-path)
@@ -34,6 +35,7 @@ npm i @irrelon/path
     * [countMatchingPathsInObject()](#countmatchingpathsinobject-testkeys-testobj)
 	* [decouple()](#decouple-obj-options--)
 	* [diff()](#diff-obj1-obj2-path-strict-maxdepth)
+    * [diffValues()](#diffValues-obj1-obj2-path-strict-maxdepth)
 	* [distill()]()
 	* [down()]()
 	* [escape()]()
@@ -292,6 +294,9 @@ false
 |strict|Boolean|false|false|
 |maxDepth|Number|false|Infinity|
 
+> If you need to know the description of the differences rather than only
+> the paths that contain differences, use `diffValues()` instead.
+
 Compares two objects / arrays and returns the differences as an
 array of paths to the different fields.
 
@@ -329,6 +334,76 @@ const resultArr2 = diff(obj1, obj2, "", true); // Strict equality check
 
 console.log(resultArr1); // Logs: ["user.firstName"]
 console.log(resultArr2); // Logs: ["user._id", "user.firstName"]
+```
+
+### diffValues (`obj1`, `obj2`, `path`, `strict`, `maxDepth`)
+
+|Param|Type|Required|Default|
+|---|---|---|---|
+|obj1|Object or Array|true|none|
+|obj2|Object or Array|true|none|
+|path|String|false|""|
+|strict|Boolean|false|false|
+|maxDepth|Number|false|Infinity|
+
+Compares two objects / arrays and returns the differences as an
+object where keys are paths to values that differ and the values
+are objects describing the difference, including the values and
+types.
+
+Fields are considered "different" if they do not contain equal
+values. The equality check is either strict or non-strict based
+on the `strict` argument.
+
+> It is important to understand that this function detects differences
+between field values, not differences between object structures. For
+instance if a field in obj1 contains `undefined` and obj2 does not contain
+that field at all, it's value in obj2 will also be `undefined` so there
+would be no difference detected.
+
+```js
+const {diffValues} = require("@irrelon/path");
+
+const obj1 = {
+	"user": {
+		"_id": 1,
+		"firstName": "Jimbo",
+		"lastName": "Jetson"
+  	}
+};
+
+const obj2 = {
+	"user": {
+		"_id": "1", // Notice string instead of numerical _id
+		"firstName": "James", // We also changed the name from "Jimbo" to "James"
+		"lastName": "Jetson"
+  	}
+};
+
+const resultArr1 = diffValues(obj1, obj2, "", false); // Non-strict equality check
+const resultArr2 = diffValues(obj1, obj2, "", true); // Strict equality check
+
+console.log(resultArr1); // Logs: {"user.firstName": {val1: "Jimbo", val2: "James", type1: "string", type2: "string", difference: "value"}}
+console.log(resultArr2);
+/*
+	Logs: 
+	{
+		"user._id": {
+			val1: 1,
+			val2: "1",
+			type1: "number",
+			type2: "string",
+			difference: "type"
+		},
+		"user.firstName": {
+			val1: "Jimbo",
+			val2: "James",
+			type1: "string",
+			type2: "string",
+			difference: "value"
+		}
+	}
+ */
 ```
 
 ### distill (`obj`, `pathArr`)
@@ -763,8 +838,9 @@ console.log(obj.foo.bar[0].hasOwnProperty("baa")); // Logs: false
 
 ### update (`obj`, `basePath`, `updateData`, `options`)
 Sets a single value on the passed object and given path. This
-will directly modify the "obj" object. If you need immutable
-updates, use updateImmutable() instead.
+will directly modify the "obj" object.
+
+>If you need immutable updates, use `updateImmutable()` instead.
 
 ```js
 const obj = {
