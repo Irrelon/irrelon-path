@@ -41,7 +41,9 @@ const {
 	diffValues,
 	update,
 	updateImmutable,
-	distill
+	distill,
+	merge,
+	mergeImmutable
 } = require("../build/path");
 
 describe("Path", () => {
@@ -2979,7 +2981,7 @@ describe("Path", () => {
 
 		it("Is not vulnerable to __proto__ pollution", () => {
 			const obj = {};
-			update(obj, {__proto__: {polluted: true}});
+			update(obj, "", {__proto__: {polluted: true}});
 			assert.strictEqual(obj.polluted, undefined, "The object prototype cannot be polluted");
 		});
 	});
@@ -3016,6 +3018,68 @@ describe("Path", () => {
 			const obj = {};
 			updateImmutable(obj, {__proto__: {polluted: true}});
 			assert.strictEqual(obj.polluted, undefined, "The object prototype cannot be polluted");
+		});
+	});
+
+	describe("merge()", () => {
+		it("Merges two objects mutably", () => {
+			const obj1 = {
+				obj: {
+					shouldNotChange: false,
+					shouldChange: false
+				},
+				arr: [{
+					shouldHaveNewKey: true
+				}, true]
+			};
+
+			const obj2 = {
+				obj: {
+					shouldChange: true
+				},
+				arr: [{
+					shouldHaveNewKey: true,
+					newKey: "foo"
+				}, false, 2]
+			};
+
+			const resultObj = merge(obj1, obj2);
+
+			assert.strictEqual(resultObj.obj.shouldNotChange, false, "Value is correct for single noted path");
+			assert.strictEqual(resultObj.obj.shouldChange, true, "Value is correct for single noted path");
+			assert.strictEqual(resultObj.arr[0].newKey, "foo", "Value is correct for multi noted path");
+			assert.strictEqual(resultObj.arr[0].newKey, "foo", "Value is correct for multi noted path");
+			assert.strictEqual(obj1, resultObj, "The changes were made by value");
+		});
+
+		it("Merges two objects immutably", () => {
+			const obj1 = {
+				obj: {
+					shouldNotChange: false,
+					shouldChange: false
+				},
+				arr: [{
+					shouldHaveNewKey: true
+				}, true]
+			};
+
+			const obj2 = {
+				obj: {
+					shouldChange: true
+				},
+				arr: [{
+					shouldHaveNewKey: true,
+					newKey: "foo"
+				}, false, 2]
+			};
+
+			const resultObj = mergeImmutable(obj1, obj2);
+
+			assert.strictEqual(resultObj.obj.shouldNotChange, false, "Value is correct for single noted path");
+			assert.strictEqual(resultObj.obj.shouldChange, true, "Value is correct for single noted path");
+			assert.strictEqual(resultObj.arr[0].newKey, "foo", "Value is correct for multi noted path");
+			assert.strictEqual(resultObj.arr[0].newKey, "foo", "Value is correct for multi noted path");
+			assert.notStrictEqual(obj1, resultObj, "The changes were made by value");
 		});
 	});
 });

@@ -30,6 +30,9 @@ export interface DiffValue {
     type2: string;
     difference: "value" | "type" | "both";
 }
+export interface MergeOptionsType {
+    immutable?: boolean;
+}
 /**
  * Determines if the given path points to a root leaf node (has no delimiter)
  * or contains a dot delimiter so will drill down before reaching a leaf node.
@@ -366,10 +369,10 @@ export declare const countMatchingPathsInObject: (testKeys: ObjectType, testObj:
  * Returns the type from the item passed. Similar to JavaScript's
  * built-in typeof except it will distinguish between arrays, nulls
  * and objects as well.
- * @param {*} item The item to get the type of.
- * @returns {string}
+ * @param item The item to get the type of.
+ * @returns The string name of the type.
  */
-export declare const type: (item: any) => string;
+export declare const type: (item: unknown) => "undefined" | "object" | "boolean" | "number" | "string" | "function" | "symbol" | "bigint" | "null" | "array";
 /**
  * Determines if the query data exists anywhere inside the source
  * data. Will recurse into arrays and objects to find query.
@@ -551,10 +554,12 @@ export declare const distill: (obj: object, pathArr: string[]) => any;
  */
 export declare const chop: (path: string, level: number) => string;
 /**
- * NOTE: This function is not currently operational.
- * Merges two objects like a "deep spread".
- * @param {Object} obj1
- * @param {Object} obj2
+ * Merges two objects like a "deep spread". If both obj1 and obj2 contain a leaf node
+ * the value from obj2 will be used.
+ * @param obj1
+ * @param obj2
+ * @param options
  */
-export declare const merge: (obj1: object, obj2: object) => void;
+export declare const merge: (obj1: object, obj2: object, options?: MergeOptionsType) => any;
+export declare const mergeImmutable: (obj1: object, obj2: object, options?: MergeOptionsType) => any;
 export {};

@@ -35,6 +35,10 @@ export interface DiffValue {
 	difference: "value" | "type" | "both"
 }
 
+export interface MergeOptionsType {
+	immutable?: boolean;
+}
+
 /**
  * @typedef {object} FindOptionsType
  * @property {number} [maxDepth=Infinity] The maximum depth to scan inside
@@ -1228,13 +1232,14 @@ export const countMatchingPathsInObject = (testKeys: ObjectType, testObj: Object
  * Returns the type from the item passed. Similar to JavaScript's
  * built-in typeof except it will distinguish between arrays, nulls
  * and objects as well.
- * @param {*} item The item to get the type of.
- * @returns {string}
+ * @param item The item to get the type of.
+ * @returns The string name of the type.
  */
-export const type = (item: any): string => {
+export const type = (item: unknown): "undefined" | "object" | "boolean" | "number" | "string" | "function" | "symbol" | "bigint" | "null" | "array" => {
 	if (item === null) {
 		return 'null';
 	}
+
 	if (Array.isArray(item)) {
 		return 'array';
 	}
@@ -1746,11 +1751,31 @@ export const chop = (path: string, level: number): string => {
 };
 
 /**
- * NOTE: This function is not currently operational.
- * Merges two objects like a "deep spread".
- * @param {Object} obj1
- * @param {Object} obj2
+ * Merges two objects like a "deep spread". If both obj1 and obj2 contain a leaf node
+ * the value from obj2 will be used.
+ * @param obj1
+ * @param obj2
+ * @param options
  */
-export const merge = (obj1: object, obj2: object) => {
-	// TODO: Write this function
+export const merge = (obj1: object, obj2: object, options: MergeOptionsType = {}) => {
+	const newObj = decouple(obj1, options);
+
+	Object.entries(obj2).forEach(([key, val]) => {
+		debugger;
+		const valueType = type(val);
+
+		if (valueType === "object" || valueType === "array") {
+			// Recursive type
+			newObj[key] = merge(obj1[key] || (valueType === "object" ? {} : []), val, options);
+		} else {
+			// Non-recursive type
+			newObj[key] = val;
+		}
+	});
+
+	return newObj;
+}
+
+export const mergeImmutable = (obj1: object, obj2: object, options: MergeOptionsType = {}) => {
+	return merge(obj1, obj2, {...options, immutable: true})
 }

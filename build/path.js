@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.merge = exports.chop = exports.distill = exports.unSetImmutable = exports.pullValImmutable = exports.pushValImmutable = exports.setImmutable = exports.isNotEqual = exports.isEqual = exports.diffValues = exports.diff = exports.keyDedup = exports.findOnePath = exports.findPath = exports.match = exports.type = exports.countMatchingPathsInObject = exports.hasMatchingPathsInObject = exports.leafNodes = exports.countLeafNodes = exports.joinEscaped = exports.join = exports.flattenValues = exports.flatten = exports.values = exports.furthest = exports.pullVal = exports.pushVal = exports.decouple = exports.updateImmutable = exports.update = exports.unSet = exports.set = exports.getMany = exports.get = exports.unEscape = exports.escape = exports.split = exports.clean = exports.numberToWildcard = exports.wildcardToZero = exports.returnWhatWasGiven = exports.shift = exports.push = exports.pop = exports.down = exports.up = exports.isNonCompositePath = exports.isCompositePath = void 0;
+exports.mergeImmutable = exports.merge = exports.chop = exports.distill = exports.unSetImmutable = exports.pullValImmutable = exports.pushValImmutable = exports.setImmutable = exports.isNotEqual = exports.isEqual = exports.diffValues = exports.diff = exports.keyDedup = exports.findOnePath = exports.findPath = exports.match = exports.type = exports.countMatchingPathsInObject = exports.hasMatchingPathsInObject = exports.leafNodes = exports.countLeafNodes = exports.joinEscaped = exports.join = exports.flattenValues = exports.flatten = exports.values = exports.furthest = exports.pullVal = exports.pushVal = exports.decouple = exports.updateImmutable = exports.update = exports.unSet = exports.set = exports.getMany = exports.get = exports.unEscape = exports.escape = exports.split = exports.clean = exports.numberToWildcard = exports.wildcardToZero = exports.returnWhatWasGiven = exports.shift = exports.push = exports.pop = exports.down = exports.up = exports.isNonCompositePath = exports.isCompositePath = void 0;
 /**
  * @typedef {object} FindOptionsType
  * @property {number} [maxDepth=Infinity] The maximum depth to scan inside
@@ -1044,8 +1044,8 @@ exports.countMatchingPathsInObject = countMatchingPathsInObject;
  * Returns the type from the item passed. Similar to JavaScript's
  * built-in typeof except it will distinguish between arrays, nulls
  * and objects as well.
- * @param {*} item The item to get the type of.
- * @returns {string}
+ * @param item The item to get the type of.
+ * @returns The string name of the type.
  */
 const type = (item) => {
     if (item === null) {
@@ -1502,12 +1502,30 @@ const chop = (path, level) => {
 };
 exports.chop = chop;
 /**
- * NOTE: This function is not currently operational.
- * Merges two objects like a "deep spread".
- * @param {Object} obj1
- * @param {Object} obj2
+ * Merges two objects like a "deep spread". If both obj1 and obj2 contain a leaf node
+ * the value from obj2 will be used.
+ * @param obj1
+ * @param obj2
+ * @param options
  */
-const merge = (obj1, obj2) => {
-    // TODO: Write this function
+const merge = (obj1, obj2, options = {}) => {
+    const newObj = (0, exports.decouple)(obj1, options);
+    Object.entries(obj2).forEach(([key, val]) => {
+        debugger;
+        const valueType = (0, exports.type)(val);
+        if (valueType === "object" || valueType === "array") {
+            // Recursive type
+            newObj[key] = (0, exports.merge)(obj1[key] || (valueType === "object" ? {} : []), val, options);
+        }
+        else {
+            // Non-recursive type
+            newObj[key] = val;
+        }
+    });
+    return newObj;
 };
 exports.merge = merge;
+const mergeImmutable = (obj1, obj2, options = {}) => {
+    return (0, exports.merge)(obj1, obj2, Object.assign(Object.assign({}, options), { immutable: true }));
+};
+exports.mergeImmutable = mergeImmutable;
