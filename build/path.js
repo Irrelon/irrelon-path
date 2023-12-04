@@ -1511,7 +1511,6 @@ exports.chop = chop;
 const merge = (obj1, obj2, options = {}) => {
     const newObj = (0, exports.decouple)(obj1, options);
     Object.entries(obj2).forEach(([key, val]) => {
-        debugger;
         const valueType = (0, exports.type)(val);
         if (valueType === "object" || valueType === "array") {
             // Recursive type
