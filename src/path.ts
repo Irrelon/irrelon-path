@@ -1761,7 +1761,6 @@ export const merge = (obj1: object, obj2: object, options: MergeOptionsType = {}
 	const newObj = decouple(obj1, options);
 
 	Object.entries(obj2).forEach(([key, val]) => {
-		debugger;
 		const valueType = type(val);
 
 		if (valueType === "object" || valueType === "array") {
