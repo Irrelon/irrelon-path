@@ -35,8 +35,20 @@ export interface DiffValue {
 	difference: "value" | "type" | "both"
 }
 
+/**
+ * Defines the options for merging objects.
+ * @interface
+ */
 export interface MergeOptionsType {
 	immutable?: boolean;
+	/**
+	 * A flag indicating whether undefined values should override
+	 * existing target values or not. If true, undefined values
+	 * will not be set in the target object from the source object.
+	 *
+	 * @type {boolean | undefined}
+	 */
+	ignoreUndefined?: boolean;
 }
 
 /**
@@ -1768,6 +1780,7 @@ export const merge = (obj1: object, obj2: object, options: MergeOptionsType = {}
 			newObj[key] = merge(obj1[key] || (valueType === "object" ? {} : []), val, options);
 		} else {
 			// Non-recursive type
+			if (options.ignoreUndefined && val === undefined) return;
 			newObj[key] = val;
 		}
 	});
