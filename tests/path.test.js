@@ -3081,5 +3081,42 @@ describe("Path", () => {
 			assert.strictEqual(resultObj.arr[0].newKey, "foo", "Value is correct for multi noted path");
 			assert.notStrictEqual(obj1, resultObj, "The changes were made by value");
 		});
+
+		it("Merges and correctly applies the ignoreUndefined option flag", () => {
+			const obj1 = {
+				obj: {
+					shouldNotChange: false,
+					shouldChange: false,
+					shouldStayTheSame: "hello"
+				},
+				arr: [{
+					shouldHaveNewKey: true
+				}, true]
+			};
+
+			const obj2 = {
+				obj: {
+					shouldChange: true,
+					shouldStayTheSame: undefined
+				},
+				arr: [{
+					shouldHaveNewKey: true,
+					newKey: "foo"
+				}, false, 2]
+			};
+
+			const resultObj1 = merge(obj1, obj2, {ignoreUndefined: true, immutable: true});
+			const resultObj2 = merge(obj1, obj2, {ignoreUndefined: false, immutable: true});
+
+			assert.strictEqual(resultObj1.obj.shouldStayTheSame, "hello", "Value is correct for single noted path");
+			assert.strictEqual(resultObj1.obj.shouldChange, true, "Value is correct for single noted path");
+			assert.strictEqual(resultObj1.arr[0].newKey, "foo", "Value is correct for multi noted path");
+			assert.strictEqual(resultObj1.arr[0].newKey, "foo", "Value is correct for multi noted path");
+
+			assert.strictEqual(resultObj2.obj.shouldStayTheSame, undefined, "Value is correct for single noted path");
+			assert.strictEqual(resultObj2.obj.shouldChange, true, "Value is correct for single noted path");
+			assert.strictEqual(resultObj2.arr[0].newKey, "foo", "Value is correct for multi noted path");
+			assert.strictEqual(resultObj2.arr[0].newKey, "foo", "Value is correct for multi noted path");
+		});
 	});
 });

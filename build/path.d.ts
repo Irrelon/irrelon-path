@@ -30,8 +30,20 @@ export interface DiffValue {
     type2: string;
     difference: "value" | "type" | "both";
 }
+/**
+ * Defines the options for merging objects.
+ * @interface
+ */
 export interface MergeOptionsType {
     immutable?: boolean;
+    /**
+     * A flag indicating whether undefined values should override
+     * existing target values or not. If true, undefined values
+     * will not be set in the target object from the source object.
+     *
+     * @type {boolean | undefined}
+     */
+    ignoreUndefined?: boolean;
 }
 /**
  * Determines if the given path points to a root leaf node (has no delimiter)

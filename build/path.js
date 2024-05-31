@@ -1518,6 +1518,8 @@ const merge = (obj1, obj2, options = {}) => {
         }
         else {
             // Non-recursive type
+            if (options.ignoreUndefined && val === undefined)
+                return;
             newObj[key] = val;
         }
     });
