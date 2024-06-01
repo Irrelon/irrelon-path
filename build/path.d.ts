@@ -1,6 +1,7 @@
-declare type ObjectType = {
+export declare type ObjectType = {
     [key: string]: any;
 };
+export declare type ArrayType = Map<string, any[]>;
 export interface OptionsType {
     transformRead?: (...rest: any) => any;
     transformKey?: (...rest: any) => any;
@@ -574,4 +575,3 @@ export declare const chop: (path: string, level: number) => string;
  */
 export declare const merge: (obj1: object, obj2: object, options?: MergeOptionsType) => any;
 export declare const mergeImmutable: (obj1: object, obj2: object, options?: MergeOptionsType) => any;
-export {};

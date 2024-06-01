@@ -1,5 +1,5 @@
-type ObjectType = {[key: string]: any};
-type ArrayType = Map<string, any[]>;
+export type ObjectType = {[key: string]: any};
+export type ArrayType = Map<string, any[]>;
 
 export interface OptionsType {
 	transformRead?: (...rest: any) => any
