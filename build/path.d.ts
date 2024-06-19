@@ -1,7 +1,7 @@
-export declare type ObjectType = {
+export type ObjectType = {
     [key: string]: any;
 };
-export declare type ArrayType = Map<string, any[]>;
+export type ArrayType = Map<string, any[]>;
 export interface OptionsType {
     transformRead?: (...rest: any) => any;
     transformKey?: (...rest: any) => any;
@@ -272,6 +272,7 @@ export declare const pushVal: (obj: ObjectType, path: string, val: any, options?
  * the array at the path specified having the newly pushed value.
  */
 export declare const pullVal: (obj: ObjectType, path: string, val: any, options?: SetOptionsType) => ObjectType;
+export declare const pullPath: (obj: ObjectType, path: string, options?: SetOptionsType) => ObjectType;
 /**
  * Given a path and an object, determines the outermost leaf node
  * that can be reached where the leaf value is not undefined.
@@ -395,6 +396,10 @@ export declare const type: (item: unknown) => "undefined" | "object" | "boolean"
  * @returns {boolean} True if query was matched, false if not.
  */
 export declare const match: (source: any, query: any, options?: OptionsType) => boolean;
+export interface FindPathReturn {
+    match: boolean;
+    path: string[];
+}
 /**
  * Finds all items in `source` that match the structure of `query` and
  * returns the path to them as an array of strings.
@@ -405,7 +410,15 @@ export declare const match: (source: any, query: any, options?: OptionsType) => 
  * path to the current structure in source.
  * @returns {Object} Contains match<Boolean> and path<Array>.
  */
-export declare const findPath: (source: any, query: any, options?: FindOptionsType, parentPath?: string) => object;
+export declare const findPath: (source: any, query: any, options?: FindOptionsType, parentPath?: string) => FindPathReturn;
+export interface FindOnePathNoMatchFoundReturn {
+    match: false;
+}
+export interface FindOnePathMatchFoundReturn {
+    match: true;
+    path: string;
+}
+export type FindOnePathReturn = FindOnePathNoMatchFoundReturn | FindOnePathMatchFoundReturn;
 /**
  * Finds the first item that matches the structure of `query`
  * and returns the path to it.
@@ -416,7 +429,7 @@ export declare const findPath: (source: any, query: any, options?: FindOptionsTy
  * path to the current structure in source.
  * @returns {Object} Contains match<boolean> and path<string>.
  */
-export declare const findOnePath: (source: any, query: any, options?: FindOptionsType, parentPath?: string) => object;
+export declare const findOnePath: (source: any, query: any, options?: FindOptionsType, parentPath?: string) => FindOnePathReturn;
 /**
  * Returns a deduplicated array of strings.
  * @param {string[]} keys An array of strings to deduplicate.

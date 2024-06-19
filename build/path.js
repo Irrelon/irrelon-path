@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.mergeImmutable = exports.merge = exports.chop = exports.distill = exports.unSetImmutable = exports.pullValImmutable = exports.pushValImmutable = exports.setImmutable = exports.isNotEqual = exports.isEqual = exports.diffValues = exports.diff = exports.keyDedup = exports.findOnePath = exports.findPath = exports.match = exports.type = exports.countMatchingPathsInObject = exports.hasMatchingPathsInObject = exports.leafNodes = exports.countLeafNodes = exports.joinEscaped = exports.join = exports.flattenValues = exports.flatten = exports.values = exports.furthest = exports.pullVal = exports.pushVal = exports.decouple = exports.updateImmutable = exports.update = exports.unSet = exports.set = exports.getMany = exports.get = exports.unEscape = exports.escape = exports.split = exports.clean = exports.numberToWildcard = exports.wildcardToZero = exports.returnWhatWasGiven = exports.shift = exports.push = exports.pop = exports.down = exports.up = exports.isNonCompositePath = exports.isCompositePath = void 0;
+exports.merge = exports.chop = exports.distill = exports.unSetImmutable = exports.pullValImmutable = exports.pushValImmutable = exports.setImmutable = exports.isNotEqual = exports.isEqual = exports.diffValues = exports.diff = exports.keyDedup = exports.findOnePath = exports.findPath = exports.match = exports.type = exports.countMatchingPathsInObject = exports.hasMatchingPathsInObject = exports.leafNodes = exports.countLeafNodes = exports.joinEscaped = exports.join = exports.flattenValues = exports.flatten = exports.values = exports.furthest = exports.pullPath = exports.pullVal = exports.pushVal = exports.decouple = exports.updateImmutable = exports.update = exports.unSet = exports.set = exports.getMany = exports.get = exports.unEscape = exports.escape = exports.split = exports.clean = exports.numberToWildcard = exports.wildcardToZero = exports.returnWhatWasGiven = exports.shift = exports.push = exports.pop = exports.down = exports.up = exports.isNonCompositePath = exports.isCompositePath = void 0;
+exports.mergeImmutable = void 0;
 /**
  * @typedef {object} FindOptionsType
  * @property {number} [maxDepth=Infinity] The maximum depth to scan inside
@@ -666,23 +667,20 @@ const pullVal = (obj, path, val, options = { strict: true }) => {
     const part = pathParts.shift();
     if (part === "__proto__")
         return obj;
+    obj = (0, exports.decouple)(obj, options);
     if (pathParts.length && part !== undefined) {
-        // Generate the path part in the object if it does not already exist
-        obj[part] = (0, exports.decouple)(obj[part], options) || {};
         // Recurse - we don't need to assign obj[part] the result of this call because
         // we are modifying by reference since we haven't reached the furthest path
         // part (leaf) node yet
-        (0, exports.pullVal)(obj[part], pathParts.join("."), val, options);
+        obj[part] = (0, exports.pullVal)(obj[part], pathParts.join("."), val, options);
     }
     else if (part) {
-        obj[part] = (0, exports.decouple)(obj[part], options) || [];
         // Recurse - this is the leaf node so assign the response to obj[part] in
         // case it is set to an immutable response
         obj[part] = (0, exports.pullVal)(obj[part], "", val, options);
     }
     else {
         // The target array is the root object, pull the value
-        obj = (0, exports.decouple)(obj, options) || [];
         if (!(obj instanceof Array)) {
             throw ("Cannot pull from a path whose leaf node is not an array!");
         }
@@ -702,9 +700,41 @@ const pullVal = (obj, path, val, options = { strict: true }) => {
             obj.splice(index, 1);
         }
     }
-    return (0, exports.decouple)(obj, options);
+    return obj;
 };
 exports.pullVal = pullVal;
+const pullPath = (obj, path, options = { strict: true }) => {
+    if (obj === undefined || obj === null || path === undefined) {
+        return obj;
+    }
+    // Clean the path
+    path = (0, exports.clean)(path);
+    const pathParts = (0, exports.split)(path);
+    const part = pathParts.shift();
+    if (part === "__proto__")
+        return obj;
+    obj = (0, exports.decouple)(obj, options);
+    if (pathParts.length && part !== undefined) {
+        // Recurse - we don't need to assign obj[part] the result of this call because
+        // we are modifying by reference since we haven't reached the furthest path
+        // part (leaf) node yet
+        obj[part] = (0, exports.pullPath)(obj[part], pathParts.join("."), options);
+    }
+    else if (part) {
+        if (!(obj instanceof Array)) {
+            throw ("Cannot pull from a path whose leaf node is not an array!");
+        }
+        const index = parseInt(part, 10);
+        if (isNaN(index)) {
+            throw ("Cannot pull from a path whose last path part is not an array index!");
+        }
+        // We've reached our destination leaf node
+        // Remove the item from the array
+        obj.splice(index, 1);
+    }
+    return obj;
+};
+exports.pullPath = pullPath;
 /**
  * Given a path and an object, determines the outermost leaf node
  * that can be reached where the leaf value is not undefined.
@@ -774,6 +804,7 @@ const values = (obj, path, options = {}) => {
         const pathPart = options.transformKey(pathParts[i]);
         currentPath.push(pathPart);
         const tmpPath = currentPath.join(".");
+        // @ts-ignore
         valueData[tmpPath] = (0, exports.get)(obj, tmpPath);
     }
     // @ts-ignore
@@ -871,9 +902,11 @@ const flattenValues = (obj, finalObj = {}, parentPath = "", options = {}, objCac
             }
             else if (options.leavesOnly) {
                 // Found leaf node!
+                // @ts-ignore
                 finalObj[pathKey] = options.transformWrite(transformedObj[i]);
             }
             if (!options.leavesOnly) {
+                // @ts-ignore
                 finalObj[pathKey] = options.transformWrite(transformedObj[i]);
             }
         }
@@ -1015,6 +1048,7 @@ const countMatchingPathsInObject = (testKeys, testObj) => {
             if (typeof testObj[i] === "object" && testObj[i] !== null) {
                 // The test / query object key is an object, recurse
                 matchData = (0, exports.countMatchingPathsInObject)(testKeys[i], testObj[i]);
+                // @ts-ignore
                 matchedKeys[i] = matchData.matchedKeys;
                 totalKeyCount += matchData.totalKeyCount;
                 matchedKeyCount += matchData.matchedKeyCount;
@@ -1024,10 +1058,12 @@ const countMatchingPathsInObject = (testKeys, testObj) => {
                 totalKeyCount++;
                 // Check if the test keys also have this key and it is also not an object
                 if (testKeys && testKeys[i] && (typeof testKeys[i] !== "object" || testKeys[i] === null)) {
+                    // @ts-ignore
                     matchedKeys[i] = true;
                     matchedKeyCount++;
                 }
                 else {
+                    // @ts-ignore
                     matchedKeys[i] = false;
                 }
             }
@@ -1478,6 +1514,7 @@ exports.unSetImmutable = unSetImmutable;
  */
 const distill = (obj, pathArr) => {
     return pathArr.reduce((newObj, path) => {
+        // @ts-ignore
         newObj[path] = (0, exports.get)(obj, path);
         return newObj;
     }, {});
@@ -1514,6 +1551,7 @@ const merge = (obj1, obj2, options = {}) => {
         const valueType = (0, exports.type)(val);
         if (valueType === "object" || valueType === "array") {
             // Recursive type
+            // @ts-ignore
             newObj[key] = (0, exports.merge)(obj1[key] || (valueType === "object" ? {} : []), val, options);
         }
         else {

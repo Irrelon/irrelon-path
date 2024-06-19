@@ -973,6 +973,7 @@ export const values = (obj: ObjectType, path: string, options: OptionsType = {})
 
 		const tmpPath = currentPath.join(".");
 
+		// @ts-ignore
 		valueData[tmpPath] = get(obj, tmpPath);
 	}
 
@@ -1085,10 +1086,12 @@ export const flattenValues = (obj: ObjectType, finalObj: object | undefined = {}
 				}
 			} else if (options.leavesOnly) {
 				// Found leaf node!
+				// @ts-ignore
 				finalObj[pathKey] = options.transformWrite(transformedObj[i]);
 			}
 
 			if (!options.leavesOnly) {
+				// @ts-ignore
 				finalObj[pathKey] = options.transformWrite(transformedObj[i]);
 			}
 		}
@@ -1247,6 +1250,7 @@ export const countMatchingPathsInObject = (testKeys: ObjectType, testObj: Object
 				// The test / query object key is an object, recurse
 				matchData = countMatchingPathsInObject(testKeys[i], testObj[i]);
 
+				// @ts-ignore
 				matchedKeys[i] = matchData.matchedKeys;
 				totalKeyCount += matchData.totalKeyCount;
 				matchedKeyCount += matchData.matchedKeyCount;
@@ -1256,9 +1260,11 @@ export const countMatchingPathsInObject = (testKeys: ObjectType, testObj: Object
 
 				// Check if the test keys also have this key and it is also not an object
 				if (testKeys && testKeys[i] && (typeof testKeys[i] !== "object" || testKeys[i] === null)) {
+					// @ts-ignore
 					matchedKeys[i] = true;
 					matchedKeyCount++;
 				} else {
+					// @ts-ignore
 					matchedKeys[i] = false;
 				}
 			}
@@ -1785,6 +1791,7 @@ export const unSetImmutable = (obj: ObjectType, path: string, options: SetOption
  */
 export const distill = (obj: object, pathArr: string[]): any => {
 	return pathArr.reduce((newObj, path) => {
+		// @ts-ignore
 		newObj[path] = get(obj, path);
 		return newObj;
 	}, {});
@@ -1825,6 +1832,7 @@ export const merge = (obj1: object, obj2: object, options: MergeOptionsType = {}
 
 		if (valueType === "object" || valueType === "array") {
 			// Recursive type
+			// @ts-ignore
 			newObj[key] = merge(obj1[key] || (valueType === "object" ? {} : []), val, options);
 		} else {
 			// Non-recursive type

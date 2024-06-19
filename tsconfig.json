@@ -13,7 +13,6 @@
 		"allowSyntheticDefaultImports": true,
 		"strict": true,
 		"forceConsistentCasingInFileNames": true,
-		"suppressImplicitAnyIndexErrors": true,
 		"noFallthroughCasesInSwitch": false,
 		"moduleResolution": "node",
 		"resolveJsonModule": true,
