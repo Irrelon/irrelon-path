@@ -1,50 +1,39 @@
-const {describe, it, assert} = require("mocha-expect");
-const {
-	wildcardToZero,
-	numberToWildcard,
-	clean,
-	decouple,
-	split,
-	escape,
-	get,
-	getMany,
-	set,
-	setImmutable,
-	unSet,
-	unSetImmutable,
-	pushValImmutable,
-	pushVal,
-	pullValImmutable,
-	pullVal,
-	furthest,
-	values,
-	flatten,
-	flattenValues,
-	join,
-	joinEscaped,
-	up,
-	down,
-	push,
-	pop,
-	shift,
+import assert from "node:assert";
+import {
 	countLeafNodes,
-	hasMatchingPathsInObject,
-	countMatchingPathsInObject,
-	findOnePath,
-	findPath,
-	type,
-	match,
-	isEqual,
-	isNotEqual,
-	leafNodes,
 	diff,
 	diffValues,
+	down,
+	escape,
+	findOnePath,
+	findPath,
+	flatten,
+	flattenValues,
+	furthest,
+	get,
+	getMany,
+	isNotEqual,
+	join,
+	joinEscaped,
+	leafNodes,
+	match,
+	merge,
+	mergeImmutable,
+	pop,
+	pullVal,
+	pushVal,
+	set,
+	setImmutable,
+	shift,
+	split,
+	type,
+	unSet,
+	unSetImmutable,
+	up,
 	update,
 	updateImmutable,
-	distill,
-	merge,
-	mergeImmutable
-} = require("../build/path");
+	values
+} from "../src/path";
 
 describe("Path", () => {
 	describe("join()", () => {
@@ -79,7 +68,7 @@ describe("Path", () => {
 		});
 
 		it("Will handle infinite recursive structures", () => {
-			const obj = {
+			const obj: any = {
 				"obj": [{
 					"other": {}
 				}]
@@ -114,7 +103,7 @@ describe("Path", () => {
 		});
 
 		it("Will count leaf nodes of an object with infinite recursive structure", () => {
-			const obj = {
+			const obj: any = {
 				"obj": [{
 					"other": {
 						moo: "foo"
@@ -167,7 +156,7 @@ describe("Path", () => {
 		});
 
 		it("Will handle an infinite recursive structure", () => {
-			const obj = {
+			const obj: any = {
 				"obj": [{
 					"other": {
 						"moo": "foo"
@@ -251,7 +240,7 @@ describe("Path", () => {
 		});
 
 		it("Will handle an infinite recursive structure", () => {
-			const obj = {
+			const obj: any = {
 				"obj": [{
 					"other": {
 						moo: "foo"
@@ -884,7 +873,7 @@ describe("Path", () => {
 
 	describe("set()", () => {
 		it("Can set a value on the passed object at the correct path with auto-created objects", () => {
-			const obj = {};
+			const obj: any = {};
 
 			const newObj = set(obj, "foo.bar.thing", "foo");
 
@@ -905,7 +894,7 @@ describe("Path", () => {
 		});
 
 		it("Can set a value on the passed object with an array index when no array currently exists at the correct path", () => {
-			const obj = {};
+			const obj: any = {};
 
 			const newObj = set(obj, "arr.0", "foo");
 
@@ -914,7 +903,7 @@ describe("Path", () => {
 		});
 
 		it("Can set a value on the passed object where the leaf node is an object", () => {
-			const obj = {
+			const obj: any = {
 				"foo": {
 					"bar": {
 						"ram": {
@@ -953,7 +942,7 @@ describe("Path", () => {
 		});
 
 		it("Handles trying to set a value on a null correctly", () => {
-			const obj = {
+			const obj: any = {
 				"foo": null
 			};
 
@@ -964,7 +953,7 @@ describe("Path", () => {
 		});
 
 		it("Is not vulnerable to __proto__ pollution", () => {
-			const obj = {};
+			const obj: any = {};
 			set(obj, "__proto__.polluted", true);
 			assert.strictEqual(obj.polluted, undefined, "The object prototype cannot be polluted");
 		});
@@ -1032,8 +1021,8 @@ describe("Path", () => {
 		});
 
 		it("Is not vulnerable to __proto__ pollution", () => {
-			const obj = {};
-			setImmutable(obj, '__proto__.polluted', true);
+			const obj: any = {};
+			setImmutable(obj, "__proto__.polluted", true);
 			assert.strictEqual(obj.polluted, undefined, "The object prototype cannot be polluted");
 		});
 	});
@@ -1076,9 +1065,9 @@ describe("Path", () => {
 			});
 
 			it("Is not vulnerable to __proto__ pollution", () => {
-				const obj = {};
+				const obj: any = {};
 				obj.__proto__.unsetPolluted = false;
-				unSet(obj, '__proto__.unsetPolluted');
+				unSet(obj, "__proto__.unsetPolluted");
 				assert.strictEqual(obj.unsetPolluted, false, "The object prototype cannot be polluted");
 			});
 		});
@@ -1139,9 +1128,9 @@ describe("Path", () => {
 			});
 
 			it("Is not vulnerable to __proto__ pollution", () => {
-				const obj = {};
+				const obj: any = {};
 				obj.__proto__.unsetPolluted = false;
-				unSetImmutable(obj, '__proto__.unsetPolluted');
+				unSetImmutable(obj, "__proto__.unsetPolluted");
 				assert.strictEqual(obj.unsetPolluted, false, "The object prototype cannot be polluted");
 			});
 		});
@@ -1262,7 +1251,7 @@ describe("Path", () => {
 	describe("findPath()", () => {
 		describe("Positive tests", () => {
 			it("Will return the correct path for a root string", () => {
-				const result = findPath("Bookshop1", "Bookshop1");
+				const result: any = findPath("Bookshop1", "Bookshop1");
 
 				assert.deepEqual(result.path, [""]);
 			});
@@ -1848,48 +1837,56 @@ describe("Path", () => {
 			it("Will return the correct path for a root string", () => {
 				const result = findOnePath("Bookshop1", "Bookshop1");
 
+				assert.strictEqual(result.match, true);
 				assert.strictEqual(result.path, "");
 			});
 
 			it("Will return the correct path for a root true boolean", () => {
 				const result = findOnePath(true, true);
 
+				assert.strictEqual(result.match, true);
 				assert.strictEqual(result.path, "");
 			});
 
 			it("Will return the correct path for a root false boolean", () => {
 				const result = findOnePath(false, false);
 
+				assert.strictEqual(result.match, true);
 				assert.strictEqual(result.path, "");
 			});
 
 			it("Will return the correct path for an object nested true boolean", () => {
 				const result = findOnePath([{"_id": {"1": true, "2": false}}], true);
 
+				assert.strictEqual(result.match, true);
 				assert.strictEqual(result.path, "0._id.1");
 			});
 
 			it("Will return the correct path for an object nested string", () => {
 				const result = findOnePath([{"_id": "Bookshop1"}], "Bookshop1");
 
+				assert.strictEqual(result.match, true);
 				assert.strictEqual(result.path, "0._id");
 			});
 
 			it("Will return the correct path for a nested equal object", () => {
 				const result = findOnePath({"profile": {"_id": "Bookshop1"}}, {"profile": {"_id": "Bookshop1"}});
 
+				assert.strictEqual(result.match, true);
 				assert.strictEqual(result.path, "");
 			});
 
 			it("Will return the correct path for an array nested string", () => {
 				const result = findOnePath([{"_id": "Bookshop1"}], {"_id": "Bookshop1"});
 
+				assert.strictEqual(result.match, true);
 				assert.strictEqual(result.path, "0");
 			});
 
 			it("Will return the correct path for a single-level nested string", () => {
 				const result = findOnePath({"profile": {"_id": "Bookshop1"}}, {"_id": "Bookshop1"});
 
+				assert.strictEqual(result.match, true);
 				assert.strictEqual(result.path, "profile");
 			});
 
@@ -1908,6 +1905,7 @@ describe("Path", () => {
 
 				const result = findOnePath(testObj, "Bookshop1");
 
+				assert.strictEqual(result.match, true);
 				assert.strictEqual(result.path, "items.0.stockedBy.0");
 			});
 
@@ -1926,6 +1924,7 @@ describe("Path", () => {
 
 				const result = findOnePath(testObj, {_id: 2});
 
+				assert.strictEqual(result.match, true);
 				assert.strictEqual(result.path, "items.1");
 			});
 		});
@@ -2154,10 +2153,10 @@ describe("Path", () => {
 
 	describe("diff()", () => {
 		it("Will not fail if given circular referenced data", () => {
-			const circle = {};
+			const circle: any = {};
 			circle.circle = circle;
 
-			const circle2 = {};
+			const circle2: any = {};
 			circle2.circle = circle;
 
 			try {
@@ -2427,10 +2426,10 @@ describe("Path", () => {
 
 	describe("diffValues()", () => {
 		it("Will not fail if given circular referenced data", () => {
-			const circle = {};
+			const circle: any = {};
 			circle.circle = circle;
 
-			const circle2 = {};
+			const circle2: any = {};
 			circle2.circle = circle;
 
 			try {
@@ -2485,8 +2484,20 @@ describe("Path", () => {
 			assert.strictEqual(Object.keys(result2).length, 2, "The result value is correct");
 			assert.strictEqual(Object.keys(result2)[0], "0.arr.1.id", "The result value is correct");
 			assert.strictEqual(Object.keys(result2)[1], "0.type", "The result value is correct");
-			assert.deepStrictEqual(result2["0.arr.1.id"], {val1: 2, val2: 4, type1: "number", type2: "number", difference: "value"}, "The result value is correct");
-			assert.deepStrictEqual(result2["0.type"], {val1: 42, val2: "42", type1: "number", type2: "string", difference: "type"}, "The result value is correct");
+			assert.deepStrictEqual(result2["0.arr.1.id"], {
+				val1: 2,
+				val2: 4,
+				type1: "number",
+				type2: "number",
+				difference: "value"
+			}, "The result value is correct");
+			assert.deepStrictEqual(result2["0.type"], {
+				val1: 42,
+				val2: "42",
+				type1: "number",
+				type2: "string",
+				difference: "type"
+			}, "The result value is correct");
 		});
 
 		it("Will handle blank arrays correctly", () => {
@@ -2713,7 +2724,7 @@ describe("Path", () => {
 		});
 
 		it("Will push a value to an array that doesn't yet exist at the given path", () => {
-			const obj = {};
+			const obj: any = {};
 
 			assert.strictEqual(obj.foo, undefined, "The key has no array yet");
 
@@ -2737,7 +2748,7 @@ describe("Path", () => {
 		});
 
 		it("Will push a value to an array with a blank path (root)", () => {
-			const obj = [];
+			const obj: any = [];
 
 			assert.strictEqual(obj.length, 0, "The array is empty");
 
@@ -2748,9 +2759,9 @@ describe("Path", () => {
 		});
 
 		it("Is not vulnerable to __proto__ pollution", () => {
-			const obj = {};
+			const obj: any = {};
 			obj.__proto__.pushValPolluted = [];
-			pushVal(obj, '__proto__.pushValPolluted', "newValue");
+			pushVal(obj, "__proto__.pushValPolluted", "newValue");
 			assert.strictEqual(obj.pushValPolluted.length, 0, "The object prototype cannot be polluted");
 		});
 	});
@@ -2852,9 +2863,9 @@ describe("Path", () => {
 		});
 
 		it("Is not vulnerable to __proto__ pollution", () => {
-			const obj = {};
+			const obj: any = {};
 			obj.__proto__.pushValPolluted = ["myExistingValue"];
-			pullVal(obj, '__proto__.pushValPolluted', "myExistingValue");
+			pullVal(obj, "__proto__.pushValPolluted", "myExistingValue");
 			assert.strictEqual(obj.pushValPolluted.length, 1, "The object prototype cannot be polluted");
 		});
 	});
@@ -2980,7 +2991,7 @@ describe("Path", () => {
 		});
 
 		it("Is not vulnerable to __proto__ pollution", () => {
-			const obj = {};
+			const obj: any = {};
 			update(obj, "", {__proto__: {polluted: true}});
 			assert.strictEqual(obj.polluted, undefined, "The object prototype cannot be polluted");
 		});
@@ -3015,8 +3026,8 @@ describe("Path", () => {
 		});
 
 		it("Is not vulnerable to __proto__ pollution", () => {
-			const obj = {};
-			updateImmutable(obj, {__proto__: {polluted: true}});
+			const obj: any = {};
+			updateImmutable(obj, "", {__proto__: {polluted: true}});
 			assert.strictEqual(obj.polluted, undefined, "The object prototype cannot be polluted");
 		});
 	});
