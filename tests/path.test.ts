@@ -20,6 +20,7 @@ import {
 	merge,
 	mergeImmutable,
 	pop,
+	pullPath,
 	pullVal,
 	pushVal,
 	set,
@@ -2792,7 +2793,8 @@ describe("Path", () => {
 
 			assert.strictEqual(obj !== newObj, true, "The old obj and new obj are not the same reference");
 			assert.strictEqual(oldFoo !== newObj.foo, true, "The old array and new array are not the same reference");
-			assert.strictEqual(obj.foo.length, 0, "The array empty");
+			assert.strictEqual(newObj.foo.length, 0, "The array length is correct");
+			assert.strictEqual(obj.foo.length, 1, "The array length is correct");
 		});
 
 		it("Will pull a string literal from a nested array at the given path with immutability", () => {
@@ -2811,7 +2813,8 @@ describe("Path", () => {
 
 			assert.strictEqual(obj !== newObj, true, "The old obj and new obj are not the same reference");
 			assert.strictEqual(oldFoo !== newObj.foo.bar.moo, true, "The old array and new array are not the same reference");
-			assert.strictEqual(obj.foo.bar.moo.length, 0, "The array empty");
+			assert.strictEqual(newObj.foo.bar.moo.length, 0, "The array empty");
+			assert.strictEqual(obj.foo.bar.moo.length, 1, "The array is not empty");
 		});
 
 		it("Will pull a string literal from an array with a blank path (root)", () => {
@@ -2821,7 +2824,7 @@ describe("Path", () => {
 
 			pullVal(obj, "", "valueToPull");
 
-			assert.strictEqual(obj.length, 0, "The array is empty");
+			assert.strictEqual(obj.length, 0, "The array length is correct");
 			assert.strictEqual(obj[0], undefined, "The value is correct");
 		});
 
@@ -2836,7 +2839,7 @@ describe("Path", () => {
 
 			pullVal(obj, "foo", objToPull);
 
-			assert.strictEqual(obj.foo.length, 0, "The array is empty");
+			assert.strictEqual(obj.foo.length, 0, "The array length is correct");
 			assert.strictEqual(obj.foo[0], undefined, "The value is correct");
 		});
 
@@ -2857,7 +2860,7 @@ describe("Path", () => {
 
 			pullVal(obj, "foo", {_id: "2"}, {"strict": false});
 
-			assert.strictEqual(obj.foo.length, 1, "The array is empty");
+			assert.strictEqual(obj.foo.length, 1, "The array length is correct");
 			assert.strictEqual(obj.foo[0]._id, "1", "The value is correct");
 			assert.strictEqual(obj.foo[1], undefined, "The value is correct");
 		});
@@ -2867,6 +2870,93 @@ describe("Path", () => {
 			obj.__proto__.pushValPolluted = ["myExistingValue"];
 			pullVal(obj, "__proto__.pushValPolluted", "myExistingValue");
 			assert.strictEqual(obj.pushValPolluted.length, 1, "The object prototype cannot be polluted");
+		});
+	});
+
+	describe("pullPath()", () => {
+		it("Will pull a string literal from an array at the given path with index", () => {
+			const obj = {
+				"foo": ["otherValToKeep", "valueToPull", "someOtherValToKeep"]
+			};
+
+			assert.strictEqual(obj.foo.length, 3, "The array is populated");
+
+			pullPath(obj, "foo.1");
+
+			assert.strictEqual(obj.foo.length, 2, "The array is the correct length");
+			assert.strictEqual(obj.foo[0], "otherValToKeep", "The value is correct");
+			assert.strictEqual(obj.foo[1], "someOtherValToKeep", "The value is correct");
+		});
+
+		it("Will pull a string literal from an array at the given path with index with immutability", () => {
+			const obj = {
+				"foo": ["otherValToKeep", "valueToPull", "someOtherValToKeep"]
+			};
+
+			assert.strictEqual(obj.foo.length, 3, "The array is populated");
+
+			const oldFoo = obj.foo;
+			debugger;
+			const newObj = pullPath(obj, "foo.1", {immutable: true});
+
+			assert.strictEqual(obj.foo.length, 3, "The array empty");
+			assert.strictEqual(newObj.foo.length, 2, "The array empty");
+			assert.strictEqual(obj !== newObj, true, "The old obj and new obj are not the same reference");
+			assert.strictEqual(oldFoo !== newObj.foo, true, "The old array and new array are not the same reference");
+		});
+
+		it("Will pull a string literal from a nested array at the given path with immutability", () => {
+			const obj = {
+				"foo": {
+					"bar": {
+						"moo": ["otherValToKeep", "valueToPull", "someOtherValToKeep"]
+					}
+				}
+			};
+
+			assert.strictEqual(obj.foo.bar.moo.length, 3, "The array is populated");
+
+			const oldFoo = obj.foo.bar.moo;
+			const newObj = pullPath(obj, "foo.bar.moo.1", {immutable: true});
+
+			assert.strictEqual(obj !== newObj, true, "The old obj and new obj are not the same reference");
+			assert.strictEqual(oldFoo !== newObj.foo.bar.moo, true, "The old array and new array are not the same reference");
+			assert.strictEqual(newObj.foo.bar.moo.length, 2, "The array empty");
+			assert.strictEqual(obj.foo.bar.moo.length, 3, "The array empty");
+		});
+
+		it("Will pull a string literal from an array with a blank path (root)", () => {
+			const obj = ["otherValToKeep", "valueToPull", "someOtherValToKeep"];
+
+			assert.strictEqual(obj.length, 3, "The array is populated");
+
+			pullPath(obj, "1");
+
+			assert.strictEqual(obj.length, 2, "The array length is correct");
+			assert.strictEqual(obj[0], "otherValToKeep", "The value is correct");
+			assert.strictEqual(obj[1], "someOtherValToKeep", "The value is correct");
+		});
+
+		it("Will pull a object from an array at the given path", () => {
+			const objToPull = {"bar": "ram you"};
+			const obj = {
+				"foo": [objToPull]
+			};
+
+			assert.strictEqual(obj.foo.length, 1, "The array is populated");
+			assert.strictEqual(obj.foo[0], objToPull, "The value is correct");
+
+			pullPath(obj, "foo.0");
+
+			assert.strictEqual(obj.foo.length, 0, "The array length is correct");
+			assert.strictEqual(obj.foo[0], undefined, "The value is correct");
+		});
+
+		it("Is not vulnerable to __proto__ pollution", () => {
+			const obj: any = {};
+			obj.__proto__.pullPathPolluted = ["myExistingValue"];
+			pullPath(obj, "__proto__.pullPathPolluted.0");
+			assert.strictEqual(obj.pullPathPolluted.length, 1, "The object prototype cannot be polluted");
 		});
 	});
 

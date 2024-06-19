@@ -810,25 +810,19 @@ export const pullVal = (obj: ObjectType, path: string, val: any, options: SetOpt
 	const part = pathParts.shift();
 
 	if (part === "__proto__") return obj;
+	obj = decouple(obj, options);
 
 	if (pathParts.length && part !== undefined) {
-		// Generate the path part in the object if it does not already exist
-		obj[part] = decouple(obj[part], options) || {};
-
 		// Recurse - we don't need to assign obj[part] the result of this call because
 		// we are modifying by reference since we haven't reached the furthest path
 		// part (leaf) node yet
-		pullVal(obj[part], pathParts.join("."), val, options);
+		obj[part] = pullVal(obj[part], pathParts.join("."), val, options);
 	} else if (part) {
-		obj[part] = decouple(obj[part], options) || [];
-
 		// Recurse - this is the leaf node so assign the response to obj[part] in
 		// case it is set to an immutable response
 		obj[part] = pullVal(obj[part], "", val, options);
 	} else {
 		// The target array is the root object, pull the value
-		obj = decouple(obj, options) || [];
-
 		if (!(obj instanceof Array)) {
 			throw("Cannot pull from a path whose leaf node is not an array!");
 		}
@@ -851,8 +845,46 @@ export const pullVal = (obj: ObjectType, path: string, val: any, options: SetOpt
 		}
 	}
 
-	return decouple(obj, options);
+	return obj;
 };
+
+export const pullPath = (obj: ObjectType, path: string, options: SetOptionsType = {strict: true}): ObjectType => {
+	if (obj === undefined || obj === null || path === undefined) {
+		return obj;
+	}
+
+	// Clean the path
+	path = clean(path);
+
+	const pathParts = split(path);
+	const part = pathParts.shift();
+
+	if (part === "__proto__") return obj;
+	obj = decouple(obj, options);
+
+	if (pathParts.length && part !== undefined) {
+		// Recurse - we don't need to assign obj[part] the result of this call because
+		// we are modifying by reference since we haven't reached the furthest path
+		// part (leaf) node yet
+		obj[part] = pullPath(obj[part], pathParts.join("."), options);
+	} else if (part) {
+		if (!(obj instanceof Array)) {
+			throw("Cannot pull from a path whose leaf node is not an array!");
+		}
+
+		const index = parseInt(part, 10);
+
+		if (isNaN(index)) {
+			throw("Cannot pull from a path whose last path part is not an array index!");
+		}
+
+		// We've reached our destination leaf node
+		// Remove the item from the array
+		obj.splice(index, 1);
+	}
+
+	return obj;
+}
 
 /**
  * Given a path and an object, determines the outermost leaf node
@@ -936,7 +968,7 @@ export const values = (obj: ObjectType, path: string, options: OptionsType = {})
 	options.transformWrite = options.transformWrite || returnWhatWasGiven;
 
 	for (let i = 0; i < pathParts.length; i++) {
-		const pathPart = options.transformKey(pathParts[i]);
+		const pathPart: string = options.transformKey(pathParts[i]);
 		currentPath.push(pathPart);
 
 		const tmpPath = currentPath.join(".");
@@ -1295,6 +1327,11 @@ export const match = (source: any, query: any, options: OptionsType = {}): boole
 	return !foundNonMatch;
 };
 
+export interface FindPathReturn {
+	match: boolean;
+	path: string[];
+}
+
 /**
  * Finds all items in `source` that match the structure of `query` and
  * returns the path to them as an array of strings.
@@ -1305,7 +1342,7 @@ export const match = (source: any, query: any, options: OptionsType = {}): boole
  * path to the current structure in source.
  * @returns {Object} Contains match<Boolean> and path<Array>.
  */
-export const findPath = (source: any, query: any, options: FindOptionsType = {maxDepth: Infinity, currentDepth: 0, includeRoot: true}, parentPath = ""): object => {
+export const findPath = (source: any, query: any, options: FindOptionsType = {maxDepth: Infinity, currentDepth: 0, includeRoot: true}, parentPath = ""): FindPathReturn => {
 	const resultArr = [];
 	const sourceType = typeof source;
 
@@ -1346,6 +1383,17 @@ export const findPath = (source: any, query: any, options: FindOptionsType = {ma
 	return {match: resultArr.length > 0, path: resultArr};
 };
 
+export interface FindOnePathNoMatchFoundReturn {
+	match: false;
+}
+
+export interface FindOnePathMatchFoundReturn {
+	match: true;
+	path: string;
+}
+
+export type FindOnePathReturn = FindOnePathNoMatchFoundReturn | FindOnePathMatchFoundReturn;
+
 /**
  * Finds the first item that matches the structure of `query`
  * and returns the path to it.
@@ -1356,7 +1404,7 @@ export const findPath = (source: any, query: any, options: FindOptionsType = {ma
  * path to the current structure in source.
  * @returns {Object} Contains match<boolean> and path<string>.
  */
-export const findOnePath = (source: any, query: any, options: FindOptionsType = {maxDepth: Infinity, currentDepth: 0, includeRoot: true}, parentPath = ""): object => {
+export const findOnePath = (source: any, query: any, options: FindOptionsType = {maxDepth: Infinity, currentDepth: 0, includeRoot: true}, parentPath = ""): FindOnePathReturn => {
 	const sourceType = typeof source;
 
 	options = {
