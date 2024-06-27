@@ -269,10 +269,22 @@ export declare const pushVal: (obj: ObjectType, path: string, val: any, options?
  * @param {*} val The value to pull from the array.
  * @param {OptionsType} [options] An options object.
  * @returns {ObjectType} The original object passed in "obj" but with
- * the array at the path specified having the newly pushed value.
+ * the array at the path specified having removed the newly pulled value.
  */
 export declare const pullVal: (obj: ObjectType, path: string, val: any, options?: SetOptionsType) => ObjectType;
-export declare const pullPath: (obj: ObjectType, path: string, options?: SetOptionsType) => ObjectType;
+/**
+ * Inserts or deletes from/into the array at the specified path.
+ * @param {ObjectType} obj The object to update.
+ * @param {string} path The path to the array to operate on.
+ * @param {number} start The index to operate from.
+ * @param {number} deleteCount The number of items to delete.
+ * @param {any[]} itemsToAdd The items to add to the array or an empty array
+ * if no items are to be added.
+ * @param {OptionsType} [options] An options object.
+ * @returns {ObjectType} The original object passed in "obj" but with
+ * the array at the path specified having inserted or removed based on splice.
+ */
+export declare const splicePath: (obj: ObjectType, path: string, start: number, deleteCount: number, itemsToAdd?: any[], options?: SetOptionsType) => ObjectType;
 /**
  * Given a path and an object, determines the outermost leaf node
  * that can be reached where the leaf value is not undefined.

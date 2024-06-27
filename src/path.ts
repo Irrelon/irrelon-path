@@ -796,7 +796,7 @@ export const pushVal = (obj: ObjectType, path: string, val: any, options: SetOpt
  * @param {*} val The value to pull from the array.
  * @param {OptionsType} [options] An options object.
  * @returns {ObjectType} The original object passed in "obj" but with
- * the array at the path specified having the newly pushed value.
+ * the array at the path specified having removed the newly pulled value.
  */
 export const pullVal = (obj: ObjectType, path: string, val: any, options: SetOptionsType = {strict: true}): ObjectType => {
 	if (obj === undefined || obj === null || path === undefined) {
@@ -848,7 +848,19 @@ export const pullVal = (obj: ObjectType, path: string, val: any, options: SetOpt
 	return obj;
 };
 
-export const pullPath = (obj: ObjectType, path: string, options: SetOptionsType = {strict: true}): ObjectType => {
+/**
+ * Inserts or deletes from/into the array at the specified path.
+ * @param {ObjectType} obj The object to update.
+ * @param {string} path The path to the array to operate on.
+ * @param {number} start The index to operate from.
+ * @param {number} deleteCount The number of items to delete.
+ * @param {any[]} itemsToAdd The items to add to the array or an empty array
+ * if no items are to be added.
+ * @param {OptionsType} [options] An options object.
+ * @returns {ObjectType} The original object passed in "obj" but with
+ * the array at the path specified having inserted or removed based on splice.
+ */
+export const splicePath = (obj: ObjectType, path: string, start: number, deleteCount: number, itemsToAdd: any[] = [], options: SetOptionsType = {strict: true}): ObjectType => {
 	if (obj === undefined || obj === null || path === undefined) {
 		return obj;
 	}
@@ -866,21 +878,24 @@ export const pullPath = (obj: ObjectType, path: string, options: SetOptionsType 
 		// Recurse - we don't need to assign obj[part] the result of this call because
 		// we are modifying by reference since we haven't reached the furthest path
 		// part (leaf) node yet
-		obj[part] = pullPath(obj[part], pathParts.join("."), options);
+		obj[part] = splicePath(obj[part], pathParts.join("."), start, deleteCount, itemsToAdd, options);
 	} else if (part) {
-		if (!(obj instanceof Array)) {
-			throw("Cannot pull from a path whose leaf node is not an array!");
-		}
-
-		const index = parseInt(part, 10);
-
-		if (isNaN(index)) {
-			throw("Cannot pull from a path whose last path part is not an array index!");
+		if (!(obj[part] instanceof Array)) {
+			throw("Cannot splice from a path whose leaf node is not an array!");
 		}
 
 		// We've reached our destination leaf node
 		// Remove the item from the array
-		obj.splice(index, 1);
+		obj[part] = decouple(obj[part], options);
+		obj[part].splice(start, deleteCount, ...itemsToAdd);
+	} else {
+		if (!(obj instanceof Array)) {
+			throw("Cannot splice from a path whose leaf node is not an array!");
+		}
+
+		// We've reached our destination leaf node
+		// Remove the item from the array
+		obj.splice(start, deleteCount, ...itemsToAdd);
 	}
 
 	return obj;

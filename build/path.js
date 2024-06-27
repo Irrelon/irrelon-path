@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.merge = exports.chop = exports.distill = exports.unSetImmutable = exports.pullValImmutable = exports.pushValImmutable = exports.setImmutable = exports.isNotEqual = exports.isEqual = exports.diffValues = exports.diff = exports.keyDedup = exports.findOnePath = exports.findPath = exports.match = exports.type = exports.countMatchingPathsInObject = exports.hasMatchingPathsInObject = exports.leafNodes = exports.countLeafNodes = exports.joinEscaped = exports.join = exports.flattenValues = exports.flatten = exports.values = exports.furthest = exports.pullPath = exports.pullVal = exports.pushVal = exports.decouple = exports.updateImmutable = exports.update = exports.unSet = exports.set = exports.getMany = exports.get = exports.unEscape = exports.escape = exports.split = exports.clean = exports.numberToWildcard = exports.wildcardToZero = exports.returnWhatWasGiven = exports.shift = exports.push = exports.pop = exports.down = exports.up = exports.isNonCompositePath = exports.isCompositePath = void 0;
+exports.merge = exports.chop = exports.distill = exports.unSetImmutable = exports.pullValImmutable = exports.pushValImmutable = exports.setImmutable = exports.isNotEqual = exports.isEqual = exports.diffValues = exports.diff = exports.keyDedup = exports.findOnePath = exports.findPath = exports.match = exports.type = exports.countMatchingPathsInObject = exports.hasMatchingPathsInObject = exports.leafNodes = exports.countLeafNodes = exports.joinEscaped = exports.join = exports.flattenValues = exports.flatten = exports.values = exports.furthest = exports.splicePath = exports.pullVal = exports.pushVal = exports.decouple = exports.updateImmutable = exports.update = exports.unSet = exports.set = exports.getMany = exports.get = exports.unEscape = exports.escape = exports.split = exports.clean = exports.numberToWildcard = exports.wildcardToZero = exports.returnWhatWasGiven = exports.shift = exports.push = exports.pop = exports.down = exports.up = exports.isNonCompositePath = exports.isCompositePath = void 0;
 exports.mergeImmutable = void 0;
 /**
  * @typedef {object} FindOptionsType
@@ -655,7 +655,7 @@ exports.pushVal = pushVal;
  * @param {*} val The value to pull from the array.
  * @param {OptionsType} [options] An options object.
  * @returns {ObjectType} The original object passed in "obj" but with
- * the array at the path specified having the newly pushed value.
+ * the array at the path specified having removed the newly pulled value.
  */
 const pullVal = (obj, path, val, options = { strict: true }) => {
     if (obj === undefined || obj === null || path === undefined) {
@@ -703,7 +703,19 @@ const pullVal = (obj, path, val, options = { strict: true }) => {
     return obj;
 };
 exports.pullVal = pullVal;
-const pullPath = (obj, path, options = { strict: true }) => {
+/**
+ * Inserts or deletes from/into the array at the specified path.
+ * @param {ObjectType} obj The object to update.
+ * @param {string} path The path to the array to operate on.
+ * @param {number} start The index to operate from.
+ * @param {number} deleteCount The number of items to delete.
+ * @param {any[]} itemsToAdd The items to add to the array or an empty array
+ * if no items are to be added.
+ * @param {OptionsType} [options] An options object.
+ * @returns {ObjectType} The original object passed in "obj" but with
+ * the array at the path specified having inserted or removed based on splice.
+ */
+const splicePath = (obj, path, start, deleteCount, itemsToAdd = [], options = { strict: true }) => {
     if (obj === undefined || obj === null || path === undefined) {
         return obj;
     }
@@ -718,23 +730,28 @@ const pullPath = (obj, path, options = { strict: true }) => {
         // Recurse - we don't need to assign obj[part] the result of this call because
         // we are modifying by reference since we haven't reached the furthest path
         // part (leaf) node yet
-        obj[part] = (0, exports.pullPath)(obj[part], pathParts.join("."), options);
+        obj[part] = (0, exports.splicePath)(obj[part], pathParts.join("."), start, deleteCount, itemsToAdd, options);
     }
     else if (part) {
-        if (!(obj instanceof Array)) {
-            throw ("Cannot pull from a path whose leaf node is not an array!");
-        }
-        const index = parseInt(part, 10);
-        if (isNaN(index)) {
-            throw ("Cannot pull from a path whose last path part is not an array index!");
+        if (!(obj[part] instanceof Array)) {
+            throw ("Cannot splice from a path whose leaf node is not an array!");
         }
         // We've reached our destination leaf node
         // Remove the item from the array
-        obj.splice(index, 1);
+        obj[part] = (0, exports.decouple)(obj[part], options);
+        obj[part].splice(start, deleteCount, ...itemsToAdd);
+    }
+    else {
+        if (!(obj instanceof Array)) {
+            throw ("Cannot splice from a path whose leaf node is not an array!");
+        }
+        // We've reached our destination leaf node
+        // Remove the item from the array
+        obj.splice(start, deleteCount, ...itemsToAdd);
     }
     return obj;
 };
-exports.pullPath = pullPath;
+exports.splicePath = splicePath;
 /**
  * Given a path and an object, determines the outermost leaf node
  * that can be reached where the leaf value is not undefined.
