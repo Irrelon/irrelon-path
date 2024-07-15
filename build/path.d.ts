@@ -2,6 +2,10 @@ export type ObjectType = {
     [key: string]: any;
 };
 export type ArrayType = Map<string, any[]>;
+export interface PathData {
+    indices?: number[][];
+    directPaths?: string[];
+}
 export interface OptionsType {
     transformRead?: (...rest: any) => any;
     transformKey?: (...rest: any) => any;
@@ -13,6 +17,8 @@ export interface GetOptionsType extends OptionsType {
     arrayTraversal?: boolean;
     arrayExpansion?: boolean;
     expandedResult?: any[];
+    pathData?: PathData;
+    pathRoot?: string;
 }
 export interface SetOptionsType extends GetOptionsType {
     immutable?: boolean;
@@ -188,7 +194,7 @@ export declare const get: (obj: ObjectType, path: string | any[], defaultVal?: a
  * @param {OptionsType} [options] Optional options object.
  * @returns {Array}
  */
-export declare const getMany: (data: ObjectType, path: string, defaultVal?: any | undefined, options?: object | undefined) => any[];
+export declare const getMany: (data: ObjectType, path: string, defaultVal?: any | undefined, options?: GetOptionsType | undefined) => any[];
 /**
  * Sets a single value on the passed object and given path. This
  * will directly modify the "obj" object. If you need immutable

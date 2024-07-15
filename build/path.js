@@ -311,6 +311,7 @@ const get = (obj, path, defaultVal = undefined, options = {}) => {
     for (let i = 0; i < pathParts.length; i++) {
         const pathPart = pathParts[i];
         const transformedKey = options.transformKey((0, exports.unEscape)(pathPart), objPart);
+        options.pathRoot = (0, exports.join)(options.pathRoot || "", pathPart);
         // @ts-ignore
         objPart = objPart[transformedKey];
         const isPartAnArray = objPart instanceof Array;
@@ -372,10 +373,13 @@ exports.get = get;
  * @returns {Array}
  */
 const getMany = (data, path, defaultVal = undefined, options = {}) => {
+    var _a, _b;
     const isDataAnArray = data instanceof Array;
+    const pathRoot = options.pathRoot || "";
     if (!isDataAnArray) {
         const innerResult = (0, exports.get)(data, path, defaultVal, options);
         const isInnerResultAnArray = innerResult instanceof Array;
+        (_b = (_a = options.pathData) === null || _a === void 0 ? void 0 : _a.directPaths) === null || _b === void 0 ? void 0 : _b.push((0, exports.join)(options.pathRoot || "", path));
         if (isInnerResultAnArray)
             return innerResult;
         if (innerResult === undefined && defaultVal === undefined)
@@ -387,16 +391,20 @@ const getMany = (data, path, defaultVal = undefined, options = {}) => {
     const parts = (0, exports.split)(path);
     const firstPart = parts[0];
     const pathRemainder = parts.slice(1).join(".");
-    const resultArr = data.reduce((innerResult, arrItem) => {
+    const resultArr = data.reduce((innerResult, arrItem, arrIndex) => {
+        var _a, _b;
         const isArrItemAnArray = arrItem[firstPart] instanceof Array;
         if (isArrItemAnArray) {
+            options.pathRoot = (0, exports.join)(pathRoot || "", String(arrIndex), firstPart);
             const recurseResult = (0, exports.getMany)(arrItem[firstPart], pathRemainder, defaultVal, options);
             innerResult.push(...recurseResult);
             return innerResult;
         }
         const val = (0, exports.get)(arrItem, path, defaultVal, options);
-        if (val !== undefined)
+        if (val !== undefined) {
+            (_b = (_a = options.pathData) === null || _a === void 0 ? void 0 : _a.directPaths) === null || _b === void 0 ? void 0 : _b.push((0, exports.join)(options.pathRoot || "", String(arrIndex), path));
             innerResult.push(val);
+        }
         return innerResult;
     }, []);
     if (resultArr.length === 0 && defaultVal !== undefined)

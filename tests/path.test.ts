@@ -18,14 +18,14 @@ import {
 	leafNodes,
 	match,
 	merge,
-	mergeImmutable,
+	mergeImmutable, PathData,
 	pop,
-	splicePath,
 	pullVal,
 	pushVal,
 	set,
 	setImmutable,
 	shift,
+	splicePath,
 	split,
 	type,
 	unSet,
@@ -869,6 +869,117 @@ describe("Path", () => {
 			}]];
 
 			assert.deepStrictEqual(result, expected, "The value is correct");
+		});
+
+		it("Correctly assigns path data when array expansion occurs", () => {
+			const obj = {
+				"arr": [{
+					"subArr": [{
+						"label": "thought",
+						"subSubArr": [{
+							"label": "one"
+						}]
+					}]
+				}, {
+					"subArr": [{
+						"label": "is",
+						"subSubArr": [{
+							"label": "two"
+						}, {
+							"label": "two-point-two"
+						}]
+					}]
+				}, {
+					"subArr": [{
+						"label": "good",
+						"subSubArr": [{
+							"label": "three"
+						}]
+					}]
+				}]
+			};
+
+			// Meaning get me all subSubArr from all docs in
+			// subArr from all docs in arr
+			const path = "arr.subArr.subSubArr";
+			const pathData: PathData = {
+				directPaths: []
+			}; // We are passing this in by reference and it will be modified by get()
+			const result = get(obj, path, undefined, {arrayTraversal: true, arrayExpansion: true, pathData});
+
+			const expected = [{
+				"label": "one"
+			}, {
+				"label": "two"
+			}, {
+				"label": "two-point-two"
+			}, {
+				"label": "three"
+			}];
+
+			const pathDataExpected = [
+				"arr.0.subArr.0.subSubArr.0",
+				"arr.1.subArr.0.subSubArr.0",
+				"arr.1.subArr.0.subSubArr.1",
+				"arr.2.subArr.0.subSubArr.0"
+			];
+
+			assert.deepStrictEqual(result, expected, "The value is correct");
+			assert.deepStrictEqual(pathData.directPaths, pathDataExpected, "The value is correct");
+		});
+
+		it("Correctly assigns path data when array expansion occurs with a target leaf node", () => {
+			const obj = {
+				"arr": [{
+					"subArr": [{
+						"label": "thought",
+						"subSubArr": [{
+							"label": "one"
+						}]
+					}]
+				}, {
+					"subArr": [{
+						"label": "is",
+						"subSubArr": [{
+							"label": "two"
+						}, {
+							"label": "two-point-two"
+						}]
+					}]
+				}, {
+					"subArr": [{
+						"label": "good",
+						"subSubArr": [{
+							"label": "three"
+						}]
+					}]
+				}]
+			};
+
+			// Meaning get me all label from all docs in subSubArr from all docs in
+			// subArr from all docs in arr
+			const path = "arr.subArr.subSubArr.label";
+			const pathData: PathData = {
+				directPaths: []
+			}; // We are passing this in by reference, and it will be modified by get()
+			const result = get(obj, path, undefined, {arrayTraversal: true, arrayExpansion: true, pathData});
+
+			const expected = [
+				"one",
+				"two",
+				"two-point-two",
+				"three"
+			];
+
+			const pathDataExpected = [
+				"arr.0.subArr.0.subSubArr.0.label",
+				"arr.1.subArr.0.subSubArr.0.label",
+				"arr.1.subArr.0.subSubArr.1.label",
+				"arr.2.subArr.0.subSubArr.0.label"
+			];
+
+			assert.deepStrictEqual(result, expected, "The value is correct");
+			assert.deepStrictEqual(pathData.directPaths, pathDataExpected, "The value is correct");
 		});
 	});
 
@@ -2961,7 +3072,7 @@ describe("Path", () => {
 			assert.strictEqual(obj.foo.length, 1, "The array is not the correct length");
 			assert.strictEqual(obj.foo[0], objToPull, "The value is correct");
 
-			splicePath(obj, "foo",0, 1, []);
+			splicePath(obj, "foo", 0, 1, []);
 
 			assert.strictEqual(obj.foo.length, 0, "The array length is correct");
 			assert.strictEqual(obj.foo[0], undefined, "The value is correct");
@@ -3079,6 +3190,20 @@ describe("Path", () => {
 			assert.strictEqual(resultObj.bar.one.two, "Three", "Value is correct for multi noted path");
 			assert.strictEqual(obj, resultObj, "The changes were made by reference");
 		});
+
+		// it("Applies the correct values to multiple paths with a where clause", () => {
+		// 	const obj = {};
+		// 	const resultObj = update(obj, "", {
+		// 		"foo": "fooVal",
+		// 		"bar.one.two": "Three"
+		// 	}, {
+		// 		"foo":
+		// 	});
+		//
+		// 	assert.strictEqual(resultObj.foo, "fooVal", "Value is correct for single noted path");
+		// 	assert.strictEqual(resultObj.bar.one.two, "Three", "Value is correct for multi noted path");
+		// 	assert.strictEqual(obj, resultObj, "The changes were made by reference");
+		// });
 
 		it("Applies the correct values to multiple paths with a basePath", () => {
 			const obj = {

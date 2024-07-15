@@ -1,6 +1,11 @@
 export type ObjectType = {[key: string]: any};
 export type ArrayType = Map<string, any[]>;
 
+export interface PathData {
+	indices?: number[][];
+	directPaths?: string[];
+}
+
 export interface OptionsType {
 	transformRead?: (...rest: any) => any
 	transformKey?: (...rest: any) => any
@@ -9,10 +14,12 @@ export interface OptionsType {
 }
 
 export interface GetOptionsType extends OptionsType {
-	wildcardExpansion?: boolean
-	arrayTraversal?: boolean
-	arrayExpansion?: boolean
-	expandedResult?: any[]
+	wildcardExpansion?: boolean; // Gets all results from an array when encountering a $ e.g. arr.$.value would return an array of `value` in all arr items
+	arrayTraversal?: boolean; // Will traverse arrays without the need for a wildcard e.g. arr.value would look inside `arr: [{value: true}]`
+	arrayExpansion?: boolean; // Same as wildcardExpansion but does not require a wildcard in the path
+	expandedResult?: any[]; // Used to store data while processing
+	pathData?: PathData; // Used to store data while processing
+	pathRoot?: string;
 }
 
 export interface SetOptionsType extends GetOptionsType {
@@ -397,6 +404,7 @@ export const get = (obj: ObjectType, path: string|any[], defaultVal: any | undef
 	for (let i = 0; i < pathParts.length; i++) {
 		const pathPart = pathParts[i];
 		const transformedKey: string = options.transformKey(unEscape(pathPart), objPart);
+		options.pathRoot = join(options.pathRoot || "", pathPart);
 
 		// @ts-ignore
 		objPart = objPart[transformedKey];
@@ -467,13 +475,15 @@ export const get = (obj: ObjectType, path: string|any[], defaultVal: any | undef
  * @param {OptionsType} [options] Optional options object.
  * @returns {Array}
  */
-export const getMany = (data: ObjectType, path: string, defaultVal: any | undefined = undefined, options: object | undefined = {}): any[] => {
+export const getMany = (data: ObjectType, path: string, defaultVal: any | undefined = undefined, options: GetOptionsType | undefined = {}): any[] => {
 	const isDataAnArray = data instanceof Array;
+	const pathRoot = options.pathRoot || "";
 
 	if (!isDataAnArray) {
 		const innerResult = get(data, path, defaultVal, options);
 		const isInnerResultAnArray = innerResult instanceof Array;
 
+		options.pathData?.directPaths?.push(join(options.pathRoot || "", path));
 		if (isInnerResultAnArray) return innerResult;
 		if (innerResult === undefined && defaultVal === undefined) return [];
 		if (innerResult === undefined && defaultVal !== undefined) return [defaultVal];
@@ -485,10 +495,11 @@ export const getMany = (data: ObjectType, path: string, defaultVal: any | undefi
 	const firstPart = parts[0];
 	const pathRemainder = parts.slice(1).join(".");
 
-	const resultArr = data.reduce((innerResult, arrItem) => {
+	const resultArr = data.reduce((innerResult, arrItem, arrIndex) => {
 		const isArrItemAnArray = arrItem[firstPart] instanceof Array;
 
 		if (isArrItemAnArray) {
+			options.pathRoot = join(pathRoot || "", String(arrIndex), firstPart);
 			const recurseResult = getMany(arrItem[firstPart], pathRemainder, defaultVal, options);
 
 			innerResult.push(...recurseResult);
@@ -496,7 +507,10 @@ export const getMany = (data: ObjectType, path: string, defaultVal: any | undefi
 		}
 
 		const val = get(arrItem, path, defaultVal, options);
-		if (val !== undefined) innerResult.push(val);
+		if (val !== undefined) {
+			options.pathData?.directPaths?.push(join(options.pathRoot || "", String(arrIndex), path));
+			innerResult.push(val);
+		}
 
 		return innerResult;
 	}, []);
