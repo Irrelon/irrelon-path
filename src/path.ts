@@ -1,4 +1,4 @@
-export type ObjectType = {[key: string]: any};
+export type ObjectType = { [key: string]: any };
 export type ArrayType = Map<string, any[]>;
 
 export interface PathData {
@@ -9,10 +9,10 @@ export interface PathData {
 export type QueryMatchFunction = (val: any) => boolean;
 
 export interface OptionsType {
-	transformRead?: (...rest: any) => any
-	transformKey?: (...rest: any) => any
-	transformWrite?: (...rest: any) => any
-	leavesOnly?: boolean
+	transformRead?: (...rest: any) => any;
+	transformKey?: (...rest: any) => any;
+	transformWrite?: (...rest: any) => any;
+	leavesOnly?: boolean;
 }
 
 export interface GetOptionsType extends OptionsType {
@@ -25,15 +25,15 @@ export interface GetOptionsType extends OptionsType {
 }
 
 export interface SetOptionsType extends GetOptionsType {
-	immutable?: boolean
-	strict?: boolean
-	ignore?: RegExp
+	immutable?: boolean;
+	strict?: boolean;
+	ignore?: RegExp;
 }
 
 export interface FindOptionsType extends OptionsType {
-	maxDepth?: number
-	currentDepth?: number
-	includeRoot?: boolean
+	maxDepth?: number;
+	currentDepth?: number;
+	includeRoot?: boolean;
 }
 
 export interface DiffValue {
@@ -41,7 +41,7 @@ export interface DiffValue {
 	val2: unknown;
 	type1: string;
 	type2: string;
-	difference: "value" | "type" | "both"
+	difference: "value" | "type" | "both";
 }
 
 /**
@@ -358,7 +358,7 @@ export const unEscape = (str: string): string => {
  * @returns {*} The value retrieved from the passed object at
  * the passed path.
  */
-export const get = (obj: ObjectType, path: string|any[], defaultVal: any | undefined = undefined, options: GetOptionsType = {}): any => {
+export const get = (obj: ObjectType, path: string | any[], defaultVal: any | undefined = undefined, options: GetOptionsType = {}): any => {
 	let internalPath = path,
 		objPart;
 
@@ -602,7 +602,7 @@ export const set = (obj: ObjectType, path: string, val: any, options: SetOptions
 		objPart = childPart;
 	}
 
-	return set(newObj, transformedPathPart, set(objPart, pathParts.join('.'), val, options), options);
+	return set(newObj, transformedPathPart, set(objPart, pathParts.join("."), val, options), options);
 };
 
 /**
@@ -612,7 +612,9 @@ export const set = (obj: ObjectType, path: string, val: any, options: SetOptions
  * @param {SetOptionsType} [options] The options object.
  * @param {Object=} tracking Do not use.
  */
-export const unSet = (obj: ObjectType, path: string, options: SetOptionsType = {}, tracking: {returnOriginal?: boolean} = {}) => {
+export const unSet = (obj: ObjectType, path: string, options: SetOptionsType = {}, tracking: {
+	returnOriginal?: boolean
+} = {}) => {
 	let internalPath = path;
 
 	options.transformRead = options.transformRead || returnWhatWasGiven;
@@ -675,7 +677,7 @@ export const unSet = (obj: ObjectType, path: string, options: SetOptionsType = {
 		return obj;
 	}
 
-	newObj[transformedPathPart] = unSet(childPart, pathParts.join('.'), options, tracking);
+	newObj[transformedPathPart] = unSet(childPart, pathParts.join("."), options, tracking);
 
 	if (tracking.returnOriginal) {
 		return obj;
@@ -785,7 +787,7 @@ export const pushVal = (obj: ObjectType, path: string, val: any, options: SetOpt
 
 		// @ts-ignore
 		if (!(obj[part] instanceof Array)) {
-			throw("Cannot push to a path whose leaf node is not an array!");
+			throw ("Cannot push to a path whose leaf node is not an array!");
 		}
 
 		// @ts-ignore
@@ -795,7 +797,7 @@ export const pushVal = (obj: ObjectType, path: string, val: any, options: SetOpt
 		obj = decouple(obj, options) || [];
 
 		if (!(obj instanceof Array)) {
-			throw("Cannot push to a path whose leaf node is not an array!");
+			throw ("Cannot push to a path whose leaf node is not an array!");
 		}
 
 		obj.push(val);
@@ -840,7 +842,7 @@ export const pullVal = (obj: ObjectType, path: string, val: any, options: SetOpt
 	} else {
 		// The target array is the root object, pull the value
 		if (!(obj instanceof Array)) {
-			throw("Cannot pull from a path whose leaf node is not an array!");
+			throw ("Cannot pull from a path whose leaf node is not an array!");
 		}
 
 		let index: number;
@@ -897,7 +899,7 @@ export const splicePath = (obj: ObjectType, path: string, start: number, deleteC
 		obj[part] = splicePath(obj[part], pathParts.join("."), start, deleteCount, itemsToAdd, options);
 	} else if (part) {
 		if (!(obj[part] instanceof Array)) {
-			throw("Cannot splice from a path whose leaf node is not an array!");
+			throw ("Cannot splice from a path whose leaf node is not an array!");
 		}
 
 		// We've reached our destination leaf node
@@ -906,7 +908,7 @@ export const splicePath = (obj: ObjectType, path: string, start: number, deleteC
 		obj[part].splice(start, deleteCount, ...itemsToAdd);
 	} else {
 		if (!(obj instanceof Array)) {
-			throw("Cannot splice from a path whose leaf node is not an array!");
+			throw ("Cannot splice from a path whose leaf node is not an array!");
 		}
 
 		// We've reached our destination leaf node
@@ -915,7 +917,7 @@ export const splicePath = (obj: ObjectType, path: string, start: number, deleteC
 	}
 
 	return obj;
-}
+};
 
 /**
  * Given a path and an object, determines the outermost leaf node
@@ -1041,7 +1043,7 @@ export const flatten = (obj: ObjectType, finalArr: any[] | undefined = [], paren
 	// @ts-ignore
 	objCache.push(transformedObj);
 
-	const currentPath = (i: string|number|symbol) => {
+	const currentPath = (i: string | number | symbol) => {
 		// @ts-ignore
 		const tKey = options.transformKey(i);
 		return parentPath ? parentPath + "." + tKey : tKey;
@@ -1268,7 +1270,11 @@ export const hasMatchingPathsInObject = (testKeys: ObjectType, testObj: ObjectTy
  * @param {ObjectType} testObj The object to test paths against.
  * @returns {{matchedKeys: ObjectType, matchedKeyCount: number, totalKeyCount: number}} Stats on the matched keys.
  */
-export const countMatchingPathsInObject = (testKeys: ObjectType, testObj: ObjectType): {matchedKeys: ObjectType, matchedKeyCount: number, totalKeyCount: number} => {
+export const countMatchingPathsInObject = (testKeys: ObjectType, testObj: ObjectType): {
+	matchedKeys: ObjectType,
+	matchedKeyCount: number,
+	totalKeyCount: number
+} => {
 	const matchedKeys = {};
 
 	let matchData,
@@ -1318,11 +1324,11 @@ export const countMatchingPathsInObject = (testKeys: ObjectType, testObj: Object
  */
 export const type = (item: unknown): "undefined" | "object" | "boolean" | "number" | "string" | "function" | "symbol" | "bigint" | "null" | "array" => {
 	if (item === null) {
-		return 'null';
+		return "null";
 	}
 
 	if (Array.isArray(item)) {
-		return 'array';
+		return "array";
 	}
 
 	return typeof item;
@@ -1379,7 +1385,11 @@ export interface FindPathReturn {
  * path to the current structure in source.
  * @returns {Object} Contains match<Boolean> and path<Array>.
  */
-export const findPath = (source: any, query: any, options: FindOptionsType = {maxDepth: Infinity, currentDepth: 0, includeRoot: true}, parentPath = ""): FindPathReturn => {
+export const findPath = (source: any, query: any, options: FindOptionsType = {
+	maxDepth: Infinity,
+	currentDepth: 0,
+	includeRoot: true
+}, parentPath = ""): FindPathReturn => {
 	const resultArr = [];
 	const sourceType = typeof source;
 
@@ -1441,7 +1451,11 @@ export type FindOnePathReturn = FindOnePathNoMatchFoundReturn | FindOnePathMatch
  * path to the current structure in source.
  * @returns {Object} Contains match<boolean> and path<string>.
  */
-export const findOnePath = (source: any, query: any, options: FindOptionsType = {maxDepth: Infinity, currentDepth: 0, includeRoot: true}, parentPath = ""): FindOnePathReturn => {
+export const findOnePath = (source: any, query: any, options: FindOptionsType = {
+	maxDepth: Infinity,
+	currentDepth: 0,
+	includeRoot: true
+}, parentPath = ""): FindOnePathReturn => {
 	const sourceType = typeof source;
 
 	options = {
@@ -1520,7 +1534,7 @@ export const keyDedup = (keys: string[]): string[] => {
  * field that holds a different value between the two objects being
  * compared.
  */
-export const diff = (obj1: ObjectType, obj2: ObjectType, basePath: string|string[] = "", strict = false, maxDepth = Infinity, parentPath = "", objCache: never[] = []): Array<string> => {
+export const diff = (obj1: ObjectType, obj2: ObjectType, basePath: string | string[] = "", strict = false, maxDepth = Infinity, parentPath = "", objCache: never[] = []): Array<string> => {
 	const paths = [];
 
 	if (basePath instanceof Array) {
@@ -1617,7 +1631,7 @@ export const diff = (obj1: ObjectType, obj2: ObjectType, basePath: string|string
  * compared and the value of each key is an object holding details of
  * the difference.
  */
-export const diffValues = (obj1: ObjectType, obj2: ObjectType, basePath: string|string[] = "", strict = false, maxDepth = Infinity, parentPath = "", objCache: never[] = []): Record<string, DiffValue> => {
+export const diffValues = (obj1: ObjectType, obj2: ObjectType, basePath: string | string[] = "", strict = false, maxDepth = Infinity, parentPath = "", objCache: never[] = []): Record<string, DiffValue> => {
 	const paths: Record<string, DiffValue> = {};
 
 	if (basePath instanceof Array) {
@@ -1647,10 +1661,9 @@ export const diffValues = (obj1: ObjectType, obj2: ObjectType, basePath: string|
 			// Difference in source and comparison types
 			paths[currentPath] = {val1, val2, type1, type2, difference: "type"};
 		}
-	}
-	else if (type1 === "array" && type2 === "array" && val1.length !== val2.length) {
+	} else if (type1 === "array" && type2 === "array" && val1.length !== val2.length) {
 		// Difference in source and comparison content
-		paths[currentPath] = { val1, val2, type1, type2, difference: "value" };
+		paths[currentPath] = {val1, val2, type1, type2, difference: "value"};
 	}
 
 	const pathParts = currentPath.split(".");
@@ -1697,7 +1710,7 @@ export const diffValues = (obj1: ObjectType, obj2: ObjectType, basePath: string|
 		paths[currentPath] = {val1, val2, type1, type2, difference};
 	}
 
-	return paths
+	return paths;
 };
 
 /**
@@ -1873,19 +1886,46 @@ export const merge = (obj1: object, obj2: object, options: MergeOptionsType = {}
 	});
 
 	return newObj;
-}
+};
 
 export const mergeImmutable = (obj1: object, obj2: object, options: MergeOptionsType = {}) => {
-	return merge(obj1, obj2, {...options, immutable: true})
+	return merge(obj1, obj2, {...options, immutable: true});
+};
+
+interface QueryGate {
+	$and?: QueryType[];
+	$or?: QueryType[];
 }
 
-export const query = (item: object, query: Record<string, QueryMatchFunction | any[]>): Record<string, string[]> => {
+interface QueryOperator {
+	$in?: QueryMatchFunction | any[];
+}
+
+type QueryType = Record<string, QueryOperator>;
+
+const queryGates: Record<keyof QueryGate, QueryMatchFunction> = {
+	$and: () => {
+		return true;
+	},
+	$or: () => {
+		return true;
+	}
+};
+
+const queryOperators: Record<keyof QueryOperator, QueryMatchFunction> = {
+	$in: () => {
+		return true;
+	}
+};
+
+export const query = (item: object, query: QueryType): Record<string, string[]> => {
 	const queryToMatchMap: Record<string, string[]> = {};
 
 	// First, extract all paths including array indices
 	for (const queryKey in query) {
 		if (!query.hasOwnProperty(queryKey)) continue;
-		const queryCriteria = query[queryKey];
+
+		const queryOperations = query[queryKey];
 
 		const pathData: PathData = {
 			directPaths: []
@@ -1897,34 +1937,39 @@ export const query = (item: object, query: Record<string, QueryMatchFunction | a
 			arrayExpansion: true
 		});
 
-		// Now loop all paths and check values against the search values
-		queryToMatchMap[queryKey] = (pathData?.directPaths || []).filter((path) => {
-			const value = get(item, path, undefined, {arrayTraversal: false});
+		// Loop the operations
+		Object.entries(queryOperations).forEach(([operationKey, operationCriteria]) => {
+			if (operationKey === "$in") {
+				// Now loop all paths and check values against the search values
+				queryToMatchMap[queryKey] = (pathData?.directPaths || []).filter((path) => {
+					const value = get(item, path, undefined, {arrayTraversal: false});
 
-			if (typeof queryCriteria === "function") {
-				// The criteria is a function, use the result boolean
-				return queryCriteria(value);
+					if (typeof operationCriteria === "function") {
+						// The criteria is a function, use the result boolean
+						return operationCriteria(value);
+					}
+
+					// The criteria is an array of values, scan them
+					// if we find any value that matches the one we are looking for,
+					// we immediately return true
+					for (let criteriaIndex = 0; criteriaIndex < operationCriteria.length; criteriaIndex++) {
+						const criteriaValue = operationCriteria[criteriaIndex];
+
+						if (typeof criteriaValue === "function" && criteriaValue(value)) {
+							// The criteria is a function, use the result boolean
+							return true;
+						}
+
+						if (value === criteriaValue) {
+							return true;
+						}
+					}
+
+					return false;
+				});
 			}
-
-			// The criteria is an array of values, scan them
-			// if we find any value that matches the one we are looking for,
-			// we immediately return true
-			for (let criteriaIndex = 0; criteriaIndex < queryCriteria.length; criteriaIndex++) {
-				const criteriaValue = queryCriteria[criteriaIndex];
-
-				if (typeof criteriaValue === "function" && criteriaValue(value)) {
-					// The criteria is a function, use the result boolean
-					return true;
-				}
-
-				if (value === criteriaValue) {
-					return true;
-				}
-			}
-
-			return false;
 		});
 	}
 
 	return queryToMatchMap;
-}
+};

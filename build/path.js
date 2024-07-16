@@ -479,7 +479,7 @@ const set = (obj, path, val, options = {}) => {
     else {
         objPart = childPart;
     }
-    return (0, exports.set)(newObj, transformedPathPart, (0, exports.set)(objPart, pathParts.join('.'), val, options), options);
+    return (0, exports.set)(newObj, transformedPathPart, (0, exports.set)(objPart, pathParts.join("."), val, options), options);
 };
 exports.set = set;
 /**
@@ -538,7 +538,7 @@ const unSet = (obj, path, options = {}, tracking = {}) => {
         tracking.returnOriginal = true;
         return obj;
     }
-    newObj[transformedPathPart] = (0, exports.unSet)(childPart, pathParts.join('.'), options, tracking);
+    newObj[transformedPathPart] = (0, exports.unSet)(childPart, pathParts.join("."), options, tracking);
     if (tracking.returnOriginal) {
         return obj;
     }
@@ -1110,10 +1110,10 @@ exports.countMatchingPathsInObject = countMatchingPathsInObject;
  */
 const type = (item) => {
     if (item === null) {
-        return 'null';
+        return "null";
     }
     if (Array.isArray(item)) {
-        return 'array';
+        return "array";
     }
     return typeof item;
 };
@@ -1158,7 +1158,11 @@ exports.match = match;
  * path to the current structure in source.
  * @returns {Object} Contains match<Boolean> and path<Array>.
  */
-const findPath = (source, query, options = { maxDepth: Infinity, currentDepth: 0, includeRoot: true }, parentPath = "") => {
+const findPath = (source, query, options = {
+    maxDepth: Infinity,
+    currentDepth: 0,
+    includeRoot: true
+}, parentPath = "") => {
     const resultArr = [];
     const sourceType = typeof source;
     options = Object.assign({ maxDepth: Infinity, currentDepth: 0, includeRoot: true }, options);
@@ -1197,7 +1201,11 @@ exports.findPath = findPath;
  * path to the current structure in source.
  * @returns {Object} Contains match<boolean> and path<string>.
  */
-const findOnePath = (source, query, options = { maxDepth: Infinity, currentDepth: 0, includeRoot: true }, parentPath = "") => {
+const findOnePath = (source, query, options = {
+    maxDepth: Infinity,
+    currentDepth: 0,
+    includeRoot: true
+}, parentPath = "") => {
     const sourceType = typeof source;
     options = Object.assign({ maxDepth: Infinity, currentDepth: 0, includeRoot: true }, options);
     if (options.currentDepth !== 0 || (options.currentDepth === 0 && options.includeRoot)) {
@@ -1593,13 +1601,26 @@ const mergeImmutable = (obj1, obj2, options = {}) => {
     return (0, exports.merge)(obj1, obj2, Object.assign(Object.assign({}, options), { immutable: true }));
 };
 exports.mergeImmutable = mergeImmutable;
+const queryGates = {
+    $and: () => {
+        return true;
+    },
+    $or: () => {
+        return true;
+    }
+};
+const queryOperators = {
+    $in: () => {
+        return true;
+    }
+};
 const query = (item, query) => {
     const queryToMatchMap = {};
     // First, extract all paths including array indices
     for (const queryKey in query) {
         if (!query.hasOwnProperty(queryKey))
             continue;
-        const queryCriteria = query[queryKey];
+        const queryOperations = query[queryKey];
         const pathData = {
             directPaths: []
         };
@@ -1608,27 +1629,32 @@ const query = (item, query) => {
             arrayTraversal: true,
             arrayExpansion: true
         });
-        // Now loop all paths and check values against the search values
-        queryToMatchMap[queryKey] = ((pathData === null || pathData === void 0 ? void 0 : pathData.directPaths) || []).filter((path) => {
-            const value = (0, exports.get)(item, path, undefined, { arrayTraversal: false });
-            if (typeof queryCriteria === "function") {
-                // The criteria is a function, use the result boolean
-                return queryCriteria(value);
+        // Loop the operations
+        Object.entries(queryOperations).forEach(([operationKey, operationCriteria]) => {
+            if (operationKey === "$in") {
+                // Now loop all paths and check values against the search values
+                queryToMatchMap[queryKey] = ((pathData === null || pathData === void 0 ? void 0 : pathData.directPaths) || []).filter((path) => {
+                    const value = (0, exports.get)(item, path, undefined, { arrayTraversal: false });
+                    if (typeof operationCriteria === "function") {
+                        // The criteria is a function, use the result boolean
+                        return operationCriteria(value);
+                    }
+                    // The criteria is an array of values, scan them
+                    // if we find any value that matches the one we are looking for,
+                    // we immediately return true
+                    for (let criteriaIndex = 0; criteriaIndex < operationCriteria.length; criteriaIndex++) {
+                        const criteriaValue = operationCriteria[criteriaIndex];
+                        if (typeof criteriaValue === "function" && criteriaValue(value)) {
+                            // The criteria is a function, use the result boolean
+                            return true;
+                        }
+                        if (value === criteriaValue) {
+                            return true;
+                        }
+                    }
+                    return false;
+                });
             }
-            // The criteria is an array of values, scan them
-            // if we find any value that matches the one we are looking for,
-            // we immediately return true
-            for (let criteriaIndex = 0; criteriaIndex < queryCriteria.length; criteriaIndex++) {
-                const criteriaValue = queryCriteria[criteriaIndex];
-                if (typeof criteriaValue === "function" && criteriaValue(value)) {
-                    // The criteria is a function, use the result boolean
-                    return true;
-                }
-                if (value === criteriaValue) {
-                    return true;
-                }
-            }
-            return false;
         });
     }
     return queryToMatchMap;

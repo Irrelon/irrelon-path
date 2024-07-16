@@ -3365,49 +3365,102 @@ describe("Path", () => {
 	});
 
 	describe("query()", () => {
-		it("Can query objects with nested paths inside arrays", () => {
-			const obj = {
-				arr: [{
-					name: "",
-					items: [{
-						moreItems: [{
-							name: "OK"
+		describe("$in", () => {
+			it("Can query objects with nested paths inside arrays", () => {
+				const obj = {
+					arr: [{
+						name: "",
+						items: [{
+							moreItems: [{
+								name: "OK"
+							}, {
+								name: ""
+							}, {
+								name: "OK"
+							}, {
+								name: ""
+							}]
 						}, {
-							name: ""
-						}, {
-							name: "OK"
-						}, {
-							name: ""
+							moreItems: [{
+								name: "OK"
+							}, {
+								name: "OK"
+							}, {
+								name: "OK"
+							}, {
+								name: ""
+							}]
 						}]
 					}, {
-						moreItems: [{
-							name: "OK"
-						}, {
-							name: "OK"
-						}, {
-							name: "OK"
-						}, {
-							name: ""
-						}]
-					}]
-				}, {
-					name: "Jim"
-				}, {
-					name: null
-				}, {}]
-			};
+						name: "Jim"
+					}, {
+						name: null
+					}, {}]
+				};
 
-			const queryToPathsResult = query(obj, {
-				"arr.items.moreItems.name": ["", undefined, null]
-			});
+				const queryToPathsResult = query(obj, {
+					"arr.items.moreItems.name": {$in: ["", undefined, null]}
+				});
 
-			expect(queryToPathsResult).toEqual({
-				"arr.items.moreItems.name": [
-					"arr.0.items.0.moreItems.1.name",
-					"arr.0.items.0.moreItems.3.name",
-					"arr.0.items.1.moreItems.3.name"
-				]
+				expect(queryToPathsResult).toEqual({
+					"arr.items.moreItems.name": [
+						"arr.0.items.0.moreItems.1.name",
+						"arr.0.items.0.moreItems.3.name",
+						"arr.0.items.1.moreItems.3.name"
+					]
+				});
 			});
 		});
+
+		// describe("$or", () => {
+		// 	it("Can query objects with nested paths inside arrays", () => {
+		// 		const obj = {
+		// 			arr: [{
+		// 				name: "",
+		// 				items: [{
+		// 					moreItems: [{
+		// 						name: "OK"
+		// 					}, {
+		// 						name: ""
+		// 					}, {
+		// 						name: "OK"
+		// 					}, {
+		// 						name: ""
+		// 					}]
+		// 				}, {
+		// 					moreItems: [{
+		// 						name: "OK"
+		// 					}, {
+		// 						name: "OK"
+		// 					}, {
+		// 						name: "OK"
+		// 					}, {
+		// 						name: ""
+		// 					}]
+		// 				}]
+		// 			}, {
+		// 				name: "Jim"
+		// 			}, {
+		// 				name: null
+		// 			}, {}]
+		// 		};
+		//
+		// 		const queryToPathsResult = query(obj, {
+		// 			$or: [{
+		// 				"arr.items.moreItems.name": {
+		// 					$in: ["", undefined, null]
+		// 				}
+		// 			}],
+		// 		});
+		//
+		// 		expect(queryToPathsResult).toEqual({
+		// 			"arr.items.moreItems.name": [
+		// 				"arr.0.items.0.moreItems.1.name",
+		// 				"arr.0.items.0.moreItems.3.name",
+		// 				"arr.0.items.1.moreItems.3.name"
+		// 			]
+		// 		});
+		// 	});
+		// });
 	});
 });

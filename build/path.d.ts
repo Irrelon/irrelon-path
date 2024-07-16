@@ -607,4 +607,9 @@ export declare const chop: (path: string, level: number) => string;
  */
 export declare const merge: (obj1: object, obj2: object, options?: MergeOptionsType) => any;
 export declare const mergeImmutable: (obj1: object, obj2: object, options?: MergeOptionsType) => any;
-export declare const query: (item: object, query: Record<string, QueryMatchFunction | any[]>) => Record<string, string[]>;
+interface QueryOperator {
+    $in?: QueryMatchFunction | any[];
+}
+type QueryType = Record<string, QueryOperator>;
+export declare const query: (item: object, query: QueryType) => Record<string, string[]>;
+export {};
