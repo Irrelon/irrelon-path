@@ -1,6 +1,6 @@
 {
 	"name": "@irrelon/path",
-	"version": "6.4.3",
+	"version": "6.4.4",
 	"description": "A powerful JSON path processor. Allows you to drill into and manipulate JSON objects with a simple dot-delimited path format e.g. \"obj.name\".",
 	"main": "./build/path.js",
 	"types": "./build/path.d.ts",

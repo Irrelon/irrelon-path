@@ -18,7 +18,8 @@ import {
 	leafNodes,
 	match,
 	merge,
-	mergeImmutable, PathData,
+	mergeImmutable,
+	PathData,
 	pop,
 	pullVal,
 	pushVal,
@@ -34,7 +35,8 @@ import {
 	up,
 	update,
 	updateImmutable,
-	values
+	values,
+	traverse
 } from "../src/path";
 
 describe("Path", () => {
@@ -3399,7 +3401,9 @@ describe("Path", () => {
 				};
 
 				const queryToPathsResult = query(obj, {
-					"arr.items.moreItems.name": {$in: ["", undefined, null]}
+					"arr.items.moreItems.name": {$in: ["", undefined, null]},
+					"arr.items.notDefined": {$in: () => true},
+					"notDefined": {$in: () => true}
 				});
 
 				expect(queryToPathsResult).toEqual({
@@ -3407,6 +3411,14 @@ describe("Path", () => {
 						"arr.0.items.0.moreItems.1.name",
 						"arr.0.items.0.moreItems.3.name",
 						"arr.0.items.1.moreItems.3.name"
+
+					],
+					"arr.items.notDefined": [
+						"arr.0.items.0.notDefined",
+						"arr.0.items.1.notDefined"
+					],
+					"notDefined": [
+						"notDefined"
 					]
 				});
 			});
@@ -3462,5 +3474,40 @@ describe("Path", () => {
 		// 		});
 		// 	});
 		// });
+
+		describe("traverse()", () => {
+			it("Calls the operation function for each path iteration", () => {
+				const obj = {
+					arr: [{
+						items: [{
+							moreItems: [{
+								name: "OK"
+							}, {
+								name: "OK"
+							}]
+						}]
+					}]
+				};
+
+				const traversedPaths: string[] = [];
+
+				traverse(obj, "arr.items.moreItems.name", ({purePath}) => {
+					traversedPaths.push(purePath);
+					return true;
+				});
+
+				expect(traversedPaths).toEqual([
+					"arr",
+					"arr.0",
+					"arr.0.items",
+					"arr.0.items.0",
+					"arr.0.items.0.moreItems",
+					"arr.0.items.0.moreItems.0",
+					"arr.0.items.0.moreItems.0.name",
+					"arr.0.items.0.moreItems.1",
+					"arr.0.items.0.moreItems.1.name",
+				]);
+			});
+		});
 	});
 });

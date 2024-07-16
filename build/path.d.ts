@@ -185,7 +185,7 @@ export declare const unEscape: (str: string) => string;
  * @returns {*} The value retrieved from the passed object at
  * the passed path.
  */
-export declare const get: (obj: ObjectType, path: string | any[], defaultVal?: any | undefined, options?: GetOptionsType) => any;
+export declare const get: (obj: ObjectType | undefined | null, path: string | any[], defaultVal?: any | undefined, options?: GetOptionsType) => any;
 /**
  * Gets multiple values from the passed arr and given path.
  * @param {ObjectType} data The array or object to operate on.
@@ -316,16 +316,16 @@ export declare const values: (obj: ObjectType, path: string, options?: OptionsTy
 /**
  * Takes an object and finds all paths, then returns the paths as an
  * array of strings.
- * @param {ObjectType} obj The object to scan.
- * @param {Array=} finalArr An object used to collect the path keys.
+ * @param obj The object to scan.
+ * @param finalArr An object used to collect the path keys.
  * (Do not pass this in directly - use undefined).
- * @param {string=} parentPath The path of the parent object. (Do not
+ * @param parentPath The path of the parent object. (Do not
  * pass this in directly - use undefined).
- * @param {OptionsType} [options] An options object.
- * @param {any[]} [objCache] Internal, do not use.
- * @returns {Array<string>} An array containing path strings.
+ * @param [options] An options object.
+ * @param [objCache] Internal, do not use.
+ * @returns An array containing path strings.
  */
-export declare const flatten: (obj: ObjectType, finalArr?: any[] | undefined, parentPath?: string | undefined, options?: SetOptionsType, objCache?: never[]) => string[];
+export declare const flatten: (obj: ObjectType, finalArr?: any[] | undefined, parentPath?: string, options?: SetOptionsType, objCache?: never[]) => string[];
 /**
  * Takes an object and finds all paths, then returns the paths as keys
  * and the values of each path as the values.
@@ -344,8 +344,8 @@ export declare const flattenValues: (obj: ObjectType, finalObj?: object | undefi
  * Ignores blank or undefined path parts and also ensures
  * that each part is escaped so passing "foo.bar" will
  * result in an escaped version.
- * @param {...string} args args Path to join.
- * @returns {string} A final path string.
+ * @param  args args Path to join.
+ * @returns  A final path string.
  */
 export declare const join: (...args: string[]) => string;
 /**
@@ -611,5 +611,31 @@ interface QueryOperator {
     $in?: QueryMatchFunction | any[];
 }
 type QueryType = Record<string, QueryOperator>;
-export declare const query: (item: object, query: QueryType) => Record<string, string[]>;
+/**
+ * Retrieves paths to parts of the object that satisfy the given query criteria.
+ *
+ * @param {ObjectType} obj - The object to query.
+ * @param {QueryType} query - The query criteria.
+ * @return {Record<string, string[]>} - The query result, represented as a record where each property
+ * contains an array of values that satisfy the corresponding query criterion.
+ */
+export declare const query: (obj: ObjectType, query: QueryType) => Record<string, string[]>;
+export interface OperationFunctionProps {
+    purePath: string;
+    flatPath: string;
+    value: any;
+    key: string;
+}
+/**
+ * Calls `operation` on every part of `path`.
+ * @param obj The object to operate on with the path.
+ * @param path The path to iterate.
+ * @param operation The function to call for each part of the path.
+ * @param options
+ * @param parentPaths Do not pass, used internally.
+ */
+export declare const traverse: (obj: ObjectType | undefined | null, path: string | any[], operation: (props: OperationFunctionProps) => boolean, options?: GetOptionsType, parentPaths?: {
+    pure: string;
+    flat: string;
+}) => any;
 export {};

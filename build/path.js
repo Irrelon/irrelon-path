@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.merge = exports.chop = exports.distill = exports.unSetImmutable = exports.pullValImmutable = exports.pushValImmutable = exports.setImmutable = exports.isNotEqual = exports.isEqual = exports.diffValues = exports.diff = exports.keyDedup = exports.findOnePath = exports.findPath = exports.match = exports.type = exports.countMatchingPathsInObject = exports.hasMatchingPathsInObject = exports.leafNodes = exports.countLeafNodes = exports.joinEscaped = exports.join = exports.flattenValues = exports.flatten = exports.values = exports.furthest = exports.splicePath = exports.pullVal = exports.pushVal = exports.decouple = exports.updateImmutable = exports.update = exports.unSet = exports.set = exports.getMany = exports.get = exports.unEscape = exports.escape = exports.split = exports.clean = exports.numberToWildcard = exports.wildcardToZero = exports.returnWhatWasGiven = exports.shift = exports.push = exports.pop = exports.down = exports.up = exports.isNonCompositePath = exports.isCompositePath = void 0;
-exports.query = exports.mergeImmutable = void 0;
+exports.traverse = exports.query = exports.mergeImmutable = void 0;
 /**
  * @typedef {object} FindOptionsType
  * @property {number} [maxDepth=Infinity] The maximum depth to scan inside
@@ -839,14 +839,14 @@ exports.values = values;
 /**
  * Takes an object and finds all paths, then returns the paths as an
  * array of strings.
- * @param {ObjectType} obj The object to scan.
- * @param {Array=} finalArr An object used to collect the path keys.
+ * @param obj The object to scan.
+ * @param finalArr An object used to collect the path keys.
  * (Do not pass this in directly - use undefined).
- * @param {string=} parentPath The path of the parent object. (Do not
+ * @param parentPath The path of the parent object. (Do not
  * pass this in directly - use undefined).
- * @param {OptionsType} [options] An options object.
- * @param {any[]} [objCache] Internal, do not use.
- * @returns {Array<string>} An array containing path strings.
+ * @param [options] An options object.
+ * @param [objCache] Internal, do not use.
+ * @returns An array containing path strings.
  */
 const flatten = (obj, finalArr = [], parentPath = "", options = {}, objCache = []) => {
     options.transformRead = options.transformRead || exports.returnWhatWasGiven;
@@ -861,20 +861,22 @@ const flatten = (obj, finalArr = [], parentPath = "", options = {}, objCache = [
     // Add object to cache to make sure we don't traverse it twice
     // @ts-ignore
     objCache.push(transformedObj);
-    const currentPath = (i) => {
+    const currentPath = (key) => {
         // @ts-ignore
-        const tKey = options.transformKey(i);
-        return parentPath ? parentPath + "." + tKey : tKey;
+        const tKey = options.transformKey(key);
+        return parentPath ? (0, exports.join)(parentPath, tKey) : tKey;
     };
     for (const i in transformedObj) {
-        if (transformedObj.hasOwnProperty(i)) {
-            if (options.ignore && options.ignore.test(i)) {
-                continue;
-            }
-            if (typeof transformedObj[i] === "object" && transformedObj[i] !== null) {
-                (0, exports.flatten)(transformedObj[i], finalArr, currentPath(i), options, objCache);
-            }
-            finalArr.push(currentPath(i));
+        if (!transformedObj.hasOwnProperty(i))
+            continue;
+        if (options.ignore && options.ignore.test(i)) {
+            continue;
+        }
+        const pathToChild = currentPath(i);
+        const childObj = transformedObj[i];
+        finalArr.push(pathToChild);
+        if (typeof childObj === "object" && childObj !== null) {
+            (0, exports.flatten)(childObj, finalArr, pathToChild, options, objCache);
         }
     }
     return finalArr;
@@ -945,8 +947,8 @@ exports.flattenValues = flattenValues;
  * Ignores blank or undefined path parts and also ensures
  * that each part is escaped so passing "foo.bar" will
  * result in an escaped version.
- * @param {...string} args args Path to join.
- * @returns {string} A final path string.
+ * @param  args args Path to join.
+ * @returns  A final path string.
  */
 const join = (...args) => {
     return args.reduce((arr, item) => {
@@ -1601,62 +1603,119 @@ const mergeImmutable = (obj1, obj2, options = {}) => {
     return (0, exports.merge)(obj1, obj2, Object.assign(Object.assign({}, options), { immutable: true }));
 };
 exports.mergeImmutable = mergeImmutable;
-const queryGates = {
-    $and: () => {
-        return true;
-    },
-    $or: () => {
-        return true;
+const $in = (value, criteria) => {
+    if (typeof criteria === "function") {
+        // The criteria is a function, use the result boolean
+        return criteria(value);
     }
-};
-const queryOperators = {
-    $in: () => {
-        return true;
+    // The criteria is an array of values, scan them
+    // if we find any value that matches the one we are looking for,
+    // we immediately return true
+    for (let criteriaIndex = 0; criteriaIndex < criteria.length; criteriaIndex++) {
+        const criteriaValue = criteria[criteriaIndex];
+        if (typeof criteriaValue === "function" && criteriaValue(value)) {
+            // The criteria is a function, use the result boolean
+            return true;
+        }
+        if (value === criteriaValue) {
+            return true;
+        }
     }
+    return false;
 };
-const query = (item, query) => {
-    const queryToMatchMap = {};
-    // First, extract all paths including array indices
+/**
+ * Retrieves paths to parts of the object that satisfy the given query criteria.
+ *
+ * @param {ObjectType} obj - The object to query.
+ * @param {QueryType} query - The query criteria.
+ * @return {Record<string, string[]>} - The query result, represented as a record where each property
+ * contains an array of values that satisfy the corresponding query criterion.
+ */
+const query = (obj, query) => {
+    const queryResult = {};
     for (const queryKey in query) {
         if (!query.hasOwnProperty(queryKey))
             continue;
+        queryResult[queryKey] = [];
         const queryOperations = query[queryKey];
-        const pathData = {
-            directPaths: []
-        };
-        (0, exports.get)(item, queryKey, undefined, {
-            pathData,
-            arrayTraversal: true,
-            arrayExpansion: true
-        });
-        // Loop the operations
         Object.entries(queryOperations).forEach(([operationKey, operationCriteria]) => {
             if (operationKey === "$in") {
-                // Now loop all paths and check values against the search values
-                queryToMatchMap[queryKey] = ((pathData === null || pathData === void 0 ? void 0 : pathData.directPaths) || []).filter((path) => {
-                    const value = (0, exports.get)(item, path, undefined, { arrayTraversal: false });
-                    if (typeof operationCriteria === "function") {
-                        // The criteria is a function, use the result boolean
-                        return operationCriteria(value);
-                    }
-                    // The criteria is an array of values, scan them
-                    // if we find any value that matches the one we are looking for,
-                    // we immediately return true
-                    for (let criteriaIndex = 0; criteriaIndex < operationCriteria.length; criteriaIndex++) {
-                        const criteriaValue = operationCriteria[criteriaIndex];
-                        if (typeof criteriaValue === "function" && criteriaValue(value)) {
-                            // The criteria is a function, use the result boolean
-                            return true;
-                        }
-                        if (value === criteriaValue) {
-                            return true;
-                        }
-                    }
-                    return false;
+                (0, exports.traverse)(obj, queryKey, ({ purePath, flatPath, value }) => {
+                    if (flatPath !== queryKey)
+                        return true;
+                    if (!$in(value, operationCriteria))
+                        return true;
+                    queryResult[queryKey].push(purePath);
+                    return true;
                 });
             }
         });
     }
-    return queryToMatchMap;
+    return queryResult;
 };
 exports.query = query;
+/**
+ * Calls `operation` on every part of `path`.
+ * @param obj The object to operate on with the path.
+ * @param path The path to iterate.
+ * @param operation The function to call for each part of the path.
+ * @param options
+ * @param parentPaths Do not pass, used internally.
+ */
+const traverse = (obj, path, operation, options = {}, parentPaths = { pure: "", flat: "" }) => {
+    let internalPath = path;
+    if (path instanceof Array) {
+        return path.forEach((individualPath) => {
+            (0, exports.traverse)(obj, individualPath, operation);
+        });
+    }
+    options.transformRead = options.transformRead || exports.returnWhatWasGiven;
+    options.transformKey = options.transformKey || exports.returnWhatWasGiven;
+    options.transformWrite = options.transformWrite || exports.returnWhatWasGiven;
+    const transformedObj = options.transformRead(obj);
+    // No path string, return the base obj
+    if (!internalPath) {
+        return;
+    }
+    // @ts-ignore
+    internalPath = (0, exports.clean)(internalPath);
+    // Path is not a string, throw error
+    if (typeof internalPath !== "string") {
+        throw new Error("Path argument must be a string");
+    }
+    const purePath = (key) => {
+        return parentPaths.pure ? (0, exports.join)(parentPaths.pure, key) : key;
+    };
+    const flatPath = (key) => {
+        return parentPaths.flat ? (0, exports.join)(parentPaths.flat, key) : key;
+    };
+    // Path has no dot-notation, return key/value
+    if ((0, exports.isNonCompositePath)(internalPath)) {
+        const transformedKey = options.transformKey((0, exports.unEscape)(internalPath), transformedObj);
+        operation({ purePath: purePath(transformedKey), flatPath: flatPath(transformedKey), key: transformedKey, value: (0, exports.get)(transformedObj, transformedKey) });
+        return;
+    }
+    const pathParts = (0, exports.split)(internalPath);
+    let objPart = transformedObj;
+    for (let i = 0; i < pathParts.length; i++) {
+        const pathPart = pathParts[i];
+        const transformedKey = options.transformKey((0, exports.unEscape)(pathPart), objPart);
+        const purePathToChild = purePath(transformedKey);
+        const flatPathToChild = flatPath(transformedKey);
+        objPart = (0, exports.get)(objPart, transformedKey);
+        operation({ purePath: purePathToChild, flatPath: flatPathToChild, key: transformedKey, value: objPart });
+        const isPartAnArray = Array.isArray(objPart);
+        if (isPartAnArray) {
+            for (let arrIndex = 0; arrIndex < objPart.length; arrIndex++) {
+                const key = arrIndex.toString();
+                operation({ purePath: (0, exports.join)(purePathToChild, key), flatPath: flatPathToChild, key, value: objPart[arrIndex] });
+                (0, exports.traverse)(objPart[arrIndex], (0, exports.down)(internalPath), operation, {}, {
+                    pure: (0, exports.join)(purePathToChild, key),
+                    flat: flatPathToChild
+                });
+            }
+            return;
+        }
+    }
+};
+exports.traverse = traverse;
