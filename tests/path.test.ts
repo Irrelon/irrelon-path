@@ -22,6 +22,7 @@ import {
 	pop,
 	pullVal,
 	pushVal,
+	query,
 	set,
 	setImmutable,
 	shift,
@@ -3360,6 +3361,53 @@ describe("Path", () => {
 			assert.strictEqual(resultObj2.obj.shouldChange, true, "Value is correct for single noted path");
 			assert.strictEqual(resultObj2.arr[0].newKey, "foo", "Value is correct for multi noted path");
 			assert.strictEqual(resultObj2.arr[0].newKey, "foo", "Value is correct for multi noted path");
+		});
+	});
+
+	describe("query()", () => {
+		it("Can query objects with nested paths inside arrays", () => {
+			const obj = {
+				arr: [{
+					name: "",
+					items: [{
+						moreItems: [{
+							name: "OK"
+						}, {
+							name: ""
+						}, {
+							name: "OK"
+						}, {
+							name: ""
+						}]
+					}, {
+						moreItems: [{
+							name: "OK"
+						}, {
+							name: "OK"
+						}, {
+							name: "OK"
+						}, {
+							name: ""
+						}]
+					}]
+				}, {
+					name: "Jim"
+				}, {
+					name: null
+				}, {}]
+			};
+
+			const queryToPathsResult = query(obj, {
+				"arr.items.moreItems.name": ["", undefined, null]
+			});
+
+			expect(queryToPathsResult).toEqual({
+				"arr.items.moreItems.name": [
+					"arr.0.items.0.moreItems.1.name",
+					"arr.0.items.0.moreItems.3.name",
+					"arr.0.items.1.moreItems.3.name"
+				]
+			});
 		});
 	});
 });

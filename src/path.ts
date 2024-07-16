@@ -6,6 +6,8 @@ export interface PathData {
 	directPaths?: string[];
 }
 
+export type QueryMatchFunction = (val: any) => boolean;
+
 export interface OptionsType {
 	transformRead?: (...rest: any) => any
 	transformKey?: (...rest: any) => any
@@ -1875,4 +1877,54 @@ export const merge = (obj1: object, obj2: object, options: MergeOptionsType = {}
 
 export const mergeImmutable = (obj1: object, obj2: object, options: MergeOptionsType = {}) => {
 	return merge(obj1, obj2, {...options, immutable: true})
+}
+
+export const query = (item: object, query: Record<string, QueryMatchFunction | any[]>): Record<string, string[]> => {
+	const queryToMatchMap: Record<string, string[]> = {};
+
+	// First, extract all paths including array indices
+	for (const queryKey in query) {
+		if (!query.hasOwnProperty(queryKey)) continue;
+		const queryCriteria = query[queryKey];
+
+		const pathData: PathData = {
+			directPaths: []
+		};
+
+		get(item, queryKey, undefined, {
+			pathData,
+			arrayTraversal: true,
+			arrayExpansion: true
+		});
+
+		// Now loop all paths and check values against the search values
+		queryToMatchMap[queryKey] = (pathData?.directPaths || []).filter((path) => {
+			const value = get(item, path, undefined, {arrayTraversal: false});
+
+			if (typeof queryCriteria === "function") {
+				// The criteria is a function, use the result boolean
+				return queryCriteria(value);
+			}
+
+			// The criteria is an array of values, scan them
+			// if we find any value that matches the one we are looking for,
+			// we immediately return true
+			for (let criteriaIndex = 0; criteriaIndex < queryCriteria.length; criteriaIndex++) {
+				const criteriaValue = queryCriteria[criteriaIndex];
+
+				if (typeof criteriaValue === "function" && criteriaValue(value)) {
+					// The criteria is a function, use the result boolean
+					return true;
+				}
+
+				if (value === criteriaValue) {
+					return true;
+				}
+			}
+
+			return false;
+		});
+	}
+
+	return queryToMatchMap;
 }

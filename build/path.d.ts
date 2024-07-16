@@ -6,6 +6,7 @@ export interface PathData {
     indices?: number[][];
     directPaths?: string[];
 }
+export type QueryMatchFunction = (val: any) => boolean;
 export interface OptionsType {
     transformRead?: (...rest: any) => any;
     transformKey?: (...rest: any) => any;
@@ -606,3 +607,4 @@ export declare const chop: (path: string, level: number) => string;
  */
 export declare const merge: (obj1: object, obj2: object, options?: MergeOptionsType) => any;
 export declare const mergeImmutable: (obj1: object, obj2: object, options?: MergeOptionsType) => any;
+export declare const query: (item: object, query: Record<string, QueryMatchFunction | any[]>) => Record<string, string[]>;

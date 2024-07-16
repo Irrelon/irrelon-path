@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.merge = exports.chop = exports.distill = exports.unSetImmutable = exports.pullValImmutable = exports.pushValImmutable = exports.setImmutable = exports.isNotEqual = exports.isEqual = exports.diffValues = exports.diff = exports.keyDedup = exports.findOnePath = exports.findPath = exports.match = exports.type = exports.countMatchingPathsInObject = exports.hasMatchingPathsInObject = exports.leafNodes = exports.countLeafNodes = exports.joinEscaped = exports.join = exports.flattenValues = exports.flatten = exports.values = exports.furthest = exports.splicePath = exports.pullVal = exports.pushVal = exports.decouple = exports.updateImmutable = exports.update = exports.unSet = exports.set = exports.getMany = exports.get = exports.unEscape = exports.escape = exports.split = exports.clean = exports.numberToWildcard = exports.wildcardToZero = exports.returnWhatWasGiven = exports.shift = exports.push = exports.pop = exports.down = exports.up = exports.isNonCompositePath = exports.isCompositePath = void 0;
-exports.mergeImmutable = void 0;
+exports.query = exports.mergeImmutable = void 0;
 /**
  * @typedef {object} FindOptionsType
  * @property {number} [maxDepth=Infinity] The maximum depth to scan inside
@@ -1593,3 +1593,44 @@ const mergeImmutable = (obj1, obj2, options = {}) => {
     return (0, exports.merge)(obj1, obj2, Object.assign(Object.assign({}, options), { immutable: true }));
 };
 exports.mergeImmutable = mergeImmutable;
+const query = (item, query) => {
+    const queryToMatchMap = {};
+    // First, extract all paths including array indices
+    for (const queryKey in query) {
+        if (!query.hasOwnProperty(queryKey))
+            continue;
+        const queryCriteria = query[queryKey];
+        const pathData = {
+            directPaths: []
+        };
+        (0, exports.get)(item, queryKey, undefined, {
+            pathData,
+            arrayTraversal: true,
+            arrayExpansion: true
+        });
+        // Now loop all paths and check values against the search values
+        queryToMatchMap[queryKey] = ((pathData === null || pathData === void 0 ? void 0 : pathData.directPaths) || []).filter((path) => {
+            const value = (0, exports.get)(item, path, undefined, { arrayTraversal: false });
+            if (typeof queryCriteria === "function") {
+                // The criteria is a function, use the result boolean
+                return queryCriteria(value);
+            }
+            // The criteria is an array of values, scan them
+            // if we find any value that matches the one we are looking for,
+            // we immediately return true
+            for (let criteriaIndex = 0; criteriaIndex < queryCriteria.length; criteriaIndex++) {
+                const criteriaValue = queryCriteria[criteriaIndex];
+                if (typeof criteriaValue === "function" && criteriaValue(value)) {
+                    // The criteria is a function, use the result boolean
+                    return true;
+                }
+                if (value === criteriaValue) {
+                    return true;
+                }
+            }
+            return false;
+        });
+    }
+    return queryToMatchMap;
+};
+exports.query = query;
