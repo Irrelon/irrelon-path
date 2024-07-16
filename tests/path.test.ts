@@ -961,7 +961,9 @@ describe("Path", () => {
 			const path = "arr.subArr.subSubArr.label";
 			const pathData: PathData = {
 				directPaths: []
-			}; // We are passing this in by reference, and it will be modified by get()
+			};
+
+			// We are passing this in by reference, and it will be modified by get()
 			const result = get(obj, path, undefined, {arrayTraversal: true, arrayExpansion: true, pathData});
 
 			const expected = [
