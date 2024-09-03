@@ -1704,17 +1704,21 @@ const traverse = (obj, path, operation, options = {}, parentPaths = { pure: "", 
         const flatPathToChild = flatPath(transformedKey);
         objPart = (0, exports.get)(objPart, transformedKey);
         operation({ purePath: purePathToChild, flatPath: flatPathToChild, key: transformedKey, value: objPart });
-        const isPartAnArray = Array.isArray(objPart);
-        if (isPartAnArray) {
+        const partValueType = (0, exports.type)(objPart);
+        if (partValueType === "array") {
             for (let arrIndex = 0; arrIndex < objPart.length; arrIndex++) {
                 const key = arrIndex.toString();
                 operation({ purePath: (0, exports.join)(purePathToChild, key), flatPath: flatPathToChild, key, value: objPart[arrIndex] });
-                (0, exports.traverse)(objPart[arrIndex], (0, exports.down)(internalPath), operation, {}, {
+                (0, exports.traverse)(objPart[arrIndex], (0, exports.down)(internalPath, i + 1), operation, {}, {
                     pure: (0, exports.join)(purePathToChild, key),
                     flat: flatPathToChild
                 });
             }
             return;
+        }
+        else if (partValueType === "object") {
+            parentPaths.pure = purePathToChild;
+            parentPaths.flat = flatPathToChild;
         }
     }
 };

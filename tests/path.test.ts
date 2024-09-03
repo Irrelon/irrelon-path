@@ -3476,7 +3476,7 @@ describe("Path", () => {
 		// });
 
 		describe("traverse()", () => {
-			it("Calls the operation function for each path iteration", () => {
+			it("Calls the operation function for each path iteration on nested arrays", () => {
 				const obj = {
 					arr: [{
 						items: [{
@@ -3506,6 +3506,108 @@ describe("Path", () => {
 					"arr.0.items.0.moreItems.0.name",
 					"arr.0.items.0.moreItems.1",
 					"arr.0.items.0.moreItems.1.name",
+				]);
+			});
+
+			it("Calls the operation function for each path iteration on nested objects", () => {
+				const obj = {
+					obj1: {
+						item1: {
+							anotherItem: {
+								name: "OK"
+							}
+						},
+						item2: {
+							anotherItem: {
+								name: "OK"
+							}
+						}
+					},
+					obj2: {
+						item1: {
+							anotherItem: {
+								name: "OK"
+							}
+						},
+						item2: {
+							anotherItem: {
+								name: "OK"
+							}
+						}
+					}
+				};
+
+				const traversedPaths: string[] = [];
+
+				traverse(obj, "obj2.item2.anotherItem.name", ({purePath}) => {
+					traversedPaths.push(purePath);
+					return true;
+				});
+
+				expect(traversedPaths).toEqual([
+					"obj2",
+					"obj2.item2",
+					"obj2.item2.anotherItem",
+					"obj2.item2.anotherItem.name",
+				]);
+			});
+
+			it("Calls the operation function for each path iteration on nested objects and arrays", () => {
+				const obj = {
+					obj1: {
+						items: [{
+							moreItems: [{
+								name: "OK"
+							}, {
+								name: "OK"
+							}]
+						}, {
+							moreItems: [{
+								name: "OK"
+							}, {
+								name: "OK"
+							}]
+						}]
+					},
+					obj2: {
+						items: [{
+							moreItems: [{
+								name: "OK"
+							}, {
+								name: "OK"
+							}]
+						}, {
+							moreItems: [{
+								name: "OK"
+							}, {
+								name: "OK"
+							}]
+						}]
+					}
+				};
+
+				const traversedPaths: string[] = [];
+
+				traverse(obj, "obj2.items.moreItems.name", ({purePath}) => {
+					traversedPaths.push(purePath);
+					return true;
+				});
+
+				expect(traversedPaths).toEqual([
+					"obj2",
+					"obj2.items",
+					"obj2.items.0",
+					"obj2.items.0.moreItems",
+					"obj2.items.0.moreItems.0",
+					"obj2.items.0.moreItems.0.name",
+					"obj2.items.0.moreItems.1",
+					"obj2.items.0.moreItems.1.name",
+					"obj2.items.1",
+					"obj2.items.1.moreItems",
+					"obj2.items.1.moreItems.0",
+					"obj2.items.1.moreItems.0.name",
+					"obj2.items.1.moreItems.1",
+					"obj2.items.1.moreItems.1.name",
 				]);
 			});
 		});

@@ -2036,19 +2036,22 @@ export const traverse = (obj: ObjectType | undefined | null, path: string | any[
 		objPart = get(objPart, transformedKey);
 		operation({purePath: purePathToChild, flatPath: flatPathToChild, key: transformedKey, value: objPart});
 
-		const isPartAnArray = Array.isArray(objPart);
+		const partValueType = type(objPart);
 
-		if (isPartAnArray) {
+		if (partValueType === "array") {
 			for (let arrIndex = 0; arrIndex < objPart.length; arrIndex++) {
 				const key = arrIndex.toString();
 				operation({purePath: join(purePathToChild, key), flatPath: flatPathToChild, key, value: objPart[arrIndex]});
-				traverse(objPart[arrIndex], down(internalPath), operation, {}, {
+				traverse(objPart[arrIndex], down(internalPath, i + 1), operation, {}, {
 					pure: join(purePathToChild, key),
 					flat: flatPathToChild
 				});
 			}
 
 			return;
+		} else if (partValueType === "object") {
+			parentPaths.pure = purePathToChild;
+			parentPaths.flat = flatPathToChild;
 		}
 	}
 };
