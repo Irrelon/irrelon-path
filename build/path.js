@@ -1335,26 +1335,41 @@ const diff = (obj1, obj2, basePath = "", strict = false, maxDepth = Infinity, pa
 };
 exports.diff = diff;
 /**
- * Compares two provided objects / arrays and returns details of any
- * differences including the values and types that are different.
+ * Compares two provided objects / arrays and returns and object
+ * where the keys are dot-notation paths and the values are any
+ * differences.
+ *
+ * e.g.
+ * {
+ *    "path.to.new.value": {
+ *        "val1": "the value from obj1",
+ *        "val2": "the value from obj2",
+ *        "type1": "string", // the value type from obj1 (see ValueType for supported values)
+ *        "type2": "string", // the value type from obj2 (see ValueType for supported values)
+ *        "difference": "value" // (see DifferenceType for supported values)
+ *    }
+ * }
+ *
+ * If you only want an array of paths to values that have changed
+ * see the `diff()` function instead.
  * @param {ObjectType} obj1 The first object / array to compare.
  * @param {ObjectType} obj2 The second object / array to compare.
- * @param {string=""|string[]} basePath The base path from which to check for
+ * @param {string|string[]} basePath="" The base path from which to check for
  * differences. Differences outside the base path will not be
  * returned as part of the array of differences. Leave blank to check
  * for all differences between the two objects to compare.
- * @param {boolean=false} strict If strict is true, diff uses strict
+ * @param {boolean} strict=false If strict is true, diff uses strict
  * equality to determine difference rather than non-strict equality;
  * effectively (=== is strict, == is non-strict).
- * @param {number=Infinity} maxDepth Specifies the maximum number of
- * path sub-trees to walk down before returning what we have found.
+ * @param {number} maxDepth=Infinity Specifies the maximum number of
+ * path subtrees to walk down before returning what we have found.
  * For instance, if set to 2, a diff would only check down,
  * "someFieldName.anotherField", or "user.name" and would not go
  * further down than two fields. If anything in the trees further
  * down than this level have changed, the change will not be detected
  * and the path will not be included in the resulting diff array.
- * @param {string=""} parentPath Used internally only.
- * @param {never[]} [objCache=[]] Internal usage to check for cyclic structures.
+ * @param {string} parentPath="" Used internally only.
+ * @param {never[]} objCache=[] Used internally only.
  * @returns {Record<string, DiffValue>} An object where each key is a path to a
  * field that holds a different value between the two objects being
  * compared and the value of each key is an object holding details of
@@ -1394,7 +1409,7 @@ const diffValues = (obj1, obj2, basePath = "", strict = false, maxDepth = Infini
     const pathParts = currentPath.split(".");
     const hasParts = pathParts[0] !== "";
     if ((!hasParts || pathParts.length < maxDepth) && typeof val1 === "object" && val1 !== null) {
-        // Check that we haven't visited this object before (avoid infinite recursion)
+        // Check that we haven't visited this object or array before (avoid infinite recursion)
         // @ts-ignore
         if (objCache.indexOf(val1) > -1 || objCache.indexOf(val2) > -1) {
             return paths;

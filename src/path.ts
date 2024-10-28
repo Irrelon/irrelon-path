@@ -1690,7 +1690,7 @@ export const diffValues = (obj1: ObjectType, obj2: ObjectType, basePath: string 
 	const hasParts = pathParts[0] !== "";
 
 	if ((!hasParts || pathParts.length < maxDepth) && typeof val1 === "object" && val1 !== null) {
-		// Check that we haven't visited this object before (avoid infinite recursion)
+		// Check that we haven't visited this object or array before (avoid infinite recursion)
 		// @ts-ignore
 		if (objCache.indexOf(val1) > -1 || objCache.indexOf(val2) > -1) {
 			return paths;
