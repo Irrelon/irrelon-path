@@ -29,14 +29,14 @@ import {
 	shift,
 	splicePath,
 	split,
+	traverse,
 	type,
 	unSet,
 	unSetImmutable,
 	up,
 	update,
 	updateImmutable,
-	values,
-	traverse
+	values
 } from "../src/path";
 
 describe("Path", () => {
@@ -2341,7 +2341,7 @@ describe("Path", () => {
 
 			const obj2 = {events: []};
 
-			const result1 = diff(obj1, obj2, "", true);
+			const result1 = diff(obj1, obj2, {basePath: "", strict: true});
 
 			assert.strictEqual(result1 instanceof Array, true, "The result is an array");
 			assert.strictEqual(result1.length, 3, "The result value is correct");
@@ -2359,7 +2359,7 @@ describe("Path", () => {
 
 			const obj2 = {events: []};
 
-			const result1 = diff(obj1, obj2, "", true, 1);
+			const result1 = diff(obj1, obj2, {basePath: "", strict: true, maxDepth: 1});
 
 			assert.strictEqual(result1 instanceof Array, true, "The result is an array");
 			assert.strictEqual(result1.length, 1, "The result value is correct");
@@ -2375,7 +2375,7 @@ describe("Path", () => {
 
 			const obj2 = {events: []};
 
-			const result1 = diff(obj1, obj2, "", true, 2);
+			const result1 = diff(obj1, obj2, {basePath: "", strict: true, maxDepth: 2});
 
 			assert.strictEqual(result1 instanceof Array, true, "The result is an array");
 			assert.strictEqual(result1.length, 2, "The result value is correct");
@@ -2530,8 +2530,8 @@ describe("Path", () => {
 				}]
 			};
 
-			const result1 = diff(obj1, obj2, "rootArray.0.arr");
-			const result2 = diff(obj1, obj3, "rootArray.0.arr");
+			const result1 = diff(obj1, obj2, {basePath: "rootArray.0.arr"});
+			const result2 = diff(obj1, obj3, {basePath: "rootArray.0.arr"});
 
 			assert.strictEqual(result1 instanceof Array, true, "The result is an array");
 			assert.strictEqual(result1.length, 0, "The result value is correct");
@@ -2595,7 +2595,7 @@ describe("Path", () => {
 			}];
 
 			const result1 = diffValues(obj1, obj2); // These should be the same
-			const result2 = diffValues(obj1, obj3, "", true); // These should detect a difference
+			const result2 = diffValues(obj1, obj3, {basePath: "", strict: true}); // These should detect a difference
 
 			assert.strictEqual(Object.keys(result1).length, 0, "The result value is correct");
 			assert.strictEqual(Object.keys(result2).length, 2, "The result value is correct");
@@ -2626,7 +2626,7 @@ describe("Path", () => {
 
 			const obj2 = {events: []};
 
-			const result1 = diffValues(obj1, obj2, "", true);
+			const result1 = diffValues(obj1, obj2, {basePath: "", strict: true});
 
 			assert.strictEqual(result1 instanceof Object, true, "The result is an array");
 			assert.strictEqual(Object.keys(result1).length, 3, "The result value is correct");
@@ -2648,7 +2648,7 @@ describe("Path", () => {
 				}]
 			};
 
-			const result1 = diffValues(obj1, obj2, "", false);
+			const result1 = diffValues(obj1, obj2, {basePath: "", strict: false});
 
 			assert.strictEqual(result1 instanceof Object, true, "The result is an array");
 			assert.strictEqual(Object.keys(result1).length, 0, "The result value is correct");
@@ -2667,7 +2667,40 @@ describe("Path", () => {
 				}]
 			};
 
-			const result1 = diffValues(obj1, obj2, "", true);
+			const result1 = diffValues(obj1, obj2, {basePath: "", strict: true});
+
+			assert.strictEqual(result1 instanceof Object, true, "The result is an array");
+			assert.strictEqual(Object.keys(result1).length, 1, "The result value is correct");
+			assert.strictEqual(Object.keys(result1)[0], "events.0.id", "The result value is correct");
+			assert.deepEqual(result1["events.0.id"], {
+				"val1": 1,
+				"val2": "1",
+				"type1": "number",
+				"type2": "string",
+				"difference": "type"
+			}, "The result value is correct");
+		});
+
+		it("Will handle exclusive=true correctly", () => {
+			const obj1 = {
+				events: [{
+					id: 1
+				}],
+				otherStuff: "foo",
+				otherArr: [],
+				otherObj: {}
+			};
+
+			const obj2 = {
+				events: [{
+					id: "1"
+				}]
+			};
+
+			// Exclusive mode will only diff keys that exist in obj2 and not the other way around.
+			// This allows you to do a partial diff where the second object is a partial of the first
+			// so we only want to identify paths that have changed in obj2 compared to obj1.
+			const result1 = diffValues(obj1, obj2, {basePath: "", strict: true, exclusive: true});
 
 			assert.strictEqual(result1 instanceof Object, true, "The result is an array");
 			assert.strictEqual(Object.keys(result1).length, 1, "The result value is correct");
@@ -2690,7 +2723,7 @@ describe("Path", () => {
 
 			const obj2 = {events: []};
 
-			const result1 = diffValues(obj1, obj2, "", true, 1);
+			const result1 = diffValues(obj1, obj2, {basePath: "", strict: true, maxDepth: 1});
 
 			assert.strictEqual(result1 instanceof Object, true, "The result is an array");
 			assert.strictEqual(Object.keys(result1).length, 1, "The result value is correct");
@@ -2706,7 +2739,7 @@ describe("Path", () => {
 
 			const obj2 = {events: []};
 
-			const result1 = diffValues(obj1, obj2, "", true, 2);
+			const result1 = diffValues(obj1, obj2, {basePath: "", strict: true, maxDepth: 2});
 
 			assert.strictEqual(result1 instanceof Object, true, "The result is an array");
 			assert.strictEqual(Object.keys(result1).length, 2, "The result value is correct");
@@ -2861,8 +2894,8 @@ describe("Path", () => {
 				}]
 			};
 
-			const result1 = diffValues(obj1, obj2, "rootArray.0.arr");
-			const result2 = diffValues(obj1, obj3, "rootArray.0.arr");
+			const result1 = diffValues(obj1, obj2, {basePath: "rootArray.0.arr"});
+			const result2 = diffValues(obj1, obj3, {basePath: "rootArray.0.arr"});
 
 			assert.strictEqual(result1 instanceof Object, true, "The result is an array");
 			assert.strictEqual(Object.keys(result1).length, 0, "The result value is correct");
@@ -3558,7 +3591,7 @@ describe("Path", () => {
 					"arr.0.items.0.moreItems.0",
 					"arr.0.items.0.moreItems.0.name",
 					"arr.0.items.0.moreItems.1",
-					"arr.0.items.0.moreItems.1.name",
+					"arr.0.items.0.moreItems.1.name"
 				]);
 			});
 
@@ -3601,7 +3634,7 @@ describe("Path", () => {
 					"obj2",
 					"obj2.item2",
 					"obj2.item2.anotherItem",
-					"obj2.item2.anotherItem.name",
+					"obj2.item2.anotherItem.name"
 				]);
 			});
 
@@ -3660,7 +3693,7 @@ describe("Path", () => {
 					"obj2.items.1.moreItems.0",
 					"obj2.items.1.moreItems.0.name",
 					"obj2.items.1.moreItems.1",
-					"obj2.items.1.moreItems.1.name",
+					"obj2.items.1.moreItems.1.name"
 				]);
 			});
 		});

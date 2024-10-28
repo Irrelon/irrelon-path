@@ -1,7 +1,17 @@
 export type ObjectType = { [key: string]: any };
 export type ArrayType = Map<string, any[]>;
 
-export type ValueType = "undefined" | "object" | "boolean" | "number" | "string" | "function" | "symbol" | "bigint" | "null" | "array";
+export type ValueType =
+	"undefined"
+	| "object"
+	| "boolean"
+	| "number"
+	| "string"
+	| "function"
+	| "symbol"
+	| "bigint"
+	| "null"
+	| "array";
 export type DifferenceType = "value" | "type" | "both";
 
 export interface PathData {
@@ -45,6 +55,13 @@ export interface DiffValue {
 	type1: ValueType;
 	type2: ValueType;
 	difference: DifferenceType;
+}
+
+export interface DiffOptionsType {
+	basePath?: string | string[];
+	strict?: boolean;
+	maxDepth?: number;
+	exclusive?: boolean;
 }
 
 /**
@@ -702,7 +719,7 @@ export const unSet = (obj: ObjectType, path: string, options: SetOptionsType = {
  * `basePath` as an empty string.
  * @param {ObjectType} updateData The update data to apply with
  * keys as string paths.
- * @param options The options object.
+ * @param {SetOptionsType} options The options object.
  * @returns {*} The object with the modified data.
  */
 export const update = (obj: ObjectType, basePath: string = "", updateData: ObjectType, options: SetOptionsType = {}): any => {
@@ -736,12 +753,12 @@ export const updateImmutable = (obj: ObjectType, basePath: string = "", updateDa
 };
 
 /**
- * If options.immutable === true then return a new de-referenced
+ * If `options.immutable` === true then return a new de-referenced
  * instance of the passed object/array. If immutable is false
  * then simply return the same `obj` that was passed.
  * @param {*} obj The object or array to decouple.
- * @param {OptionsType} [options] The options object that has the immutable
- * key with a boolean value.
+ * @param {OptionsType} [options] The options object.
+ * @param {boolean} options.immutable
  * @returns {*} The new decoupled instance (if immutable is true)
  * or the original `obj` if immutable is false.
  */
@@ -1515,102 +1532,6 @@ export const keyDedup = (keys: string[]): string[] => {
 };
 
 /**
- * Compares two provided objects / arrays and returns an array of
- * dot-notation paths to the fields that hold different values.
- * @param {ObjectType} obj1 The first object / array to compare.
- * @param {ObjectType} obj2 The second object / array to compare.
- * @param {string=""|string[]} basePath The base path from which to check for
- * differences. Differences outside the base path will not be
- * returned as part of the array of differences. Leave blank to check
- * for all differences between the two objects to compare.
- * @param {boolean=false} strict If strict is true, diff uses strict
- * equality to determine difference rather than non-strict equality;
- * effectively (=== is strict, == is non-strict).
- * @param {number=Infinity} maxDepth Specifies the maximum number of
- * path sub-trees to walk down before returning what we have found.
- * For instance, if set to 2, a diff would only check down,
- * "someFieldName.anotherField", or "user.name" and would not go
- * further down than two fields. If anything in the trees further
- * down than this level have changed, the change will not be detected
- * and the path will not be included in the resulting diff array.
- * @param {string=""} parentPath Used internally only.
- * @param {never[]} [objCache=[]] Internal usage to check for cyclic structures.
- * @returns {Array} An array of strings, each string is a path to a
- * field that holds a different value between the two objects being
- * compared.
- */
-export const diff = (obj1: ObjectType, obj2: ObjectType, basePath: string | string[] = "", strict = false, maxDepth = Infinity, parentPath = "", objCache: never[] = []): Array<string> => {
-	const paths = [];
-
-	if (basePath instanceof Array) {
-		// We were given an array of paths, check each path
-		return basePath.reduce((arr, individualPath) => {
-			// Here we find any path that has a *non-equal* result which
-			// returns true and then returns the index as a positive integer
-			// that is not -1. If -1 is returned then no non-equal matches
-			// were found
-			const result = diff(obj1, obj2, individualPath, strict, maxDepth, parentPath, objCache);
-			if (result && result.length) {
-				// @ts-ignore
-				arr.push(...result);
-			}
-
-			return arr;
-		}, []);
-	}
-
-	const currentPath = join(parentPath, basePath);
-	const val1 = get(obj1, basePath);
-	const val2 = get(obj2, basePath);
-	const type1 = type(val1);
-	const type2 = type(val2);
-
-	if (type1 !== type2) {
-		// Difference in source and comparison types
-		paths.push(currentPath);
-	} else if (type1 === "array" && val1.length !== val2.length) {
-		// Difference in source and comparison types
-		paths.push(currentPath);
-	}
-
-	const pathParts = currentPath.split(".");
-	const hasParts = pathParts[0] !== "";
-
-	if ((!hasParts || pathParts.length < maxDepth) && typeof val1 === "object" && val1 !== null) {
-		// Check that we haven't visited this object before (avoid infinite recursion)
-		// @ts-ignore
-		if (objCache.indexOf(val1) > -1 || objCache.indexOf(val2) > -1) {
-			return paths;
-		}
-
-		// @ts-ignore
-		objCache.push(val1);
-		// @ts-ignore
-		objCache.push(val2);
-
-		// Grab composite of all keys on val1 and val2
-		const val1Keys = Object.keys(val1);
-		const val2Keys = (typeof val2 === "object" && val2 !== null) ? Object.keys(val2) : [];
-		const compositeKeys = keyDedup(val1Keys.concat(val2Keys));
-
-		return compositeKeys.reduce((arr, key) => {
-			const result = diff(val1, val2, key, strict, maxDepth, currentPath, objCache);
-			if (result && result.length) {
-				arr.push(...result);
-			}
-
-			return arr;
-		}, paths);
-	}
-
-	if ((strict && val1 !== val2) || (!strict && val1 != val2)) {
-		paths.push(currentPath);
-	}
-
-	return keyDedup(paths);
-};
-
-/**
  * Compares two provided objects / arrays and returns and object
  * where the keys are dot-notation paths and the values are any
  * differences.
@@ -1630,20 +1551,25 @@ export const diff = (obj1: ObjectType, obj2: ObjectType, basePath: string | stri
  * see the `diff()` function instead.
  * @param {ObjectType} obj1 The first object / array to compare.
  * @param {ObjectType} obj2 The second object / array to compare.
- * @param {string|string[]} basePath="" The base path from which to check for
+ * @param {DiffOptionsType} [options] Options object
+ * @param {string|string[]} options.basePath="" The base path from which to check for
  * differences. Differences outside the base path will not be
  * returned as part of the array of differences. Leave blank to check
  * for all differences between the two objects to compare.
- * @param {boolean} strict=false If strict is true, diff uses strict
+ * @param {boolean} options.strict=false If strict is true, diff uses strict
  * equality to determine difference rather than non-strict equality;
  * effectively (=== is strict, == is non-strict).
- * @param {number} maxDepth=Infinity Specifies the maximum number of
+ * @param {number} options.maxDepth=Infinity Specifies the maximum number of
  * path subtrees to walk down before returning what we have found.
  * For instance, if set to 2, a diff would only check down,
  * "someFieldName.anotherField", or "user.name" and would not go
  * further down than two fields. If anything in the trees further
  * down than this level have changed, the change will not be detected
  * and the path will not be included in the resulting diff array.
+ * @param {boolean} options.exclusive=false If true, only examines obj2's
+ * data against obj1 rather than diffing against each other. Especially
+ * useful if obj2 is a partial of obj1, and you only need to know what
+ * parts of the partial have changed against obj1.
  * @param {string} parentPath="" Used internally only.
  * @param {never[]} objCache=[] Used internally only.
  * @returns {Record<string, DiffValue>} An object where each key is a path to a
@@ -1651,7 +1577,19 @@ export const diff = (obj1: ObjectType, obj2: ObjectType, basePath: string | stri
  * compared and the value of each key is an object holding details of
  * the difference.
  */
-export const diffValues = (obj1: ObjectType, obj2: ObjectType, basePath: string | string[] = "", strict: boolean = false, maxDepth: number = Infinity, parentPath: string = "", objCache: never[] = []): Record<string, DiffValue> => {
+export const diffValues = (obj1: ObjectType, obj2: ObjectType, options: DiffOptionsType = {}, parentPath: string = "", objCache: never[] = []): Record<string, DiffValue> => {
+	// Default the various options values
+	options.basePath = options.basePath || "";
+	options.strict = options.strict === undefined ? false : options.strict;
+	options.maxDepth = options.maxDepth === undefined ? Infinity : options.maxDepth;
+	options.exclusive = options.exclusive === undefined ? false : options.exclusive;
+
+	const {
+		basePath, strict,
+		maxDepth,
+		exclusive
+	} = options;
+
 	const paths: Record<string, DiffValue> = {};
 
 	if (basePath instanceof Array) {
@@ -1661,7 +1599,7 @@ export const diffValues = (obj1: ObjectType, obj2: ObjectType, basePath: string 
 			// returns true and then returns the index as a positive integer
 			// that is not -1. If -1 is returned then no non-equal matches
 			// were found
-			const result = diffValues(obj1, obj2, individualPath, strict, maxDepth, parentPath, objCache);
+			const result = diffValues(obj1, obj2, {basePath: individualPath, strict, maxDepth, exclusive}, parentPath, objCache);
 			if (result && Object.keys(result).length) {
 				diffVals = {...diffVals, ...result};
 			}
@@ -1701,13 +1639,22 @@ export const diffValues = (obj1: ObjectType, obj2: ObjectType, basePath: string 
 		// @ts-ignore
 		objCache.push(val2);
 
-		// Grab composite of all keys on val1 and val2
+		// Grab keys from val1 and val2
 		const val1Keys = Object.keys(val1);
 		const val2Keys = (typeof val2 === "object" && val2 !== null) ? Object.keys(val2) : [];
-		const compositeKeys = keyDedup(val1Keys.concat(val2Keys));
+
+		let compositeKeys;
+
+		if (exclusive) {
+			// Use only the keys from val2 for determining differences
+			compositeKeys = val2Keys;
+		} else {
+			// Combine val1 keys and val2 keys so we diff both objects against each other
+			compositeKeys = keyDedup(val1Keys.concat(val2Keys));
+		}
 
 		return compositeKeys.reduce((newPaths, key) => {
-			const result = diffValues(val1, val2, key, strict, maxDepth, currentPath, objCache);
+			const result = diffValues(val1, val2, {basePath: key, strict, maxDepth, exclusive}, currentPath, objCache);
 			if (result && Object.keys(result).length) {
 				newPaths = {...newPaths, ...result};
 			}
@@ -1731,6 +1678,40 @@ export const diffValues = (obj1: ObjectType, obj2: ObjectType, basePath: string 
 	}
 
 	return paths;
+};
+
+/**
+ * Compares two provided objects / arrays and returns an array of
+ * dot-notation paths to the fields that hold different values.
+ * @param {ObjectType} obj1 The first object / array to compare.
+ * @param {ObjectType} obj2 The second object / array to compare.
+ * @param {DiffOptionsType} [options] Options object
+ * @param {string|string[]} options.basePath="" The base path from which to check for
+ * differences. Differences outside the base path will not be
+ * returned as part of the array of differences. Leave blank to check
+ * for all differences between the two objects to compare.
+ * @param {boolean} options.strict=false If strict is true, diff uses strict
+ * equality to determine difference rather than non-strict equality;
+ * effectively (=== is strict, == is non-strict).
+ * @param {number} options.maxDepth=Infinity Specifies the maximum number of
+ * path subtrees to walk down before returning what we have found.
+ * For instance, if set to 2, a diff would only check down,
+ * "someFieldName.anotherField", or "user.name" and would not go
+ * further down than two fields. If anything in the trees further
+ * down than this level have changed, the change will not be detected
+ * and the path will not be included in the resulting diff array.
+ * @param {boolean} options.exclusive=false If true, only examines obj2's
+ * data against obj1 rather than diffing against each other. Especially
+ * useful if obj2 is a partial of obj1, and you only need to know what
+ * parts of the partial have changed against obj1.
+ * @param {string} parentPath="" Used internally only.
+ * @param {never[]} [objCache=[]] Internal usage to check for cyclic structures.
+ * @returns {Array} An array of strings, each string is a path to a
+ * field that holds a different value between the two objects being
+ * compared.
+ */
+export const diff = (obj1: ObjectType, obj2: ObjectType, options: DiffOptionsType = {}, parentPath: string = "", objCache: never[] = []): Array<string> => {
+	return Object.keys(diffValues(obj1, obj2, options, parentPath, objCache));
 };
 
 /**
@@ -1946,7 +1927,7 @@ const $in = (value: any, criteria: QueryMatchFunction | any[]) => {
 	}
 
 	return false;
-}
+};
 
 /**
  * Retrieves paths to parts of the object that satisfy the given query criteria.
@@ -1977,8 +1958,8 @@ export const query = (obj: ObjectType, query: QueryType): Record<string, string[
 		});
 	}
 
-	return queryResult
-}
+	return queryResult;
+};
 
 export interface OperationFunctionProps {
 	purePath: string;
@@ -2036,8 +2017,13 @@ export const traverse = (obj: ObjectType | undefined | null, path: string | any[
 
 	// Path has no dot-notation, return key/value
 	if (isNonCompositePath(internalPath)) {
-		const transformedKey = options.transformKey(unEscape(internalPath), transformedObj)
-		operation({purePath: purePath(transformedKey), flatPath: flatPath(transformedKey), key: transformedKey, value: get(transformedObj, transformedKey)});
+		const transformedKey = options.transformKey(unEscape(internalPath), transformedObj);
+		operation({
+			purePath: purePath(transformedKey),
+			flatPath: flatPath(transformedKey),
+			key: transformedKey,
+			value: get(transformedObj, transformedKey)
+		});
 		return;
 	}
 
@@ -2059,7 +2045,12 @@ export const traverse = (obj: ObjectType | undefined | null, path: string | any[
 		if (partValueType === "array") {
 			for (let arrIndex = 0; arrIndex < objPart.length; arrIndex++) {
 				const key = arrIndex.toString();
-				operation({purePath: join(purePathToChild, key), flatPath: flatPathToChild, key, value: objPart[arrIndex]});
+				operation({
+					purePath: join(purePathToChild, key),
+					flatPath: flatPathToChild,
+					key,
+					value: objPart[arrIndex]
+				});
 				traverse(objPart[arrIndex], down(internalPath, i + 1), operation, {}, {
 					pure: join(purePathToChild, key),
 					flat: flatPathToChild

@@ -1,11 +1,13 @@
 # Irrelon Path
+
 A powerful JSON path processor with no third-party dependencies.
 Allows you to traverse JSON object trees with a simple dot-delimited
 path format e.g. "obj.name"
 
 ## What Can It Do?
+
 Irrelon Path is a JavaScript object manipulation library that uses
-dot notation to denote object key / value field locations within 
+dot notation to denote object key / value field locations within
 the object structure. It allows you to easily access, modify or
 remove data from an object at locations specified via a path string.
 
@@ -16,26 +18,27 @@ npm i @irrelon/path
 ```
 
 # Quick Reference
+
 * [Simple Usage](#simple-usage)
 * [Escaping Fields with Periods](#escaping-fields-with-periods)
 * [Behaviour](#behaviour)
 * [Default Values](#default-values)
 * Most Common
-    * [get()](#get-obj-path-defaultvalue)
-    * [set()](#set-obj-path-value)
-    * [pushVal()]()
-    * [pullVal()]()
-    * [update()](#update-obj-updatedata-options)
-    * [diff()](#diff-obj1-obj2-path-strict-maxdepth)
+	* [get()](#get-obj-path-defaultvalue)
+	* [set()](#set-obj-path-value)
+	* [pushVal()]()
+	* [pullVal()]()
+	* [update()](#update-obj-updatedata-options)
+	* [diff()](#diff-obj1-obj2-path-strict-maxdepth)
 	* [diffValues()](#diffValues-obj1-obj2-path-strict-maxdepth)
 * All Functions (Alphabetically)
-    * [chop()](#chop-path-level)
-    * [clean()](#clean-path)
-    * [countLeafNodes()](#countleafnodes-obj)
-    * [countMatchingPathsInObject()](#countmatchingpathsinobject-testkeys-testobj)
+	* [chop()](#chop-path-level)
+	* [clean()](#clean-path)
+	* [countLeafNodes()](#countleafnodes-obj)
+	* [countMatchingPathsInObject()](#countmatchingpathsinobject-testkeys-testobj)
 	* [decouple()](#decouple-obj-options--)
 	* [diff()](#diff-obj1-obj2-path-strict-maxdepth)
-    * [diffValues()](#diffValues-obj1-obj2-path-strict-maxdepth)
+	* [diffValues()](#diffValues-obj1-obj2-path-strict-maxdepth)
 	* [distill()]()
 	* [down()]()
 	* [escape()]()
@@ -70,19 +73,20 @@ npm i @irrelon/path
 	* [update()](#update-obj-updatedata-options)
 	* [updateImmutable()]()
 	* [values()]()
-    * [wildcardToZero()]()
+	* [wildcardToZero()]()
 
 ## Simple Usage
+
 ```js
 const {get} = require("@irrelon/path");
 
 // Define an object in JSON
 const obj = {
-  "users": {
-    "test1": {
-      "name": "My Test User"
-    }
-  }
+	"users": {
+		"test1": {
+			"name": "My Test User"
+		}
+	}
 };
 
 // Grab data from the object via the path solver
@@ -92,15 +96,16 @@ console.log(result); // Logs: My Test User
 ```
 
 ## Escaping Fields with Periods
+
 Sometimes you want to access data where a field name has periods in it like this:
 
 ```js
 const obj = {
-  "users": {
-    "test@test.com": {
-      "name": "My Test User"
-    }
-  }
+	"users": {
+		"test@test.com": {
+			"name": "My Test User"
+		}
+	}
 };
 ```
 
@@ -119,6 +124,7 @@ console.log(result); // Logs: My Test User
 ```
 
 ## Behaviour
+
 If data or an object to traverse does not exist inside the base object, the
 path solver will return undefined and will NOT throw an error:
 
@@ -126,7 +132,7 @@ path solver will return undefined and will NOT throw an error:
 const {get} = require("@irrelon/path");
 
 const obj = {
-  "foo": null
+	"foo": null
 };
 
 const result = get(obj, "foo.bar.one");
@@ -135,6 +141,7 @@ console.log(result); // Logs: undefined
 ```
 
 ## Default Values
+
 When using get() you can specify a default value to return if the value at
 the given path is undefined.
 
@@ -142,7 +149,7 @@ the given path is undefined.
 const {get} = require("@irrelon/path");
 
 const obj = {
-  "foo": null
+	"foo": null
 };
 
 const result = get(obj, "foo.bar.one", "My Default Value");
@@ -151,12 +158,13 @@ console.log(result); // Logs: My Default Value
 ```
 
 ## Methods
+
 ### chop (`path`, `level`)
 
-|Param|Type|Required|Default|
-|---|---|---|---|
-|path|String|true|none|
-|level|Number|true|none|
+| Param | Type   | Required | Default |
+|-------|--------|----------|---------|
+| path  | String | true     | none    |
+| level | Number | true     | none    |
 
 Chops a `path` string down to the given `level`. Given a `path` string
 like "foo.bar.ram.you.too", chop will remove any path parts below
@@ -175,9 +183,9 @@ console.log(result); // Logs: foo.bar
 
 ### clean (`path`)
 
-|Param|Type|Required|Default|
-|---|---|---|---|
-|path|String|true|none|
+| Param | Type   | Required | Default |
+|-------|--------|----------|---------|
+| path  | String | true     | none    |
 
 Removes leading period (.) from string and returns new string.
 
@@ -191,9 +199,9 @@ console.log(result); // Logs: foo.bar.one
 
 ### countLeafNodes (`obj`)
 
-|Param|Type|Required|Default|
-|---|---|---|---|
-|obj|Object or Array|true|none|
+| Param | Type            | Required | Default |
+|-------|-----------------|----------|---------|
+| obj   | Object or Array | true     | none    |
 
 Counts the total number of key leaf nodes in the passed object.
 Leaf nodes are any key that does not have a value of object or
@@ -209,10 +217,10 @@ console.log(result); // Logs: 2
 
 ### countMatchingPathsInObject (`testKeys`, `testObj`)
 
-|Param|Type|Required|Default|
-|---|---|---|---|
-|testKeys|Object or Array|true|none|
-|testObj|Object or Array|true|none|
+| Param    | Type            | Required | Default |
+|----------|-----------------|----------|---------|
+| testKeys | Object or Array | true     | none    |
+| testObj  | Object or Array | true     | none    |
 
 Tests if the passed object has the paths that are specified and that
 a value exists in those paths and if so returns the number matched.
@@ -220,51 +228,53 @@ The output includes `matchedKeys` with an object where the same structure
 exists as the `testObj` where each leaf node key will be a boolean that
 describes if the leaf node exists in the `testKeys` object.
 
->MAY NOT BE INFINITE RECURSION SAFE.
+> MAY NOT BE INFINITE RECURSION SAFE.
 
 ```js
 const {countMatchingPathsInObject} = require("@irrelon/path");
 
 const result = countMatchingPathsInObject({
-    "moo": true
+	"moo": true
 }, {
-   "foo": {
-       "bar": null
-   },
-   "moo": true
+	"foo": {
+		"bar": null
+	},
+	"moo": true
 });
 
 console.log(result);
 ```
 
 Outputs:
+
 ```json
 {
-  "matchedKeyCount": 1,
-  "matchedKeys": {
-    "foo": {
-      "bar": false
-    },
-    "moo": true
-  },
-  "totalKeyCount": 2
+	"matchedKeyCount": 1,
+	"matchedKeys": {
+		"foo": {
+			"bar": false
+		},
+		"moo": true
+	},
+	"totalKeyCount": 2
 }
 ```
 
-### decouple (`obj`, `options` = {})
+### decouple (`obj`, `options = {}`)
 
-|Param|Type|Required|Default|
-|---|---|---|---|
-|obj|Object or Array|true|none|
-|options|Object|false|{}|
+| Param             | Type            | Required | Default |
+|-------------------|-----------------|----------|---------|
+| obj               | Object or Array | true     | none    |
+| options           | Object          | false    | {}      |
+| options.immutable | Boolean         | false    | false   |
 
-If options.immutable === true then return a new de-referenced
+If `options.immutable` === true then return a new de-referenced
 instance of the passed object/array. If immutable is false
 then simply return the same `obj` that was passed. The returned
 instance is NOT deeply immutably cloned because we recurse through
 object trees and only immutably clone when making changes. This is
 useful so you can instantly compare two states with a strict
-equality check such as when using [setImmutable()](#setimmutable-obj-path-value). 
+equality check such as when using [setImmutable()](#setimmutable-obj-path-value).
 
 ```js
 const {decouple} = require("@irrelon/path");
@@ -277,22 +287,28 @@ console.log(result === obj);
 ```
 
 Outputs:
+
 ```json
-{"foo":  true}
+{
+	"foo": true
+}
 ```
+
 ```
 false
 ```
 
-### diff (`obj1`, `obj2`, `path`, `strict`, `maxDepth`)
+### diff (`obj1`, `obj2`, `options = {}`)
 
-|Param|Type|Required|Default|
-|---|---|---|---|
-|obj1|Object or Array|true|none|
-|obj2|Object or Array|true|none|
-|path|String|false|""|
-|strict|Boolean|false|false|
-|maxDepth|Number|false|Infinity|
+| Param             | Type            | Required | Default  |
+|-------------------|-----------------|----------|----------|
+| obj1              | Object or Array | true     | none     |
+| obj2              | Object or Array | true     | none     |
+| options           | Object          | false    | {}       |
+| options.strict    | Boolean         | false    | false    |
+| options.maxDepth  | Number          | false    | Infinity |
+| options.basePath  | String          | false    | ""       |
+| options.exclusive | Boolean         | false    | false    |
 
 > If you need to know the description of the differences rather than only
 > the paths that contain differences, use `diffValues()` instead.
@@ -302,13 +318,13 @@ array of paths to the different fields.
 
 Fields are considered "different" if they do not contain equal
 values. The equality check is either strict or non-strict based
-on the `strict` argument.
+on the `options.strict` argument.
 
 > It is important to understand that this function detects differences
-between field values, not differences between object structures. For
-instance if a field in obj1 contains `undefined` and obj2 does not contain
-that field at all, it's value in obj2 will also be `undefined` so there
-would be no difference detected.
+> between field values, not differences between object structures. For
+> instance if a field in obj1 contains `undefined` and obj2 does not contain
+> that field at all, it's value in obj2 will also technically be equal to
+> `undefined` so there would be no difference detected.
 
 ```js
 const {diff} = require("@irrelon/path");
@@ -318,7 +334,7 @@ const obj1 = {
 		"_id": 1,
 		"firstName": "Jimbo",
 		"lastName": "Jetson"
-  	}
+	}
 };
 
 const obj2 = {
@@ -326,11 +342,11 @@ const obj2 = {
 		"_id": "1", // Notice string instead of numerical _id
 		"firstName": "James", // We also changed the name from "Jimbo" to "James"
 		"lastName": "Jetson"
-  	}
+	}
 };
 
-const resultArr1 = diff(obj1, obj2, "", false); // Non-strict equality check
-const resultArr2 = diff(obj1, obj2, "", true); // Strict equality check
+const resultArr1 = diff(obj1, obj2, {basePath: "", strict: false}); // Non-strict equality check
+const resultArr2 = diff(obj1, obj2, {basePath: "", strict: true}); // Strict equality check
 
 console.log(resultArr1); // Logs: ["user.firstName"]
 console.log(resultArr2); // Logs: ["user._id", "user.firstName"]
@@ -338,13 +354,15 @@ console.log(resultArr2); // Logs: ["user._id", "user.firstName"]
 
 ### diffValues (`obj1`, `obj2`, `path`, `strict`, `maxDepth`)
 
-|Param|Type|Required|Default|
-|---|---|---|---|
-|obj1|Object or Array|true|none|
-|obj2|Object or Array|true|none|
-|path|String|false|""|
-|strict|Boolean|false|false|
-|maxDepth|Number|false|Infinity|
+| Param             | Type            | Required | Default  |
+|-------------------|-----------------|----------|----------|
+| obj1              | Object or Array | true     | none     |
+| obj2              | Object or Array | true     | none     |
+| options           | Object          | false    | {}       |
+| options.strict    | Boolean         | false    | false    |
+| options.maxDepth  | Number          | false    | Infinity |
+| options.basePath  | String          | false    | ""       |
+| options.exclusive | Boolean         | false    | false    |
 
 Compares two objects / arrays and returns the differences as an
 object where keys are paths to values that differ and the values
@@ -353,13 +371,13 @@ types.
 
 Fields are considered "different" if they do not contain equal
 values. The equality check is either strict or non-strict based
-on the `strict` argument.
+on the `options.strict` argument.
 
 > It is important to understand that this function detects differences
-between field values, not differences between object structures. For
-instance if a field in obj1 contains `undefined` and obj2 does not contain
-that field at all, it's value in obj2 will also be `undefined` so there
-would be no difference detected.
+> between field values, not differences between object structures. For
+> instance if a field in obj1 contains `undefined` and obj2 does not contain
+> that field at all, it's value in obj2 will also technically be equal to
+> `undefined` so there would be no difference detected.
 
 ```js
 const {diffValues} = require("@irrelon/path");
@@ -369,7 +387,7 @@ const obj1 = {
 		"_id": 1,
 		"firstName": "Jimbo",
 		"lastName": "Jetson"
-  	}
+	}
 };
 
 const obj2 = {
@@ -377,11 +395,11 @@ const obj2 = {
 		"_id": "1", // Notice string instead of numerical _id
 		"firstName": "James", // We also changed the name from "Jimbo" to "James"
 		"lastName": "Jetson"
-  	}
+	}
 };
 
-const resultArr1 = diffValues(obj1, obj2, "", false); // Non-strict equality check
-const resultArr2 = diffValues(obj1, obj2, "", true); // Strict equality check
+const resultArr1 = diffValues(obj1, obj2, {basePath: "", strict: false}); // Non-strict equality check
+const resultArr2 = diffValues(obj1, obj2, {basePath: "", strict: true}); // Strict equality check
 
 console.log(resultArr1); // Logs: {"user.firstName": {val1: "Jimbo", val2: "James", type1: "string", type2: "string", difference: "value"}}
 console.log(resultArr2);
@@ -408,10 +426,10 @@ console.log(resultArr2);
 
 ### distill (`obj`, `pathArr`)
 
-|Param|Type|Required|Default|
-|---|---|---|---|
-|obj|Object or Array|true|none|
-|pathArr|Array<String>|true|none|
+| Param   | Type            | Required | Default |
+|---------|-----------------|----------|---------|
+| obj     | Object or Array | true     | none    |
+| pathArr | Array<String>   | true     | none    |
 
 Gets the values of the paths in pathArr and returns them as an object
 with each key matching the path and the value matching the value from
@@ -421,35 +439,36 @@ obj that was at that path.
 const {distill} = require("@irrelon/path");
 
 const obj = {
-    "user": {
-        "firstName": "Jim",
-        "lastName": "Jones",
-        "age": 22
-    }
+	"user": {
+		"firstName": "Jim",
+		"lastName": "Jones",
+		"age": 22
+	}
 };
 
 const result = distill(obj, [
-    "user.firstName",
-    "user.lastName"
+	"user.firstName",
+	"user.lastName"
 ]);
 
 console.log(result);
 ```
 
 Outputs:
+
 ```json
 {
-  "user.firstName": "Jim",
-  "user.lastName": "Jones"
+	"user.firstName": "Jim",
+	"user.lastName": "Jones"
 }
 ```
 
 ### down (`path`, `levels` = 1)
 
-|Param|Type|Required|Default|
-|---|---|---|---|
-|path|String|true|none|
-|levels|Number|false|1|
+| Param  | Type   | Required | Default |
+|--------|--------|----------|---------|
+| path   | String | true     | none    |
+| levels | Number | false    | 1       |
 
 Returns the given path after removing the first leaf from the
 path. E.g. "foo.bar.thing" becomes "bar.thing".
@@ -463,6 +482,7 @@ console.log(result);
 ```
 
 Outputs:
+
 ```json
 "friends.0.firstName"
 ```
@@ -471,9 +491,9 @@ Outputs:
 
 ### escape (`path`)
 
-|Param|Type|Required|Default|
-|---|---|---|---|
-|path|String|true|none|
+| Param | Type   | Required | Default |
+|-------|--------|----------|---------|
+| path  | String | true     | none    |
 
 Escapes any periods in the passed string so they will
 not be identified as part of a path. Useful if you have
@@ -482,7 +502,13 @@ a path like "domains.www.google.com.data" where the
 traversal as it is actually in an object like:
 
 ```json
-{"domains": {"www.google.com": {"data": "foo"}}}
+{
+	"domains": {
+		"www.google.com": {
+			"data": "foo"
+		}
+	}
+}
 ```
 
 Usage:
@@ -496,11 +522,13 @@ console.log(result);
 ```
 
 Outputs:
+
 ```json
 "www\\.google\\.com"
 ```
 
 ### findOnePath (`source`, `query`)
+
 Finds the first item that matches the structure of `query`
 and returns the path to it
 
@@ -508,15 +536,15 @@ and returns the path to it
 const {findOnePath} = require("@irrelon/path");
 
 const myDataArray = [{
-  "profile": {
-  	"id": 1,
-  	"name": "Ron Swanson"
-  }
+	"profile": {
+		"id": 1,
+		"name": "Ron Swanson"
+	}
 }, {
- "profile": {
-	"id": 2,
-	"name": "April Ludgate"
- }
+	"profile": {
+		"id": 2,
+		"name": "April Ludgate"
+	}
 }];
 
 // Find the object that has a key "profile"
@@ -540,14 +568,14 @@ console.log(result2); // Logs: "0.profile"
 ```
 
 > See the unit tests for findOnePath() for many more examples
- of usage.
+> of usage.
 
 ### findPath (`source`, `query`)
 
-|Param|Type|Required|Default|Description|
-|---|---|---|---|---|
-|source|*|true|none|The source to test.|
-|query|*|true|none|The query to match.|
+| Param  | Type | Required | Default | Description         |
+|--------|------|----------|---------|---------------------|
+| source | *    | true     | none    | The source to test. |
+| query  | *    | true     | none    | The query to match. |
 
 Finds all items in `source` that match the structure of `query` and
 returns the path to them as an array of strings.
@@ -556,35 +584,40 @@ returns the path to them as an array of strings.
 const {findPath} = require("@irrelon/path");
 
 const myData = {
-  "profile": {
-  	"id": 1,
-  	"name": "Ron Swanson",
-    "data": {
-        "mobile": "+001293284732"
-    }
-  }
+	"profile": {
+		"id": 1,
+		"name": "Ron Swanson",
+		"data": {
+			"mobile": "+001293284732"
+		}
+	}
 };
 
 const result = findPath(myData, {
 	data: {
-        "mobile": "+001293284732"
-    }
+		"mobile": "+001293284732"
+	}
 });
 
 console.log(result);
 ```
 
-Output: 
+Output:
 
 ```json
-{"match": true, "path": ["profile"]}
+{
+	"match": true,
+	"path": [
+		"profile"
+	]
+}
 ```
 
 ### flatten (`obj`)
 
-|Param|Type|Required|Default|Description|
-|---|---|---|---|---|
-|obj|Object or Array|true|none|The object to scan.|
+| Param | Type            | Required | Default | Description         |
+|-------|-----------------|----------|---------|---------------------|
+| obj   | Object or Array | true     | none    | The object to scan. |
 
 Takes an object and finds all paths, then returns the paths as an array
 of strings.
@@ -593,10 +626,10 @@ of strings.
 const {flatten} = require("@irrelon/path");
 
 const myData = {
-  "profile": {
-  	"id": 1,
-  	"name": "Ron Swanson"
-  }
+	"profile": {
+		"id": 1,
+		"name": "Ron Swanson"
+	}
 };
 
 const result = flatten(myData);
@@ -607,14 +640,18 @@ console.log(result);
 Output:
 
 ```json
-["profile.id", "profile.name", "profile"]
+[
+	"profile.id",
+	"profile.name",
+	"profile"
+]
 ```
 
 ### flattenValues (`obj`)
 
-|Param|Type|Required|Default|Description|
-|---|---|---|---|---|
-|obj|Object or Array|true|none|The object to scan.|
+| Param | Type            | Required | Default | Description         |
+|-------|-----------------|----------|---------|---------------------|
+| obj   | Object or Array | true     | none    | The object to scan. |
 
 Takes an object and finds all paths, then returns the paths as keys
 and the values of each path as the values.
@@ -623,10 +660,10 @@ and the values of each path as the values.
 const {flattenValues} = require("@irrelon/path");
 
 const myData = {
-  "profile": {
-  	"id": 1,
-  	"name": "Ron Swanson"
-  }
+	"profile": {
+		"id": 1,
+		"name": "Ron Swanson"
+	}
 };
 
 const result = flattenValues(myData);
@@ -638,21 +675,21 @@ Output:
 
 ```json
 {
-  "profile": {
-    "id": 1,
-    "name": "Ron Swanson"
-  },
-  "profile.id": 1,
-  "profile.name": "Ron Swanson"
+	"profile": {
+		"id": 1,
+		"name": "Ron Swanson"
+	},
+	"profile.id": 1,
+	"profile.name": "Ron Swanson"
 }
 ```
 
 ### furthest (`obj`, `path`)
 
-|Param|Type|Required|Default|Description|
-|---|---|---|---|---|
-|obj|Object or Array|true|none|The object to operate on.|
-|path|String|true|none|The object to operate on.|
+| Param | Type            | Required | Default | Description               |
+|-------|-----------------|----------|---------|---------------------------|
+| obj   | Object or Array | true     | none    | The object to operate on. |
+| path  | String          | true     | none    | The object to operate on. |
 
 Given object `obj` and a `path`, determines the outermost leaf node
 that can be reached where the leaf value is not undefined.
@@ -661,10 +698,10 @@ that can be reached where the leaf value is not undefined.
 const {furthest} = require("@irrelon/path");
 
 const myData = {
-  "profile": {
-  	"id": 1,
-  	"name": "Ron Swanson"
-  }
+	"profile": {
+		"id": 1,
+		"name": "Ron Swanson"
+	}
 };
 
 const result = furthest(myData, "profile.id.bson");
@@ -680,11 +717,11 @@ Output:
 
 ### get (`obj`, `path`, `defaultValue`)
 
-|Param|Type|Required|Default|
-|---|---|---|---|
-|obj|Object or Array|true|none|
-|path|String|true|none|
-|defaultValue|Any|false|undefined|
+| Param        | Type            | Required | Default   |
+|--------------|-----------------|----------|-----------|
+| obj          | Object or Array | true     | none      |
+| path         | String          | true     | none      |
+| defaultValue | Any             | false    | undefined |
 
 Gets a value from the `obj` at the given `path` and if no value exists for
 that path, returns `defaultValue` if one was provided.
@@ -693,7 +730,7 @@ that path, returns `defaultValue` if one was provided.
 const {get} = require("@irrelon/path");
 
 const obj = {
-  "foo": null
+	"foo": null
 };
 
 const result1 = get(obj, "foo");
@@ -710,12 +747,12 @@ as part of your path e.g.
 const {get} = require("@irrelon/path");
 
 const obj = {
-    "myArr": [
-        "hello",
-        {
-            "bar": "goodbye"
-        }
-    ]
+	"myArr": [
+		"hello",
+		{
+			"bar": "goodbye"
+		}
+	]
 };
 
 const result1 = get(obj, "myArr.0"); // hello
@@ -724,22 +761,22 @@ const result2 = get(obj, "myArr.1.bar"); // goodbye
 
 ### set (`obj`, `path`, `value`)
 
-|Param|Type|Required|Default|
-|---|---|---|---|
-|obj|Object or Array|true|none|
-|path|String|true|none|
-|value|Any|true|none|
+| Param | Type            | Required | Default |
+|-------|-----------------|----------|---------|
+| obj   | Object or Array | true     | none    |
+| path  | String          | true     | none    |
+| value | Any             | true     | none    |
 
 Sets a `value` in the `obj` at the given `path`.
 
 > If the given path doesn't exist in the target object it will be created
-by making each non-existent path part a new object.
+> by making each non-existent path part a new object.
 
 ```js
 const {set, get} = require("@irrelon/path");
 
 const obj = {
-  "foo": null
+	"foo": null
 };
 
 const result1 = get(obj, "foo.bar"); // Currently: undefined
@@ -753,14 +790,15 @@ console.log(result2); // Logs: hello
 ```
 
 ### setImmutable (`obj`, `path`, `value`)
-> This is a helper function that calls `set()` with immutable
- flag switched on.
 
-|Param|Type|Required|Default|
-|---|---|---|---|
-|obj|Object or Array|true|none|
-|path|String|true|none|
-|value|Any|true|none|
+> This is a helper function that calls `set()` with immutable
+> flag switched on.
+
+| Param | Type            | Required | Default |
+|-------|-----------------|----------|---------|
+| obj   | Object or Array | true     | none    |
+| path  | String          | true     | none    |
+| value | Any             | true     | none    |
 
 Sets a `value` in the `obj` at the given `path` in an immutable way
 and returns a new object. This will not change or modify the existing
@@ -772,21 +810,21 @@ to appropriately act on changes to specific data rather than
 re-rendering an entire DOM tree when one sub-object changes.
 
 > If the given path doesn't exist in the target object it will be created
-by making each non-existent path part a new object.
+> by making each non-existent path part a new object.
 
 ```js
 const {setImmutable, get} = require("@irrelon/path");
 
 const obj = {
-  "foo": {
-  	"bar": "goodbye",
-  	"subBar": {
-  		"somethingElse": true
-  	}
-  },
-  "otherObj": {
-  	"enabled": true
-  }
+	"foo": {
+		"bar": "goodbye",
+		"subBar": {
+			"somethingElse": true
+		}
+	},
+	"otherObj": {
+		"enabled": true
+	}
 };
 
 const result1 = get(obj, "foo.bar"); // Currently: goodbye
@@ -816,6 +854,12 @@ console.log(obj.foo.subBar === newObj.foo.subBar); // Logs: true
 ```
 
 ### unSet (`obj`, `path`)
+
+| Param | Type            | Required | Default |
+|-------|-----------------|----------|---------|
+| obj   | Object or Array | true     | none    |
+| path  | String          | true     | none    |
+
 Deletes a key from an object by the given path.
 
 ```js
@@ -836,11 +880,22 @@ console.log(obj.foo.bar[0].baa); // Logs: undefined
 console.log(obj.foo.bar[0].hasOwnProperty("baa")); // Logs: false
 ```
 
-### update (`obj`, `basePath`, `updateData`, `options`)
+### update (`obj`, `basePath`, `updateData`, `options = {}`)
+
+| Param             | Type            | Required | Default |
+|-------------------|-----------------|----------|---------|
+| obj               | Object or Array | true     | none    |
+| basePath          | String          | true     | ""      |
+| updateData        | Object or Array | true     | none    |
+| options           | Object          | false    | {}      |
+| options.immutable | Boolean         | false    | false   |
+| options.strict    | Boolean         | false    | false   |
+| options.ignore    | RegExp          | false    | false   |
+
 Sets a single value on the passed object and given path. This
 will directly modify the "obj" object.
 
->If you need immutable updates, use `updateImmutable()` instead.
+> If you need immutable updates, use `updateImmutable()` instead.
 
 ```js
 const obj = {
@@ -867,18 +922,21 @@ console.log(obj.and.so); // Logs: have I!
 ```
 
 ## Version 5.x Breaking Changes
+
 The update() and updateImmutable() functions have their signature changed
 to include a base path in the arguments. If migrating from a previous
 version you can simply add an empty string as the basePath argument to
 have the functions operate in the same way as before e.g.
 
 #### Before Version 5.x
+
 ```js
 update(obj, updateObj);
 updateImmutable(obj, updateObj);
 ```
 
 #### After Version 5.x
+
 ```js
 update(obj, "", updateObj);
 updateImmutable(obj, "", updateObj);
@@ -895,8 +953,10 @@ update(obj, "subObj", {"foo": true});
 The update above will modify `obj.subObj.foo` to equal `true`.
 
 ## Version 3.x Breaking Changes
+
 There was a bug in the get() function that would return an incorrect value
 when a non-object was passed to get data from and a path was passed e.g.
+
 ```js
 get("foo-im-not-an-object", "some.path.to.get.data.from"); // Version 2.x returned "foo-im-not-an-object"
 ```
@@ -904,6 +964,7 @@ get("foo-im-not-an-object", "some.path.to.get.data.from"); // Version 2.x return
 In version 3.x, this call will return `undefined` as expected.
 
 ## Version 2.x Breaking Changes
+
 Version 1.x exported a class that you could instantiate. Version 2.x
 exports an object with all available functions. You can require version
 2.x either all at once (all functions) or you can destructure to require
@@ -917,6 +978,7 @@ and instead of using an instance of the 1.x class, you simply require the
 parts of the library you need e.g.
 
 #### Version 1.x Style Code (Don't Do This)
+
 ```js
 // DON'T DO THIS !!!!!!!!!!!
 const Path = require("irrelon-path");
@@ -926,6 +988,7 @@ const b = pathSolver.get(a, "hello.foo"); // b === true
 ```
 
 #### Version 2.x Style Code (Please Use This)
+
 ```js
 // DO THIS :)
 const {get} = require("@irrelon/path");

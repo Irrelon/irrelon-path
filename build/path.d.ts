@@ -40,6 +40,12 @@ export interface DiffValue {
     type2: ValueType;
     difference: DifferenceType;
 }
+export interface DiffOptionsType {
+    basePath?: string | string[];
+    strict?: boolean;
+    maxDepth?: number;
+    exclusive?: boolean;
+}
 /**
  * Defines the options for merging objects.
  * @interface
@@ -232,7 +238,7 @@ export declare const unSet: (obj: ObjectType, path: string, options?: SetOptions
  * `basePath` as an empty string.
  * @param {ObjectType} updateData The update data to apply with
  * keys as string paths.
- * @param options The options object.
+ * @param {SetOptionsType} options The options object.
  * @returns {*} The object with the modified data.
  */
 export declare const update: (obj: ObjectType, basePath: string | undefined, updateData: ObjectType, options?: SetOptionsType) => any;
@@ -250,12 +256,12 @@ export declare const update: (obj: ObjectType, basePath: string | undefined, upd
  */
 export declare const updateImmutable: (obj: ObjectType, basePath: string | undefined, updateData: ObjectType, options?: SetOptionsType) => any;
 /**
- * If options.immutable === true then return a new de-referenced
+ * If `options.immutable` === true then return a new de-referenced
  * instance of the passed object/array. If immutable is false
  * then simply return the same `obj` that was passed.
  * @param {*} obj The object or array to decouple.
- * @param {OptionsType} [options] The options object that has the immutable
- * key with a boolean value.
+ * @param {OptionsType} [options] The options object.
+ * @param {boolean} options.immutable
  * @returns {*} The new decoupled instance (if immutable is true)
  * or the original `obj` if immutable is false.
  */
@@ -458,32 +464,6 @@ export declare const findOnePath: (source: any, query: any, options?: FindOption
  */
 export declare const keyDedup: (keys: string[]) => string[];
 /**
- * Compares two provided objects / arrays and returns an array of
- * dot-notation paths to the fields that hold different values.
- * @param {ObjectType} obj1 The first object / array to compare.
- * @param {ObjectType} obj2 The second object / array to compare.
- * @param {string=""|string[]} basePath The base path from which to check for
- * differences. Differences outside the base path will not be
- * returned as part of the array of differences. Leave blank to check
- * for all differences between the two objects to compare.
- * @param {boolean=false} strict If strict is true, diff uses strict
- * equality to determine difference rather than non-strict equality;
- * effectively (=== is strict, == is non-strict).
- * @param {number=Infinity} maxDepth Specifies the maximum number of
- * path sub-trees to walk down before returning what we have found.
- * For instance, if set to 2, a diff would only check down,
- * "someFieldName.anotherField", or "user.name" and would not go
- * further down than two fields. If anything in the trees further
- * down than this level have changed, the change will not be detected
- * and the path will not be included in the resulting diff array.
- * @param {string=""} parentPath Used internally only.
- * @param {never[]} [objCache=[]] Internal usage to check for cyclic structures.
- * @returns {Array} An array of strings, each string is a path to a
- * field that holds a different value between the two objects being
- * compared.
- */
-export declare const diff: (obj1: ObjectType, obj2: ObjectType, basePath?: string | string[], strict?: boolean, maxDepth?: number, parentPath?: string, objCache?: never[]) => Array<string>;
-/**
  * Compares two provided objects / arrays and returns and object
  * where the keys are dot-notation paths and the values are any
  * differences.
@@ -503,20 +483,25 @@ export declare const diff: (obj1: ObjectType, obj2: ObjectType, basePath?: strin
  * see the `diff()` function instead.
  * @param {ObjectType} obj1 The first object / array to compare.
  * @param {ObjectType} obj2 The second object / array to compare.
- * @param {string|string[]} basePath="" The base path from which to check for
+ * @param {DiffOptionsType} [options] Options object
+ * @param {string|string[]} options.basePath="" The base path from which to check for
  * differences. Differences outside the base path will not be
  * returned as part of the array of differences. Leave blank to check
  * for all differences between the two objects to compare.
- * @param {boolean} strict=false If strict is true, diff uses strict
+ * @param {boolean} options.strict=false If strict is true, diff uses strict
  * equality to determine difference rather than non-strict equality;
  * effectively (=== is strict, == is non-strict).
- * @param {number} maxDepth=Infinity Specifies the maximum number of
+ * @param {number} options.maxDepth=Infinity Specifies the maximum number of
  * path subtrees to walk down before returning what we have found.
  * For instance, if set to 2, a diff would only check down,
  * "someFieldName.anotherField", or "user.name" and would not go
  * further down than two fields. If anything in the trees further
  * down than this level have changed, the change will not be detected
  * and the path will not be included in the resulting diff array.
+ * @param {boolean} options.exclusive=false If true, only examines obj2's
+ * data against obj1 rather than diffing against each other. Especially
+ * useful if obj2 is a partial of obj1, and you only need to know what
+ * parts of the partial have changed against obj1.
  * @param {string} parentPath="" Used internally only.
  * @param {never[]} objCache=[] Used internally only.
  * @returns {Record<string, DiffValue>} An object where each key is a path to a
@@ -524,7 +509,38 @@ export declare const diff: (obj1: ObjectType, obj2: ObjectType, basePath?: strin
  * compared and the value of each key is an object holding details of
  * the difference.
  */
-export declare const diffValues: (obj1: ObjectType, obj2: ObjectType, basePath?: string | string[], strict?: boolean, maxDepth?: number, parentPath?: string, objCache?: never[]) => Record<string, DiffValue>;
+export declare const diffValues: (obj1: ObjectType, obj2: ObjectType, options?: DiffOptionsType, parentPath?: string, objCache?: never[]) => Record<string, DiffValue>;
+/**
+ * Compares two provided objects / arrays and returns an array of
+ * dot-notation paths to the fields that hold different values.
+ * @param {ObjectType} obj1 The first object / array to compare.
+ * @param {ObjectType} obj2 The second object / array to compare.
+ * @param {DiffOptionsType} [options] Options object
+ * @param {string|string[]} options.basePath="" The base path from which to check for
+ * differences. Differences outside the base path will not be
+ * returned as part of the array of differences. Leave blank to check
+ * for all differences between the two objects to compare.
+ * @param {boolean} options.strict=false If strict is true, diff uses strict
+ * equality to determine difference rather than non-strict equality;
+ * effectively (=== is strict, == is non-strict).
+ * @param {number} options.maxDepth=Infinity Specifies the maximum number of
+ * path subtrees to walk down before returning what we have found.
+ * For instance, if set to 2, a diff would only check down,
+ * "someFieldName.anotherField", or "user.name" and would not go
+ * further down than two fields. If anything in the trees further
+ * down than this level have changed, the change will not be detected
+ * and the path will not be included in the resulting diff array.
+ * @param {boolean} options.exclusive=false If true, only examines obj2's
+ * data against obj1 rather than diffing against each other. Especially
+ * useful if obj2 is a partial of obj1, and you only need to know what
+ * parts of the partial have changed against obj1.
+ * @param {string} parentPath="" Used internally only.
+ * @param {never[]} [objCache=[]] Internal usage to check for cyclic structures.
+ * @returns {Array} An array of strings, each string is a path to a
+ * field that holds a different value between the two objects being
+ * compared.
+ */
+export declare const diff: (obj1: ObjectType, obj2: ObjectType, options?: DiffOptionsType, parentPath?: string, objCache?: never[]) => Array<string>;
 /**
  * A boolean check to see if the values at the given path or paths
  * are the same in both given objects.
