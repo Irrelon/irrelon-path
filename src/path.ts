@@ -1,6 +1,9 @@
 export type ObjectType = { [key: string]: any };
 export type ArrayType = Map<string, any[]>;
 
+export type ValueType = "undefined" | "object" | "boolean" | "number" | "string" | "function" | "symbol" | "bigint" | "null" | "array";
+export type DifferenceType = "value" | "type" | "both";
+
 export interface PathData {
 	indices?: number[][];
 	directPaths?: string[];
@@ -39,9 +42,9 @@ export interface FindOptionsType extends OptionsType {
 export interface DiffValue {
 	val1: unknown;
 	val2: unknown;
-	type1: string;
-	type2: string;
-	difference: "value" | "type" | "both";
+	type1: ValueType;
+	type2: ValueType;
+	difference: DifferenceType;
 }
 
 /**
@@ -1324,7 +1327,7 @@ export const countMatchingPathsInObject = (testKeys: ObjectType, testObj: Object
  * @param item The item to get the type of.
  * @returns The string name of the type.
  */
-export const type = (item: unknown): "undefined" | "object" | "boolean" | "number" | "string" | "function" | "symbol" | "bigint" | "null" | "array" => {
+export const type = (item: unknown): ValueType => {
 	if (item === null) {
 		return "null";
 	}
@@ -1608,32 +1611,47 @@ export const diff = (obj1: ObjectType, obj2: ObjectType, basePath: string | stri
 };
 
 /**
- * Compares two provided objects / arrays and returns details of any
- * differences including the values and types that are different.
+ * Compares two provided objects / arrays and returns and object
+ * where the keys are dot-notation paths and the values are any
+ * differences.
+ *
+ * e.g.
+ * {
+ *    "path.to.new.value": {
+ *        "val1": "the value from obj1",
+ *        "val2": "the value from obj2",
+ *        "type1": "string", // the value type from obj1 (see ValueType for supported values)
+ *        "type2": "string", // the value type from obj2 (see ValueType for supported values)
+ *        "difference": "value" // (see DifferenceType for supported values)
+ *    }
+ * }
+ *
+ * If you only want an array of paths to values that have changed
+ * see the `diff()` function instead.
  * @param {ObjectType} obj1 The first object / array to compare.
  * @param {ObjectType} obj2 The second object / array to compare.
- * @param {string=""|string[]} basePath The base path from which to check for
+ * @param {string|string[]} basePath="" The base path from which to check for
  * differences. Differences outside the base path will not be
  * returned as part of the array of differences. Leave blank to check
  * for all differences between the two objects to compare.
- * @param {boolean=false} strict If strict is true, diff uses strict
+ * @param {boolean} strict=false If strict is true, diff uses strict
  * equality to determine difference rather than non-strict equality;
  * effectively (=== is strict, == is non-strict).
- * @param {number=Infinity} maxDepth Specifies the maximum number of
- * path sub-trees to walk down before returning what we have found.
+ * @param {number} maxDepth=Infinity Specifies the maximum number of
+ * path subtrees to walk down before returning what we have found.
  * For instance, if set to 2, a diff would only check down,
  * "someFieldName.anotherField", or "user.name" and would not go
  * further down than two fields. If anything in the trees further
  * down than this level have changed, the change will not be detected
  * and the path will not be included in the resulting diff array.
- * @param {string=""} parentPath Used internally only.
- * @param {never[]} [objCache=[]] Internal usage to check for cyclic structures.
+ * @param {string} parentPath="" Used internally only.
+ * @param {never[]} objCache=[] Used internally only.
  * @returns {Record<string, DiffValue>} An object where each key is a path to a
  * field that holds a different value between the two objects being
  * compared and the value of each key is an object holding details of
  * the difference.
  */
-export const diffValues = (obj1: ObjectType, obj2: ObjectType, basePath: string | string[] = "", strict = false, maxDepth = Infinity, parentPath = "", objCache: never[] = []): Record<string, DiffValue> => {
+export const diffValues = (obj1: ObjectType, obj2: ObjectType, basePath: string | string[] = "", strict: boolean = false, maxDepth: number = Infinity, parentPath: string = "", objCache: never[] = []): Record<string, DiffValue> => {
 	const paths: Record<string, DiffValue> = {};
 
 	if (basePath instanceof Array) {
