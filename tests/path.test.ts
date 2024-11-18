@@ -3508,6 +3508,65 @@ describe("Path", () => {
 					]
 				});
 			});
+
+			it("Can query with $in criteria as an array of functions", () => {
+				const obj = {
+					arr: [{
+						name: "",
+						items: [{
+							moreItems: [{
+								name: "OK"
+							}, {
+								name: ""
+							}, {
+								name: "OK"
+							}, {
+								name: ""
+							}]
+						}, {
+							moreItems: [{
+								name: "OK"
+							}, {
+								name: "OK"
+							}, {
+								name: "OK"
+							}, {
+								name: ""
+							}]
+						}]
+					}, {
+						name: "Jim"
+					}, {
+						name: null
+					}, {}]
+				};
+
+				const queryToPathsResult = query(obj, {
+					"arr.items.moreItems.name": {$in: [() => true, undefined, null]},
+					"arr.items.notDefined": {$in: [() => true, () => true]},
+					"notDefined": {$in: () => true}
+				});
+
+				expect(queryToPathsResult).toEqual({
+					"arr.items.moreItems.name": [
+						"arr.0.items.0.moreItems.0.name",
+						"arr.0.items.0.moreItems.1.name",
+						"arr.0.items.0.moreItems.2.name",
+						"arr.0.items.0.moreItems.3.name",
+						"arr.0.items.1.moreItems.0.name",
+						"arr.0.items.1.moreItems.1.name",
+						"arr.0.items.1.moreItems.2.name",
+						"arr.0.items.1.moreItems.3.name"
+					],
+					"arr.items.notDefined": [
+						"arr.0.items.0.notDefined",
+						"arr.0.items.1.notDefined"
+					],
+					"notDefined": [
+						"notDefined"
+					]
+				});
+			});
 		});
 
 		// describe("$or", () => {
@@ -3694,6 +3753,68 @@ describe("Path", () => {
 					"obj2.items.1.moreItems.0.name",
 					"obj2.items.1.moreItems.1",
 					"obj2.items.1.moreItems.1.name"
+				]);
+			});
+
+			it('should correctly traverse multiple paths when an array of strings is provided', () => {
+				const paths = ['user.name', 'user.contacts.phone'];
+				const results: any[] = [];
+
+				const sampleObject = {
+					user: {
+						name: 'John Doe',
+						age: 30,
+						contacts: {
+							phone: '123-456-7890',
+							email: 'john.doe@example.com'
+						}
+					},
+					items: [{ id: 1, name: 'item1' }, { id: 2, name: 'item2' }]
+				};
+
+				traverse(sampleObject, paths, ({ purePath, value }) => {
+					results.push({ path: purePath, value });
+					return true;
+				});
+
+				expect(results).toEqual([
+					{
+						"path": "user",
+						"value": {
+							"name": "John Doe",
+							"age": 30,
+							"contacts": {
+								"phone": "123-456-7890",
+								"email": "john.doe@example.com"
+							}
+						}
+					},
+					{
+						"path": "user.name",
+						"value": "John Doe"
+					},
+					{
+						"path": "user",
+						"value": {
+							"name": "John Doe",
+							"age": 30,
+							"contacts": {
+								"phone": "123-456-7890",
+								"email": "john.doe@example.com"
+							}
+						}
+					},
+					{
+						"path": "user.contacts",
+						"value": {
+							"phone": "123-456-7890",
+							"email": "john.doe@example.com"
+						}
+					},
+					{
+						"path": "user.contacts.phone",
+						"value": "123-456-7890"
+					}
 				]);
 			});
 		});

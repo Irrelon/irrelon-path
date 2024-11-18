@@ -392,7 +392,7 @@ export const get = (obj: ObjectType | undefined | null, path: string | any[], de
 	options.transformKey = options.transformKey || returnWhatWasGiven;
 	options.transformWrite = options.transformWrite || returnWhatWasGiven;
 
-	// No object data, return undefined
+	// No object data, return default data
 	if (obj === undefined || obj === null) {
 		return defaultVal;
 	}
@@ -1961,6 +1961,16 @@ export const query = (obj: ObjectType, query: QueryType): Record<string, string[
 	return queryResult;
 };
 
+/**
+ * The function definition for the `traverse()` callback.
+ * @param {string} purePath The path including any array indexes
+ * like `someObject.someArray.0.someProp`.
+ * @param {string} flatPath The path excluding any array indexes
+ * like `someObject.someArray.someProp`.
+ * @param {any} value The value stored at the `purePath`.
+ * @param {string} key The individual property key at which the
+ * value exists in its parent. e.g. `someProp`.
+ */
 export interface OperationFunctionProps {
 	purePath: string;
 	flatPath: string;
@@ -1973,7 +1983,7 @@ export interface OperationFunctionProps {
  * @param obj The object to operate on with the path.
  * @param path The path to iterate.
  * @param operation The function to call for each part of the path.
- * @param options
+ * @param options Currently unused.
  * @param parentPaths Do not pass, used internally.
  */
 export const traverse = (obj: ObjectType | undefined | null, path: string | any[], operation: (props: OperationFunctionProps) => boolean, options: GetOptionsType = {}, parentPaths: {

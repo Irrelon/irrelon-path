@@ -653,6 +653,16 @@ type QueryType = Record<string, QueryOperator>;
  * contains an array of values that satisfy the corresponding query criterion.
  */
 export declare const query: (obj: ObjectType, query: QueryType) => Record<string, string[]>;
+/**
+ * The function definition for the `traverse()` callback.
+ * @param {string} purePath The path including any array indexes
+ * like `someObject.someArray.0.someProp`.
+ * @param {string} flatPath The path excluding any array indexes
+ * like `someObject.someArray.someProp`.
+ * @param {any} value The value stored at the `purePath`.
+ * @param {string} key The individual property key at which the
+ * value exists in its parent. e.g. `someProp`.
+ */
 export interface OperationFunctionProps {
     purePath: string;
     flatPath: string;
@@ -664,7 +674,7 @@ export interface OperationFunctionProps {
  * @param obj The object to operate on with the path.
  * @param path The path to iterate.
  * @param operation The function to call for each part of the path.
- * @param options
+ * @param options Currently unused.
  * @param parentPaths Do not pass, used internally.
  */
 export declare const traverse: (obj: ObjectType | undefined | null, path: string | any[], operation: (props: OperationFunctionProps) => boolean, options?: GetOptionsType, parentPaths?: {

@@ -1,12 +1,12 @@
 {
 	"name": "@irrelon/path",
-	"version": "7.0.0",
+	"version": "7.0.1",
 	"description": "A powerful JSON path processor. Allows you to drill into and manipulate JSON objects with a simple dot-delimited path format e.g. \"obj.name\".",
 	"main": "./build/path.js",
 	"types": "./build/path.d.ts",
 	"scripts": {
-		"test": "NODE_ENV=test jest",
-		"test-watch": "NODE_ENV=test jest --watch",
+		"test": "NODE_ENV=test jest --coverage",
+		"test-watch": "NODE_ENV=test jest --coverage --watch",
 		"build": "tsc",
 		"buildAndTest": "npm run build && npm run test",
 		"eslint": "eslint ./src/**.js ./tests/**.js ./dist/Path.js",

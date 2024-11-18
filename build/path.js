@@ -284,7 +284,7 @@ const get = (obj, path, defaultVal = undefined, options = {}) => {
     options.transformRead = options.transformRead || exports.returnWhatWasGiven;
     options.transformKey = options.transformKey || exports.returnWhatWasGiven;
     options.transformWrite = options.transformWrite || exports.returnWhatWasGiven;
-    // No object data, return undefined
+    // No object data, return default data
     if (obj === undefined || obj === null) {
         return defaultVal;
     }
@@ -1642,7 +1642,7 @@ exports.query = query;
  * @param obj The object to operate on with the path.
  * @param path The path to iterate.
  * @param operation The function to call for each part of the path.
- * @param options
+ * @param options Currently unused.
  * @param parentPaths Do not pass, used internally.
  */
 const traverse = (obj, path, operation, options = {}, parentPaths = { pure: "", flat: "" }) => {
