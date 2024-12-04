@@ -1,6 +1,6 @@
 {
 	"name": "@irrelon/path",
-	"version": "7.0.1",
+	"version": "7.0.2",
 	"description": "A powerful JSON path processor. Allows you to drill into and manipulate JSON objects with a simple dot-delimited path format e.g. \"obj.name\".",
 	"main": "./build/path.js",
 	"types": "./build/path.d.ts",
@@ -40,16 +40,13 @@
 		"nodemon": "^2.0.3",
 		"rimraf": "^2.7.1",
 		"ts-node": "^10.4.0",
-		"ts-jest": "^29.1.4",
 		"jest": "^29.7.0",
-		"typescript": "^5.4.5"
+		"typescript": "^5.4.5",
+		"ts-jest": "^29.1.5"
 	},
 	"repository": {
 		"type": "git",
 		"url": "git://github.com/irrelon/irrelon-path.git"
 	},
-	"private": false,
-	"dependencies": {
-		"ts-jest": "^29.1.5"
-	}
+	"private": false
 }

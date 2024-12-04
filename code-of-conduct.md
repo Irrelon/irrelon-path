@@ -1,0 +1,2 @@
+# Contributor Code of Conduct
+Don't be an a-hole. It's that simple. We're all adults. We don't need a list of rules to work together. If you need a document to tell you how not to be an a-hole, you have bigger problems than can be rectified by an npm module's code of conduct. 
