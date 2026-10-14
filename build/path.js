@@ -12,47 +12,139 @@ exports.traverse = exports.query = exports.mergeImmutable = void 0;
  * root source object if it matches the query.
  */
 /**
- * Scans an object for all keys that are either objects or arrays
- * and returns an array of those keys only.
- * @param {ObjectType} obj The object to scan.
- * @returns {string[]} An array of string keys.
+ * Arrays longer than this are copied by their existing indexes only, so
+ * a sparse array with a huge length (e.g. one created by setting
+ * "arr.4000000000") cannot exhaust memory when it is copied.
  * @private
  */
-const _iterableKeys = (obj) => {
-    return Object.entries(obj).reduce((arr, [key, val]) => {
-        const valType = (0, exports.type)(val);
-        if (valType === "object" || valType === "array") {
-            arr.push(key);
-        }
-        return arr;
-    }, []);
+const SPARSE_COPY_LENGTH = 1000000;
+/**
+ * Determines if writing to the given key would modify the prototype of
+ * an object rather than the object itself.
+ * @param {*} key The key to check.
+ * @returns {boolean} True if the key must not be written to.
+ * @private
+ */
+const _isUnsafeKey = (key) => key === "__proto__";
+/**
+ * Checks if the object has its own property with the given key without
+ * relying on the object's own hasOwnProperty() which may have been
+ * overridden by data or may not exist at all (Object.create(null)).
+ * @param {object} obj The object to check.
+ * @param {PropertyKey} key The key to check for.
+ * @returns {boolean} True if the object has its own property.
+ * @private
+ */
+const _hasOwn = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key);
+/**
+ * Determines if the value is an object or array that can be traversed.
+ * @param {*} val The value to check.
+ * @returns {boolean} True if the value is a non-null object.
+ * @private
+ */
+const _isObjectLike = (val) => typeof val === "object" && val !== null;
+/**
+ * Determines if the value is a plain object (created via an object
+ * literal, JSON.parse() or Object.create(null)) rather than an array,
+ * a class instance or a built-in like Date or Map.
+ * @param {*} val The value to check.
+ * @returns {boolean} True if the value is a plain object.
+ * @private
+ */
+const _isPlainObject = (val) => {
+    if (!_isObjectLike(val) || Array.isArray(val)) {
+        return false;
+    }
+    const proto = Object.getPrototypeOf(val);
+    // Plain objects from another realm (e.g. an iframe) have a different
+    // Object.prototype so check the shape of the chain instead
+    return proto === null || Object.getPrototypeOf(proto) === null;
+};
+/**
+ * Determines if the key is a canonical array index e.g. "0" or "12" but
+ * not "-1", "01" or "1.5".
+ * @param {string} key The key to check.
+ * @returns {boolean} True if the key is an array index.
+ * @private
+ */
+const _isArrayIndex = (key) => /^(?:0|[1-9]\d*)$/.test(key) && Number(key) < 4294967295;
+/**
+ * Sets a value as an own property of the object. Plain assignment of a
+ * "__proto__" key would change the prototype of the object instead, so
+ * that key is defined explicitly.
+ * @param {ObjectType} obj The object to set the value on.
+ * @param {string} key The key to set.
+ * @param {*} val The value to set.
+ * @private
+ */
+const _setOwn = (obj, key, val) => {
+    if (key === "__proto__") {
+        Object.defineProperty(obj, key, { value: val, writable: true, enumerable: true, configurable: true });
+        return;
+    }
+    obj[key] = val;
+};
+/**
+ * Copies every own key / value of the source object onto the target
+ * object as own properties.
+ * @param {ObjectType} target The object to copy to.
+ * @param {ObjectType} source The object to copy from.
+ * @private
+ */
+const _assignOwn = (target, source) => {
+    Object.keys(source).forEach((key) => _setOwn(target, key, source[key]));
+};
+/**
+ * Throws if the path is not a string.
+ * @param {*} path The path to check.
+ * @private
+ */
+const _assertPathIsString = (path) => {
+    if (typeof path !== "string") {
+        throw new Error("Path argument must be a string");
+    }
 };
 /**
  * Creates a new instance of "item" that is dereferenced. Useful
  * when you want to return a new version of "item" with the same
- * data for immutable data structures.
- * @param {ObjectType} item The item to mimic.
- * @param {string} key The key to set data in.
- * @param {*} val The data to set in the key.
- * @returns {*} A new dereferenced version of "item" with the "key"
- * containing the "val" data.
+ * data for immutable data structures. Primitives and functions are
+ * returned as they are.
+ * @param {*} item The item to mimic.
+ * @returns {*} A new dereferenced version of "item".
  * @private
  */
-const _newInstance = (item, key, val) => {
-    const objType = (0, exports.type)(item);
-    let newObj;
-    if (objType === "object") {
-        newObj = Object.assign({}, item);
+const _newInstance = (item) => {
+    if (Array.isArray(item)) {
+        if (item.length <= SPARSE_COPY_LENGTH) {
+            return item.slice();
+        }
+        const newArr = new Array(item.length);
+        Object.keys(item).forEach((key) => {
+            newArr[key] = item[key];
+        });
+        return newArr;
     }
-    if (objType === "array") {
-        // @ts-ignore
-        newObj = [...item];
+    if (!_isObjectLike(item)) {
+        return item;
     }
-    if (key !== undefined) {
-        // @ts-ignore
-        newObj[key] = val;
+    // Built-ins that keep their data in internal slots need their own
+    // constructor to be copied
+    if (item instanceof Date)
+        return new Date(item.getTime());
+    if (item instanceof RegExp)
+        return new RegExp(item);
+    if (item instanceof Map)
+        return new Map(item);
+    if (item instanceof Set)
+        return new Set(item);
+    const proto = Object.getPrototypeOf(item);
+    // Object spread compiles to Object.assign() which would turn an own
+    // "__proto__" key (e.g. from JSON.parse()) into a prototype change
+    if (proto === Object.prototype && !_hasOwn(item, "__proto__")) {
+        return Object.assign({}, item);
     }
-    return newObj;
+    // Keep the prototype of class instances and objects without one
+    return Object.defineProperties(Object.create(proto), Object.getOwnPropertyDescriptors(item));
 };
 /**
  * Determines if the given path points to a root leaf node (has no delimiter)
@@ -62,17 +154,7 @@ const _newInstance = (item, key, val) => {
  * @returns {boolean} True if delimiter found, false if not.
  */
 const isCompositePath = (path) => {
-    const regExp = /\./g;
-    let result;
-    while (result = regExp.exec(path)) {
-        // Check if the previous character was an escape
-        // and if so, ignore this delimiter
-        if (result.index === 0 || path.substr(result.index - 1, 1) !== "\\") {
-            // This is not an escaped path, so it IS a composite path
-            return true;
-        }
-    }
-    return false;
+    return (0, exports.split)(path).length > 1;
 };
 exports.isCompositePath = isCompositePath;
 /**
@@ -139,14 +221,15 @@ exports.pop = pop;
 /**
  * Adds a leaf to the end of the path. E.g.
  * pushing "goo" to path "foo.bar.thing" returns
- * "foo.bar.thing.goo".
+ * "foo.bar.thing.goo". A blank path or leaf does
+ * not add a delimiter.
  * @param {string} path The path to operate on.
  * @param {string} val The string value to push
  * to the end of the path.
  * @returns {string} The new path string.
  */
 const push = (path, val = "") => {
-    return `${path}.${val}`;
+    return (0, exports.join)(path, val);
 };
 exports.push = push;
 /**
@@ -216,27 +299,42 @@ const clean = (str) => {
 exports.clean = clean;
 /**
  * Splits a path by period character, taking into account
- * escaped period characters.
+ * escaped period characters. Escape sequences are kept intact
+ * in each part, use `unEscape()` to get the original key.
  * @param {string} path The path to split into an array.
  * @return {Array<string>} The component parts of the path, split
  * by period character.
  */
 const split = (path) => {
-    // Convert all \. (escaped periods) to another character
-    // temporarily
-    const escapedPath = path.replace(/\\\./g, "[--]");
-    const splitPath = escapedPath.split(".");
-    // Loop the split path array and convert any escaped period
-    // placeholders back to their real period characters
-    for (let i = 0; i < splitPath.length; i++) {
-        splitPath[i] = splitPath[i].replace(/\[--]/g, "\\.");
+    // Nothing is escaped so a plain split is enough
+    if (path.indexOf("\\") === -1) {
+        return path.split(".");
     }
-    return splitPath;
+    const parts = [];
+    let part = "";
+    for (let i = 0; i < path.length; i++) {
+        const char = path[i];
+        if (char === "\\" && i < path.length - 1) {
+            // Keep the escape sequence and skip the escaped character
+            // so an escaped period is not treated as a delimiter
+            part += char + path[i + 1];
+            i++;
+        }
+        else if (char === ".") {
+            parts.push(part);
+            part = "";
+        }
+        else {
+            part += char;
+        }
+    }
+    parts.push(part);
+    return parts;
 };
 exports.split = split;
 /**
- * Escapes any periods in the passed string so they will
- * not be identified as part of a path. Useful if you have
+ * Escapes any periods (and backslashes) in the passed string so
+ * they will not be identified as part of a path. Useful if you have
  * a path like "domains.www.google.com.data" where the
  * "www.google.com" should not be considered part of the
  * traversal as it is actually in an object like:
@@ -251,34 +349,31 @@ exports.split = split;
  * @return {string} The escaped string.
  */
 const escape = (str) => {
-    return str.replace(/\./g, "\\.");
+    return str.replace(/\\/g, "\\\\").replace(/\./g, "\\.");
 };
 exports.escape = escape;
 /**
  * Converts a string previously escaped with the `escape()`
- * function back to its original value.
+ * function back to its original value. A backslash followed
+ * by any other character is left as it is.
  * @param {string} str The string to unescape.
  * @returns {string} The unescaped string.
  */
 const unEscape = (str) => {
-    return str.replace(/\\./g, ".");
+    return str.replace(/\\([.\\])/g, "$1");
 };
 exports.unEscape = unEscape;
 /**
- * Gets a single value from the passed object and given path.
- * @param {ObjectType} obj The object to operate on.
- * @param {string} path The path to retrieve data from.
- * @param {*=} defaultVal Optional default to return if the
- * value retrieved from the given object and path equals undefined.
- * @param {OptionsType} [options] Optional options object.
- * @returns {*} The value retrieved from the passed object at
- * the passed path.
+ * The implementation of get(). The options object is shared and mutated
+ * by recursive calls (and getMany()) during a single top-level call so
+ * wildcard results and path data can be collected.
+ * @private
  */
-const get = (obj, path, defaultVal = undefined, options = {}) => {
-    let internalPath = path, objPart;
+const _get = (obj, path, defaultVal, options) => {
+    let objPart;
     if (path instanceof Array) {
         return path.map((individualPath) => {
-            (0, exports.get)(obj, individualPath, defaultVal, options);
+            return _get(obj, individualPath, defaultVal, Object.assign({}, options));
         });
     }
     options.transformRead = options.transformRead || exports.returnWhatWasGiven;
@@ -289,24 +384,20 @@ const get = (obj, path, defaultVal = undefined, options = {}) => {
         return defaultVal;
     }
     // No path string, return the base obj
-    if (!internalPath) {
+    if (!path) {
         return obj;
     }
-    // @ts-ignore
-    internalPath = (0, exports.clean)(internalPath);
-    // Path is not a string, throw error
-    if (typeof internalPath !== "string") {
-        throw new Error("Path argument must be a string");
-    }
+    _assertPathIsString(path);
+    const pathParts = (0, exports.split)((0, exports.clean)(path));
     // Path has no dot-notation, return key/value
-    if ((0, exports.isNonCompositePath)(internalPath)) {
+    if (pathParts.length === 1) {
+        const key = options.transformKey((0, exports.unEscape)(pathParts[0]), obj);
         // @ts-ignore
-        return obj[internalPath] !== undefined ? obj[internalPath] : defaultVal;
+        return obj[key] !== undefined ? obj[key] : defaultVal;
     }
     if (typeof obj !== "object") {
-        return defaultVal !== undefined ? defaultVal : undefined;
+        return defaultVal;
     }
-    const pathParts = (0, exports.split)(internalPath);
     objPart = obj;
     for (let i = 0; i < pathParts.length; i++) {
         const pathPart = pathParts[i];
@@ -328,7 +419,7 @@ const get = (obj, path, defaultVal = undefined, options = {}) => {
                         options.expandedResult.push(arrItem);
                     }
                     else {
-                        const innerResult = (0, exports.get)(arrItem, innerKey, defaultVal, options);
+                        const innerResult = _get(arrItem, innerKey, defaultVal, options);
                         if (innerKey.indexOf(".$") === -1) {
                             // @ts-ignore
                             options.expandedResult.push(innerResult);
@@ -342,13 +433,13 @@ const get = (obj, path, defaultVal = undefined, options = {}) => {
             // The data is an array and we have arrayTraversal enabled
             // Check for auto-expansion
             if (options.arrayExpansion === true) {
-                return (0, exports.getMany)(objPart, pathParts.slice(i + 1).join("."), defaultVal, options);
+                return _getMany(objPart, pathParts.slice(i + 1).join("."), defaultVal, options);
             }
             // Loop the array items and return the first non-undefined
             // value from any array item leaf node that matches the path
             for (let objPartIndex = 0; objPartIndex < objPart.length; objPartIndex++) {
                 const arrItem = objPart[objPartIndex];
-                const innerResult = (0, exports.get)(arrItem, pathParts.slice(i + 1).join("."), defaultVal, options);
+                const innerResult = _get(arrItem, pathParts.slice(i + 1).join("."), defaultVal, options);
                 if (innerResult !== undefined)
                     return innerResult;
             }
@@ -362,47 +453,62 @@ const get = (obj, path, defaultVal = undefined, options = {}) => {
     }
     return objPart !== undefined ? objPart : defaultVal;
 };
-exports.get = get;
 /**
- * Gets multiple values from the passed arr and given path.
- * @param {ObjectType} data The array or object to operate on.
- * @param {string} path The path to retrieve data from.
+ * Gets a single value from the passed object and given path.
+ * @param {ObjectType} obj The object to operate on.
+ * @param {string|string[]} path The path to retrieve data from. If
+ * an array of paths is passed, an array of values is returned.
  * @param {*=} defaultVal Optional default to return if the
  * value retrieved from the given object and path equals undefined.
- * @param {OptionsType} [options] Optional options object.
- * @returns {Array}
+ * @param {OptionsType} [options] Optional options object. It is
+ * not modified, so it is safe to reuse between calls.
+ * @returns {*} The value retrieved from the passed object at
+ * the passed path.
  */
-const getMany = (data, path, defaultVal = undefined, options = {}) => {
+const get = (obj, path, defaultVal = undefined, options = {}) => {
+    return _get(obj, path, defaultVal, Object.assign({}, options));
+};
+exports.get = get;
+/**
+ * The implementation of getMany(), see _get() for why the options
+ * object is shared.
+ * @private
+ */
+const _getMany = (data, path, defaultVal, options) => {
     var _a, _b;
     const isDataAnArray = data instanceof Array;
     const pathRoot = options.pathRoot || "";
     if (!isDataAnArray) {
-        const innerResult = (0, exports.get)(data, path, defaultVal, options);
+        const innerResult = _get(data, path, defaultVal, options);
         const isInnerResultAnArray = innerResult instanceof Array;
-        (_b = (_a = options.pathData) === null || _a === void 0 ? void 0 : _a.directPaths) === null || _b === void 0 ? void 0 : _b.push((0, exports.join)(options.pathRoot || "", path));
+        (_b = (_a = options.pathData) === null || _a === void 0 ? void 0 : _a.directPaths) === null || _b === void 0 ? void 0 : _b.push((0, exports.join)(pathRoot, path));
         if (isInnerResultAnArray)
             return innerResult;
-        if (innerResult === undefined && defaultVal === undefined)
+        // _get() only returns undefined when there is no default value
+        if (innerResult === undefined)
             return [];
-        if (innerResult === undefined && defaultVal !== undefined)
-            return [defaultVal];
         return [innerResult];
     }
     const parts = (0, exports.split)(path);
     const firstPart = parts[0];
+    const firstKey = (0, exports.unEscape)(firstPart);
     const pathRemainder = parts.slice(1).join(".");
     const resultArr = data.reduce((innerResult, arrItem, arrIndex) => {
         var _a, _b;
-        const isArrItemAnArray = arrItem[firstPart] instanceof Array;
+        const itemRoot = (0, exports.join)(pathRoot, String(arrIndex));
+        const isArrItemAnArray = _isObjectLike(arrItem) && arrItem[firstKey] instanceof Array;
         if (isArrItemAnArray) {
-            options.pathRoot = (0, exports.join)(pathRoot || "", String(arrIndex), firstPart);
-            const recurseResult = (0, exports.getMany)(arrItem[firstPart], pathRemainder, defaultVal, options);
+            options.pathRoot = (0, exports.join)(itemRoot, firstPart);
+            const recurseResult = _getMany(arrItem[firstKey], pathRemainder, defaultVal, options);
             innerResult.push(...recurseResult);
             return innerResult;
         }
-        const val = (0, exports.get)(arrItem, path, defaultVal, options);
+        // Reset the root so paths recorded for this item don't include
+        // the paths walked while getting data from previous items
+        options.pathRoot = itemRoot;
+        const val = _get(arrItem, path, defaultVal, options);
         if (val !== undefined) {
-            (_b = (_a = options.pathData) === null || _a === void 0 ? void 0 : _a.directPaths) === null || _b === void 0 ? void 0 : _b.push((0, exports.join)(options.pathRoot || "", String(arrIndex), path));
+            (_b = (_a = options.pathData) === null || _a === void 0 ? void 0 : _a.directPaths) === null || _b === void 0 ? void 0 : _b.push((0, exports.join)(itemRoot, path));
             innerResult.push(val);
         }
         return innerResult;
@@ -410,6 +516,19 @@ const getMany = (data, path, defaultVal = undefined, options = {}) => {
     if (resultArr.length === 0 && defaultVal !== undefined)
         return [defaultVal];
     return resultArr;
+};
+/**
+ * Gets multiple values from the passed arr and given path.
+ * @param {ObjectType} data The array or object to operate on.
+ * @param {string} path The path to retrieve data from.
+ * @param {*=} defaultVal Optional default to return if the
+ * value retrieved from the given object and path equals undefined.
+ * @param {OptionsType} [options] Optional options object. It is
+ * not modified, so it is safe to reuse between calls.
+ * @returns {Array}
+ */
+const getMany = (data, path, defaultVal = undefined, options = {}) => {
+    return _getMany(data, path, defaultVal, Object.assign({}, options));
 };
 exports.getMany = getMany;
 /**
@@ -420,66 +539,42 @@ exports.getMany = getMany;
  * @param {string} path The path to set data on.
  * @param {*} val The value to assign to the obj at the path.
  * @param {SetOptionsType} [options] The options object.
- * @returns {*} Nothing.
+ * @returns {*} The object with the value set, or undefined if the
+ * object or path is missing.
  */
 const set = (obj, path, val, options = {}) => {
-    let internalPath = path, objPart;
-    options.transformRead = options.transformRead || exports.returnWhatWasGiven;
-    options.transformKey = options.transformKey || exports.returnWhatWasGiven;
-    options.transformWrite = options.transformWrite || exports.returnWhatWasGiven;
+    const transformKey = options.transformKey || exports.returnWhatWasGiven;
     // No object data
     if (obj === undefined || obj === null) {
         return;
     }
     // No path string
-    if (!internalPath) {
+    if (!path) {
         return;
     }
-    internalPath = (0, exports.clean)(internalPath);
-    // Path is not a string, throw error
-    if (typeof internalPath !== "string") {
-        throw new Error("Path argument must be a string");
-    }
+    _assertPathIsString(path);
     if (typeof obj !== "object") {
         return;
     }
-    // Path has no dot-notation, set key/value
-    if ((0, exports.isNonCompositePath)(internalPath)) {
-        const unescapedPath = (0, exports.unEscape)(internalPath);
-        // Do not allow prototype pollution
-        if (unescapedPath === "__proto__") {
-            return obj;
-        }
-        obj = (0, exports.decouple)(obj, options);
-        // @ts-ignore
-        obj[options.transformKey(unescapedPath)] = val;
+    const pathParts = (0, exports.split)((0, exports.clean)(path));
+    const key = transformKey((0, exports.unEscape)(pathParts.shift()));
+    // Do not allow prototype pollution
+    if (_isUnsafeKey(key)) {
         return obj;
     }
     const newObj = (0, exports.decouple)(obj, options);
-    const pathParts = (0, exports.split)(internalPath);
-    const pathPart = pathParts.shift();
-    // @ts-ignore
-    const transformedPathPart = options.transformKey(pathPart);
-    // Do not allow prototype pollution
-    if (transformedPathPart === "__proto__") {
-        return obj;
+    if (!pathParts.length) {
+        newObj[key] = val;
+        return newObj;
     }
-    let childPart = newObj[transformedPathPart];
-    if (typeof childPart !== "object" || childPart === null) {
-        // Create an object or array on the path
-        if (String(parseInt(transformedPathPart, 10)) === transformedPathPart || (pathParts.length > 0 && String(parseInt(pathParts[0], 10)) === pathParts[0])) {
-            // This is an array index
-            newObj[transformedPathPart] = [];
-        }
-        else {
-            newObj[transformedPathPart] = {};
-        }
-        objPart = newObj[transformedPathPart];
+    let childPart = newObj[key];
+    if (!_isObjectLike(childPart)) {
+        // Create the missing path part, an array if the next key is an
+        // array index or an object otherwise
+        childPart = _isArrayIndex(transformKey((0, exports.unEscape)(pathParts[0]))) ? [] : {};
     }
-    else {
-        objPart = childPart;
-    }
-    return (0, exports.set)(newObj, transformedPathPart, (0, exports.set)(objPart, pathParts.join("."), val, options), options);
+    newObj[key] = (0, exports.set)(childPart, pathParts.join("."), val, options);
+    return newObj;
 };
 exports.set = set;
 /**
@@ -490,58 +585,47 @@ exports.set = set;
  * @param {Object=} tracking Do not use.
  */
 const unSet = (obj, path, options = {}, tracking = {}) => {
-    let internalPath = path;
-    options.transformRead = options.transformRead || exports.returnWhatWasGiven;
-    options.transformKey = options.transformKey || exports.returnWhatWasGiven;
-    options.transformWrite = options.transformWrite || exports.returnWhatWasGiven;
+    const transformKey = options.transformKey || exports.returnWhatWasGiven;
     // No object data
     if (obj === undefined || obj === null) {
         return;
     }
     // No path string
-    if (!internalPath) {
+    if (!path) {
         return;
     }
-    internalPath = (0, exports.clean)(internalPath);
-    // Path is not a string, throw error
-    if (typeof internalPath !== "string") {
-        throw new Error("Path argument must be a string");
-    }
+    _assertPathIsString(path);
     if (typeof obj !== "object") {
         return;
     }
-    const newObj = (0, exports.decouple)(obj, options);
-    // Path has no dot-notation, set key/value
-    if ((0, exports.isNonCompositePath)(internalPath)) {
-        const unescapedPath = (0, exports.unEscape)(internalPath);
-        // Do not allow prototype pollution
-        if (unescapedPath === "__proto__")
-            return obj;
-        if (newObj.hasOwnProperty(unescapedPath)) {
-            // @ts-ignore
-            delete newObj[options.transformKey(unescapedPath)];
-            return newObj;
-        }
-        tracking.returnOriginal = true;
-        return obj;
-    }
-    const pathParts = (0, exports.split)(internalPath);
-    const pathPart = pathParts.shift();
-    // @ts-ignore
-    const transformedPathPart = options.transformKey((0, exports.unEscape)(pathPart));
+    const pathParts = (0, exports.split)((0, exports.clean)(path));
+    const key = transformKey((0, exports.unEscape)(pathParts.shift()));
     // Do not allow prototype pollution
-    if (transformedPathPart === "__proto__")
-        return obj;
-    let childPart = newObj[transformedPathPart];
-    if (!childPart) {
-        // No child part available, nothing to unset!
+    if (_isUnsafeKey(key)) {
         tracking.returnOriginal = true;
         return obj;
     }
-    newObj[transformedPathPart] = (0, exports.unSet)(childPart, pathParts.join("."), options, tracking);
+    if (!pathParts.length) {
+        if (!_hasOwn(obj, key)) {
+            tracking.returnOriginal = true;
+            return obj;
+        }
+        const newObj = (0, exports.decouple)(obj, options);
+        delete newObj[key];
+        return newObj;
+    }
+    const childPart = obj[key];
+    if (!_isObjectLike(childPart)) {
+        // No child object to traverse, nothing to unset!
+        tracking.returnOriginal = true;
+        return obj;
+    }
+    const newChildPart = (0, exports.unSet)(childPart, pathParts.join("."), options, tracking);
     if (tracking.returnOriginal) {
         return obj;
     }
+    const newObj = (0, exports.decouple)(obj, options);
+    newObj[key] = newChildPart;
     return newObj;
 };
 exports.unSet = unSet;
@@ -564,7 +648,7 @@ exports.unSet = unSet;
 const update = (obj, basePath = "", updateData, options = {}) => {
     let newObj = obj;
     for (let path in updateData) {
-        if (updateData.hasOwnProperty(path)) {
+        if (_hasOwn(updateData, path)) {
             // @ts-ignore
             const data = updateData[path];
             newObj = (0, exports.set)(newObj, (0, exports.join)(basePath, path), data, options);
@@ -592,7 +676,9 @@ exports.updateImmutable = updateImmutable;
 /**
  * If `options.immutable` === true then return a new de-referenced
  * instance of the passed object/array. If immutable is false
- * then simply return the same `obj` that was passed.
+ * then simply return the same `obj` that was passed. Class instances
+ * keep their prototype and Dates, RegExps, Maps and Sets are copied
+ * with their data. Primitives and functions are returned as they are.
  * @param {*} obj The object or array to decouple.
  * @param {OptionsType} [options] The options object.
  * @param {boolean} options.immutable
@@ -619,100 +705,95 @@ const pushVal = (obj, path, val, options = {}) => {
     if (obj === undefined || obj === null || path === undefined) {
         return obj;
     }
-    // Clean the path
-    path = (0, exports.clean)(path);
-    const pathParts = (0, exports.split)(path);
+    const pathParts = (0, exports.split)((0, exports.clean)(path));
     const part = pathParts.shift();
-    if (part === "__proto__")
+    if (!part) {
+        // The root is the target array, push the value
+        const newArr = (0, exports.decouple)(obj, options);
+        if (!(newArr instanceof Array)) {
+            throw new Error("Cannot push to a path whose leaf node is not an array!");
+        }
+        newArr.push(val);
+        return newArr;
+    }
+    if (!_isObjectLike(obj)) {
         return obj;
+    }
+    const key = (0, exports.unEscape)(part);
+    // Do not allow prototype pollution
+    if (_isUnsafeKey(key)) {
+        return obj;
+    }
+    const newObj = (0, exports.decouple)(obj, options);
+    const childPart = newObj[key];
     if (pathParts.length) {
         // Generate the path part in the object if it does not already exist
-        // @ts-ignore
-        obj[part] = (0, exports.decouple)(obj[part], options) || {};
-        // Recurse
-        // @ts-ignore
-        (0, exports.pushVal)(obj[part], pathParts.join("."), val, options);
-    }
-    else if (part) {
-        // We have found the target array, push the value
-        // @ts-ignore
-        obj[part] = (0, exports.decouple)(obj[part], options) || [];
-        // @ts-ignore
-        if (!(obj[part] instanceof Array)) {
-            throw ("Cannot push to a path whose leaf node is not an array!");
-        }
-        // @ts-ignore
-        obj[part].push(val);
+        newObj[key] = (0, exports.pushVal)(_isObjectLike(childPart) ? childPart : {}, pathParts.join("."), val, options);
     }
     else {
-        // We have found the target array, push the value
-        obj = (0, exports.decouple)(obj, options) || [];
-        if (!(obj instanceof Array)) {
-            throw ("Cannot push to a path whose leaf node is not an array!");
-        }
-        obj.push(val);
+        // We have found the target array, create it if it doesn't exist
+        newObj[key] = (0, exports.pushVal)(childPart === undefined ? [] : childPart, "", val, options);
     }
-    return (0, exports.decouple)(obj, options);
+    return newObj;
 };
 exports.pushVal = pushVal;
 /**
  * Pull a value to from an array at the specified path. Removes the first
- * matching value, not every matching value.
+ * matching value, not every matching value. If the path does not exist
+ * nothing is changed.
  * @param {ObjectType} obj The object to update.
  * @param {string} path The path to the array to pull from.
  * @param {*} val The value to pull from the array.
- * @param {OptionsType} [options] An options object.
+ * @param {OptionsType} [options] An options object. Values are matched
+ * with strict equality unless `options.strict` is false, in which case
+ * the first item matching the structure of `val` is removed.
  * @returns {ObjectType} The original object passed in "obj" but with
  * the array at the path specified having removed the newly pulled value.
  */
-const pullVal = (obj, path, val, options = { strict: true }) => {
+const pullVal = (obj, path, val, options = {}) => {
     if (obj === undefined || obj === null || path === undefined) {
         return obj;
     }
-    // Clean the path
-    path = (0, exports.clean)(path);
-    const pathParts = (0, exports.split)(path);
+    const pathParts = (0, exports.split)((0, exports.clean)(path));
     const part = pathParts.shift();
-    if (part === "__proto__")
-        return obj;
-    obj = (0, exports.decouple)(obj, options);
-    if (pathParts.length && part !== undefined) {
-        // Recurse - we don't need to assign obj[part] the result of this call because
-        // we are modifying by reference since we haven't reached the furthest path
-        // part (leaf) node yet
-        obj[part] = (0, exports.pullVal)(obj[part], pathParts.join("."), val, options);
-    }
-    else if (part) {
-        // Recurse - this is the leaf node so assign the response to obj[part] in
-        // case it is set to an immutable response
-        obj[part] = (0, exports.pullVal)(obj[part], "", val, options);
-    }
-    else {
+    if (!part) {
         // The target array is the root object, pull the value
         if (!(obj instanceof Array)) {
-            throw ("Cannot pull from a path whose leaf node is not an array!");
+            throw new Error("Cannot pull from a path whose leaf node is not an array!");
         }
-        let index;
         // Find the index of the passed value
-        if (options.strict === true) {
-            index = obj.indexOf(val);
+        const index = options.strict === false ? obj.findIndex((item) => (0, exports.match)(item, val)) : obj.indexOf(val);
+        if (index === -1) {
+            return obj;
         }
-        else {
-            // Do a non-strict check
-            index = obj.findIndex((item) => {
-                return (0, exports.match)(item, val);
-            });
-        }
-        if (index > -1) {
-            // Remove the item from the array
-            obj.splice(index, 1);
-        }
+        // Remove the item from the array
+        const newArr = (0, exports.decouple)(obj, options);
+        newArr.splice(index, 1);
+        return newArr;
     }
-    return obj;
+    const key = (0, exports.unEscape)(part);
+    // Do not allow prototype pollution
+    if (_isUnsafeKey(key)) {
+        return obj;
+    }
+    const childPart = obj[key];
+    // The path does not exist so there is nothing to pull from
+    if (childPart === undefined || (pathParts.length && !_isObjectLike(childPart))) {
+        return obj;
+    }
+    const newChildPart = (0, exports.pullVal)(childPart, pathParts.join("."), val, options);
+    // Nothing changed or the change was made in place
+    if (newChildPart === childPart) {
+        return obj;
+    }
+    const newObj = (0, exports.decouple)(obj, options);
+    newObj[key] = newChildPart;
+    return newObj;
 };
 exports.pullVal = pullVal;
 /**
- * Inserts or deletes from/into the array at the specified path.
+ * Inserts or deletes from/into the array at the specified path. If the
+ * path does not exist nothing is changed.
  * @param {ObjectType} obj The object to update.
  * @param {string} path The path to the array to operate on.
  * @param {number} start The index to operate from.
@@ -723,41 +804,34 @@ exports.pullVal = pullVal;
  * @returns {ObjectType} The original object passed in "obj" but with
  * the array at the path specified having inserted or removed based on splice.
  */
-const splicePath = (obj, path, start, deleteCount, itemsToAdd = [], options = { strict: true }) => {
+const splicePath = (obj, path, start, deleteCount, itemsToAdd = [], options = {}) => {
     if (obj === undefined || obj === null || path === undefined) {
         return obj;
     }
-    // Clean the path
-    path = (0, exports.clean)(path);
-    const pathParts = (0, exports.split)(path);
+    const pathParts = (0, exports.split)((0, exports.clean)(path));
     const part = pathParts.shift();
-    if (part === "__proto__")
-        return obj;
-    obj = (0, exports.decouple)(obj, options);
-    if (pathParts.length && part !== undefined) {
-        // Recurse - we don't need to assign obj[part] the result of this call because
-        // we are modifying by reference since we haven't reached the furthest path
-        // part (leaf) node yet
-        obj[part] = (0, exports.splicePath)(obj[part], pathParts.join("."), start, deleteCount, itemsToAdd, options);
-    }
-    else if (part) {
-        if (!(obj[part] instanceof Array)) {
-            throw ("Cannot splice from a path whose leaf node is not an array!");
-        }
+    if (!part) {
         // We've reached our destination leaf node
-        // Remove the item from the array
-        obj[part] = (0, exports.decouple)(obj[part], options);
-        obj[part].splice(start, deleteCount, ...itemsToAdd);
-    }
-    else {
         if (!(obj instanceof Array)) {
-            throw ("Cannot splice from a path whose leaf node is not an array!");
+            throw new Error("Cannot splice from a path whose leaf node is not an array!");
         }
-        // We've reached our destination leaf node
-        // Remove the item from the array
-        obj.splice(start, deleteCount, ...itemsToAdd);
+        const newArr = (0, exports.decouple)(obj, options);
+        newArr.splice(start, deleteCount, ...itemsToAdd);
+        return newArr;
     }
-    return obj;
+    const key = (0, exports.unEscape)(part);
+    // Do not allow prototype pollution
+    if (_isUnsafeKey(key)) {
+        return obj;
+    }
+    const childPart = obj[key];
+    // The path does not exist so there is nothing to splice
+    if (childPart === undefined || (pathParts.length && !_isObjectLike(childPart))) {
+        return obj;
+    }
+    const newObj = (0, exports.decouple)(obj, options);
+    newObj[key] = (0, exports.splicePath)(childPart, pathParts.join("."), start, deleteCount, itemsToAdd, options);
+    return newObj;
 };
 exports.splicePath = splicePath;
 /**
@@ -769,35 +843,22 @@ exports.splicePath = splicePath;
  * @returns {string} The path to the furthest non-undefined value.
  */
 const furthest = (obj, path, options = {}) => {
-    let internalPath = path, objPart;
-    options.transformRead = options.transformRead || exports.returnWhatWasGiven;
-    options.transformKey = options.transformKey || exports.wildcardToZero;
-    options.transformWrite = options.transformWrite || exports.returnWhatWasGiven;
+    const transformKey = options.transformKey || exports.wildcardToZero;
     const finalPath = [];
     // No path string, return the base obj
-    if (!internalPath) {
-        return finalPath.join(".");
+    if (!path) {
+        return "";
     }
-    internalPath = (0, exports.clean)(internalPath);
-    // Path is not a string, throw error
-    if (typeof internalPath !== "string") {
-        throw new Error("Path argument must be a string");
+    _assertPathIsString(path);
+    if (!_isObjectLike(obj)) {
+        return "";
     }
-    if (typeof obj !== "object" || obj === null) {
-        return finalPath.join(".");
-    }
-    // Path has no dot-notation, return key/value
-    if ((0, exports.isNonCompositePath)(internalPath)) {
-        if (obj[internalPath] !== undefined) {
-            return internalPath;
-        }
-        return finalPath.join(".");
-    }
-    const pathParts = (0, exports.split)(internalPath);
-    objPart = obj;
+    const pathParts = (0, exports.split)((0, exports.clean)(path));
+    let objPart = obj;
     for (let i = 0; i < pathParts.length; i++) {
         const pathPart = pathParts[i];
-        objPart = objPart[options.transformKey((0, exports.unEscape)(pathPart))];
+        // Stop at values that can't be traversed instead of reading from them
+        objPart = _isObjectLike(objPart) ? objPart[transformKey((0, exports.unEscape)(pathPart))] : undefined;
         if (objPart === undefined) {
             break;
         }
@@ -818,27 +879,22 @@ exports.furthest = furthest;
  * @returns {ObjectType} The result of the traversal.
  */
 const values = (obj, path, options = {}) => {
-    const internalPath = (0, exports.clean)(path);
-    const pathParts = (0, exports.split)(internalPath);
+    const transformKey = options.transformKey || exports.returnWhatWasGiven;
+    const pathParts = (0, exports.split)((0, exports.clean)(path));
     const currentPath = [];
     const valueData = {};
-    options.transformRead = options.transformRead || exports.returnWhatWasGiven;
-    options.transformKey = options.transformKey || exports.returnWhatWasGiven;
-    options.transformWrite = options.transformWrite || exports.returnWhatWasGiven;
     for (let i = 0; i < pathParts.length; i++) {
-        const pathPart = options.transformKey(pathParts[i]);
-        currentPath.push(pathPart);
+        currentPath.push(transformKey(pathParts[i]));
         const tmpPath = currentPath.join(".");
-        // @ts-ignore
-        valueData[tmpPath] = (0, exports.get)(obj, tmpPath);
+        _setOwn(valueData, tmpPath, (0, exports.get)(obj, tmpPath));
     }
-    // @ts-ignore
     return valueData;
 };
 exports.values = values;
 /**
  * Takes an object and finds all paths, then returns the paths as an
- * array of strings.
+ * array of strings. Keys are escaped so each path can be passed to
+ * get() or set().
  * @param obj The object to scan.
  * @param finalArr An object used to collect the path keys.
  * (Do not pass this in directly - use undefined).
@@ -849,34 +905,25 @@ exports.values = values;
  * @returns An array containing path strings.
  */
 const flatten = (obj, finalArr = [], parentPath = "", options = {}, objCache = []) => {
-    options.transformRead = options.transformRead || exports.returnWhatWasGiven;
-    options.transformKey = options.transformKey || exports.returnWhatWasGiven;
-    options.transformWrite = options.transformWrite || exports.returnWhatWasGiven;
-    const transformedObj = options.transformRead(obj);
-    // Check that we haven't visited this object before (avoid infinite recursion)
-    // @ts-ignore
+    const transformRead = options.transformRead || exports.returnWhatWasGiven;
+    const transformKey = options.transformKey || exports.returnWhatWasGiven;
+    const transformedObj = transformRead(obj);
+    // Check that this object isn't one of its own ancestors (avoid infinite recursion)
     if (objCache.indexOf(transformedObj) > -1) {
         return finalArr;
     }
-    // Add object to cache to make sure we don't traverse it twice
-    // @ts-ignore
-    objCache.push(transformedObj);
-    const currentPath = (key) => {
-        // @ts-ignore
-        const tKey = options.transformKey(key);
-        return parentPath ? (0, exports.join)(parentPath, tKey) : tKey;
-    };
+    const ancestors = [...objCache, transformedObj];
     for (const i in transformedObj) {
-        if (!transformedObj.hasOwnProperty(i))
+        if (!_hasOwn(transformedObj, i))
             continue;
         if (options.ignore && options.ignore.test(i)) {
             continue;
         }
-        const pathToChild = currentPath(i);
+        const pathToChild = (0, exports.join)(parentPath, (0, exports.escape)(String(transformKey(i))));
         const childObj = transformedObj[i];
         finalArr.push(pathToChild);
-        if (typeof childObj === "object" && childObj !== null) {
-            (0, exports.flatten)(childObj, finalArr, pathToChild, options, objCache);
+        if (_isObjectLike(childObj)) {
+            (0, exports.flatten)(childObj, finalArr, pathToChild, options, ancestors);
         }
     }
     return finalArr;
@@ -884,7 +931,8 @@ const flatten = (obj, finalArr = [], parentPath = "", options = {}, objCache = [
 exports.flatten = flatten;
 /**
  * Takes an object and finds all paths, then returns the paths as keys
- * and the values of each path as the values.
+ * and the values of each path as the values. Keys are escaped so each
+ * path can be passed to get() or set().
  * @param {ObjectType} obj The object to scan.
  * @param {Object=} finalObj An object used to collect the path keys.
  * (Do not pass this in directly).
@@ -895,50 +943,41 @@ exports.flatten = flatten;
  * @returns {ObjectType} An object containing path keys and their values.
  */
 const flattenValues = (obj, finalObj = {}, parentPath = "", options = {}, objCache = []) => {
-    options.transformRead = options.transformRead || exports.returnWhatWasGiven;
-    options.transformKey = options.transformKey || exports.returnWhatWasGiven;
-    options.transformWrite = options.transformWrite || exports.returnWhatWasGiven;
-    const transformedObj = options.transformRead(obj);
-    // Check that we haven't visited this object before (avoid infinite recursion)
-    // @ts-ignore
+    const transformRead = options.transformRead || exports.returnWhatWasGiven;
+    const transformKey = options.transformKey || exports.returnWhatWasGiven;
+    const transformWrite = options.transformWrite || exports.returnWhatWasGiven;
+    const transformedObj = transformRead(obj);
+    // Check that this object isn't one of its own ancestors (avoid infinite recursion)
     if (objCache.indexOf(transformedObj) > -1) {
-        // @ts-ignore
         return finalObj;
     }
-    // Add object to cache to make sure we don't traverse it twice
-    // @ts-ignore
-    objCache.push(transformedObj);
+    const ancestors = [...objCache, transformedObj];
     const currentPath = (i, info) => {
-        // @ts-ignore
-        const tKey = options.transformKey(i, info);
+        const tKey = (0, exports.escape)(String(transformKey(i, info)));
         return parentPath ? parentPath + "." + tKey : tKey;
     };
     for (const i in transformedObj) {
-        if (transformedObj.hasOwnProperty(i)) {
-            const type = typeof transformedObj[i];
-            const info = {
-                type,
-                isArrayIndex: Array.isArray(transformedObj),
-                isFlat: type !== "object" || transformedObj[i] instanceof Date || transformedObj[i] instanceof RegExp
-            };
-            const pathKey = currentPath(i, info);
-            if (!info.isFlat) {
-                if (transformedObj[i] !== null) {
-                    (0, exports.flattenValues)(transformedObj[i], finalObj, pathKey, options, objCache);
-                }
-            }
-            else if (options.leavesOnly) {
-                // Found leaf node!
-                // @ts-ignore
-                finalObj[pathKey] = options.transformWrite(transformedObj[i]);
-            }
-            if (!options.leavesOnly) {
-                // @ts-ignore
-                finalObj[pathKey] = options.transformWrite(transformedObj[i]);
-            }
+        if (!_hasOwn(transformedObj, i))
+            continue;
+        const value = transformedObj[i];
+        const type = typeof value;
+        const info = {
+            type,
+            isArrayIndex: Array.isArray(transformedObj),
+            isFlat: type !== "object" || value === null || value instanceof Date || value instanceof RegExp
+        };
+        const pathKey = currentPath(i, info);
+        if (!info.isFlat) {
+            (0, exports.flattenValues)(value, finalObj, pathKey, options, ancestors);
+        }
+        else if (options.leavesOnly) {
+            // Found leaf node!
+            _setOwn(finalObj, pathKey, transformWrite(value));
+        }
+        if (!options.leavesOnly) {
+            _setOwn(finalObj, pathKey, transformWrite(value));
         }
     }
-    // @ts-ignore
     return finalObj;
 };
 exports.flattenValues = flattenValues;
@@ -984,18 +1023,17 @@ exports.joinEscaped = joinEscaped;
  */
 const countLeafNodes = (obj, objCache = []) => {
     let totalKeys = 0;
-    // Add object to cache to make sure we don't traverse it twice
-    objCache.push(obj);
+    // Track ancestors so cyclic references are counted as leaf nodes
+    // rather than recursed into forever
+    const ancestors = [...objCache, obj];
     for (const i in obj) {
-        if (obj.hasOwnProperty(i)) {
-            if (obj[i] !== undefined) {
-                if (obj[i] === null || typeof obj[i] !== "object" || objCache.indexOf(obj[i]) > -1) {
-                    totalKeys++;
-                }
-                else {
-                    totalKeys += (0, exports.countLeafNodes)(obj[i], objCache);
-                }
-            }
+        if (!_hasOwn(obj, i) || obj[i] === undefined)
+            continue;
+        if (!_isObjectLike(obj[i]) || ancestors.indexOf(obj[i]) > -1) {
+            totalKeys++;
+        }
+        else {
+            totalKeys += (0, exports.countLeafNodes)(obj[i], ancestors);
         }
     }
     return totalKeys;
@@ -1005,7 +1043,7 @@ exports.countLeafNodes = countLeafNodes;
  * Finds all the leaf nodes for a given object and returns an array of paths
  * to them. This is different from `flatten()` in that it only includes leaf
  * nodes and will not include every intermediary path traversed to get to a
- * leaf node.
+ * leaf node. Keys are escaped so each path can be passed to get() or set().
  * @param {ObjectType} obj The object to traverse.
  * @param {string} [parentPath=""] The path to use as a root/base path to
  * start scanning for leaf nodes under.
@@ -1014,19 +1052,18 @@ exports.countLeafNodes = countLeafNodes;
  */
 const leafNodes = (obj, parentPath = "", objCache = []) => {
     const paths = [];
-    // Add object to cache to make sure we don't traverse it twice
-    objCache.push(obj);
+    // Track ancestors so cyclic references are treated as leaf nodes
+    // rather than recursed into forever
+    const ancestors = [...objCache, obj];
     for (const i in obj) {
-        if (obj.hasOwnProperty(i)) {
-            if (obj[i] !== undefined) {
-                const currentPath = (0, exports.join)(parentPath, i);
-                if (obj[i] === null || typeof obj[i] !== "object" || objCache.indexOf(obj[i]) > -1) {
-                    paths.push(currentPath);
-                }
-                else {
-                    paths.push(...(0, exports.leafNodes)(obj[i], currentPath, objCache));
-                }
-            }
+        if (!_hasOwn(obj, i) || obj[i] === undefined)
+            continue;
+        const currentPath = (0, exports.join)(parentPath, (0, exports.escape)(i));
+        if (!_isObjectLike(obj[i]) || ancestors.indexOf(obj[i]) > -1) {
+            paths.push(currentPath);
+        }
+        else {
+            paths.push(...(0, exports.leafNodes)(obj[i], currentPath, ancestors));
         }
     }
     return paths;
@@ -1034,34 +1071,31 @@ const leafNodes = (obj, parentPath = "", objCache = []) => {
 exports.leafNodes = leafNodes;
 /**
  * Tests if the passed object has the paths that are specified and that
- * a value exists in those paths. MAY NOT BE INFINITE RECURSION SAFE.
+ * a value exists in those paths. Only own properties are considered.
+ * MAY NOT BE INFINITE RECURSION SAFE.
  * @param {ObjectType} testKeys The object describing the paths to test for.
  * @param {ObjectType} testObj The object to test paths against.
  * @returns {boolean} True if the object paths exist.
  */
 const hasMatchingPathsInObject = (testKeys, testObj) => {
-    let result = true;
     for (const i in testKeys) {
-        if (testKeys.hasOwnProperty(i)) {
-            if (testObj[i] === undefined) {
-                return false;
-            }
-            if (typeof testKeys[i] === "object" && testKeys[i] !== null) {
-                // Recurse object
-                result = (0, exports.hasMatchingPathsInObject)(testKeys[i], testObj[i]);
-                // Should we exit early?
-                if (!result) {
-                    return false;
-                }
-            }
+        if (!_hasOwn(testKeys, i))
+            continue;
+        if (!_isObjectLike(testObj) || !_hasOwn(testObj, i) || testObj[i] === undefined) {
+            return false;
+        }
+        // Recurse object
+        if (_isObjectLike(testKeys[i]) && !(0, exports.hasMatchingPathsInObject)(testKeys[i], testObj[i])) {
+            return false;
         }
     }
-    return result;
+    return true;
 };
 exports.hasMatchingPathsInObject = hasMatchingPathsInObject;
 /**
  * Tests if the passed object has the paths that are specified and that
  * a value exists in those paths and if so returns the number matched.
+ * Only own properties are considered.
  * MAY NOT BE INFINITE RECURSION SAFE.
  * @param {ObjectType} testKeys The object describing the paths to test for.
  * @param {ObjectType} testObj The object to test paths against.
@@ -1071,28 +1105,26 @@ const countMatchingPathsInObject = (testKeys, testObj) => {
     const matchedKeys = {};
     let matchData, matchedKeyCount = 0, totalKeyCount = 0;
     for (const i in testObj) {
-        if (testObj.hasOwnProperty(i)) {
-            if (typeof testObj[i] === "object" && testObj[i] !== null) {
-                // The test / query object key is an object, recurse
-                matchData = (0, exports.countMatchingPathsInObject)(testKeys[i], testObj[i]);
-                // @ts-ignore
-                matchedKeys[i] = matchData.matchedKeys;
-                totalKeyCount += matchData.totalKeyCount;
-                matchedKeyCount += matchData.matchedKeyCount;
+        if (!_hasOwn(testObj, i))
+            continue;
+        const testKey = _isObjectLike(testKeys) && _hasOwn(testKeys, i) ? testKeys[i] : undefined;
+        if (_isObjectLike(testObj[i])) {
+            // The test / query object key is an object, recurse
+            matchData = (0, exports.countMatchingPathsInObject)(testKey, testObj[i]);
+            _setOwn(matchedKeys, i, matchData.matchedKeys);
+            totalKeyCount += matchData.totalKeyCount;
+            matchedKeyCount += matchData.matchedKeyCount;
+        }
+        else {
+            // The test / query object has a property that is not an object so add it as a key
+            totalKeyCount++;
+            // Check if the test keys also have this key and it is also not an object
+            if (testKey && !_isObjectLike(testKey)) {
+                _setOwn(matchedKeys, i, true);
+                matchedKeyCount++;
             }
             else {
-                // The test / query object has a property that is not an object so add it as a key
-                totalKeyCount++;
-                // Check if the test keys also have this key and it is also not an object
-                if (testKeys && testKeys[i] && (typeof testKeys[i] !== "object" || testKeys[i] === null)) {
-                    // @ts-ignore
-                    matchedKeys[i] = true;
-                    matchedKeyCount++;
-                }
-                else {
-                    // @ts-ignore
-                    matchedKeys[i] = false;
-                }
+                _setOwn(matchedKeys, i, false);
             }
         }
     }
@@ -1134,7 +1166,7 @@ const match = (source, query, options = {}) => {
     if (sourceType !== queryType) {
         return false;
     }
-    if (sourceType !== "object" || source === null) {
+    if (sourceType !== "object" || source === null || query === null) {
         // Simple test
         return source === query;
     }
@@ -1152,21 +1184,23 @@ const match = (source, query, options = {}) => {
 exports.match = match;
 /**
  * Finds all items in `source` that match the structure of `query` and
- * returns the path to them as an array of strings.
+ * returns the path to them as an array of strings. Keys are escaped so
+ * each path can be passed to get() or set().
  * @param {*} source The source to test.
  * @param {*} query The query to match.
  * @param {FindOptionsType} [options] Options object.
  * @param {string=""} parentPath Do not use. The aggregated
  * path to the current structure in source.
+ * @param {any[]} [objCache=[]] Do not use. Internal usage to check for
+ * cyclic structures.
  * @returns {Object} Contains match<Boolean> and path<Array>.
  */
 const findPath = (source, query, options = {
     maxDepth: Infinity,
     currentDepth: 0,
     includeRoot: true
-}, parentPath = "") => {
+}, parentPath = "", objCache = []) => {
     const resultArr = [];
-    const sourceType = typeof source;
     options = Object.assign({ maxDepth: Infinity, currentDepth: 0, includeRoot: true }, options);
     if (options.currentDepth !== 0 || (options.currentDepth === 0 && options.includeRoot)) {
         if ((0, exports.match)(source, query)) {
@@ -1175,16 +1209,16 @@ const findPath = (source, query, options = {
     }
     // @ts-ignore
     options.currentDepth++;
+    // Don't recurse into an object that is one of its own ancestors (avoid infinite recursion)
     // @ts-ignore
-    if (options.currentDepth <= options.maxDepth && sourceType === "object") {
+    if (options.currentDepth <= options.maxDepth && _isObjectLike(source) && objCache.indexOf(source) === -1) {
+        const ancestors = [...objCache, source];
         for (let key in source) {
-            if (source.hasOwnProperty(key)) {
+            if (_hasOwn(source, key)) {
                 const val = source[key];
                 // Recurse down object to find more instances
-                const result = (0, exports.findPath)(val, query, options, (0, exports.join)(parentPath, key));
-                // @ts-ignore
+                const result = (0, exports.findPath)(val, query, options, (0, exports.join)(parentPath, (0, exports.escape)(key)), ancestors);
                 if (result.match) {
-                    // @ts-ignore
                     resultArr.push(...result.path);
                 }
             }
@@ -1195,20 +1229,22 @@ const findPath = (source, query, options = {
 exports.findPath = findPath;
 /**
  * Finds the first item that matches the structure of `query`
- * and returns the path to it.
+ * and returns the path to it. Keys are escaped so the path can be
+ * passed to get() or set().
  * @param {*} source The source to test.
  * @param {*} query The query to match.
  * @param {FindOptionsType} [options] Options object.
  * @param {string=""} parentPath Do not use. The aggregated
  * path to the current structure in source.
+ * @param {any[]} [objCache=[]] Do not use. Internal usage to check for
+ * cyclic structures.
  * @returns {Object} Contains match<boolean> and path<string>.
  */
 const findOnePath = (source, query, options = {
     maxDepth: Infinity,
     currentDepth: 0,
     includeRoot: true
-}, parentPath = "") => {
-    const sourceType = typeof source;
+}, parentPath = "", objCache = []) => {
     options = Object.assign({ maxDepth: Infinity, currentDepth: 0, includeRoot: true }, options);
     if (options.currentDepth !== 0 || (options.currentDepth === 0 && options.includeRoot)) {
         if ((0, exports.match)(source, query)) {
@@ -1220,15 +1256,16 @@ const findOnePath = (source, query, options = {
     }
     // @ts-ignore
     options.currentDepth++;
+    // Don't recurse into an object that is one of its own ancestors (avoid infinite recursion)
     // @ts-ignore
-    if (options.currentDepth <= options.maxDepth && sourceType === "object" && source !== null) {
+    if (options.currentDepth <= options.maxDepth && _isObjectLike(source) && objCache.indexOf(source) === -1) {
+        const ancestors = [...objCache, source];
         for (let key in source) {
-            if (source.hasOwnProperty(key)) {
+            if (_hasOwn(source, key)) {
                 const val = source[key];
                 // Recurse down object to find more instances
-                const subPath = (0, exports.join)(parentPath, key);
-                const result = (0, exports.findOnePath)(val, query, options, subPath);
-                // @ts-ignore
+                const subPath = (0, exports.join)(parentPath, (0, exports.escape)(key));
+                const result = (0, exports.findOnePath)(val, query, options, subPath, ancestors);
                 if (result.match) {
                     return result;
                 }
@@ -1244,11 +1281,32 @@ exports.findOnePath = findOnePath;
  * @returns {string[]} The deduplicated array.
  */
 const keyDedup = (keys) => {
-    return keys.filter((elem, pos, arr) => {
-        return arr.indexOf(elem) === pos;
-    });
+    return Array.from(new Set(keys));
 };
 exports.keyDedup = keyDedup;
+/**
+ * Determines the kind of difference between two values, if any.
+ * @param {*} val1 The first value.
+ * @param {*} val2 The second value.
+ * @param {ValueType} type1 The type of the first value.
+ * @param {ValueType} type2 The type of the second value.
+ * @param {boolean} strict If true, uses strict equality. The values must
+ * not be the same value when strict is true.
+ * @returns {DifferenceType|undefined} The kind of difference or
+ * undefined if the values are equal.
+ * @private
+ */
+const _difference = (val1, val2, type1, type2, strict) => {
+    if (!strict) {
+        return val1 != val2 ? "value" : undefined;
+    }
+    if (type1 !== type2) {
+        return val1 != val2 ? "both" : "type";
+    }
+    // diffValues() never compares a value with itself, so in strict mode
+    // values of the same type are always different here
+    return "value";
+};
 /**
  * Compares two provided objects / arrays and returns and object
  * where the keys are dot-notation paths and the values are any
@@ -1264,6 +1322,11 @@ exports.keyDedup = keyDedup;
  *        "difference": "value" // (see DifferenceType for supported values)
  *    }
  * }
+ *
+ * If a field changes between an object / array and another type, the
+ * field itself is reported as well as any leaf paths inside it. The
+ * same paths are reported whichever object is passed first. Keys in
+ * the returned paths are escaped so each path can be passed to get().
  *
  * If you only want an array of paths to values that have changed
  * see the `diff()` function instead.
@@ -1289,92 +1352,68 @@ exports.keyDedup = keyDedup;
  * useful if obj2 is a partial of obj1, and you only need to know what
  * parts of the partial have changed against obj1.
  * @param {string} parentPath="" Used internally only.
- * @param {never[]} objCache=[] Used internally only.
+ * @param {any[]} objCache=[] Used internally only.
  * @returns {Record<string, DiffValue>} An object where each key is a path to a
  * field that holds a different value between the two objects being
  * compared and the value of each key is an object holding details of
  * the difference.
  */
 const diffValues = (obj1, obj2, options = {}, parentPath = "", objCache = []) => {
-    // Default the various options values
-    options.basePath = options.basePath || "";
-    options.strict = options.strict === undefined ? false : options.strict;
-    options.maxDepth = options.maxDepth === undefined ? Infinity : options.maxDepth;
-    options.exclusive = options.exclusive === undefined ? false : options.exclusive;
-    const { basePath, strict, maxDepth, exclusive } = options;
+    // Default the various options values without modifying the caller's object
+    const basePath = options.basePath || "";
+    const strict = options.strict === true;
+    const maxDepth = options.maxDepth === undefined ? Infinity : options.maxDepth;
+    const exclusive = options.exclusive === true;
     const paths = {};
     if (basePath instanceof Array) {
         // We were given an array of paths, check each path
-        return basePath.reduce((diffVals, individualPath) => {
-            // Here we find any path that has a *non-equal* result which
-            // returns true and then returns the index as a positive integer
-            // that is not -1. If -1 is returned then no non-equal matches
-            // were found
-            const result = (0, exports.diffValues)(obj1, obj2, { basePath: individualPath, strict, maxDepth, exclusive }, parentPath, objCache);
-            if (result && Object.keys(result).length) {
-                diffVals = Object.assign(Object.assign({}, diffVals), result);
-            }
-            return diffVals;
-        }, {});
+        basePath.forEach((individualPath) => {
+            _assignOwn(paths, (0, exports.diffValues)(obj1, obj2, { basePath: individualPath, strict, maxDepth, exclusive }, parentPath, objCache));
+        });
+        return paths;
     }
     const currentPath = (0, exports.join)(parentPath, basePath);
     const val1 = (0, exports.get)(obj1, basePath);
     const val2 = (0, exports.get)(obj2, basePath);
+    // The same value or reference can't contain any differences
+    if (val1 === val2) {
+        return paths;
+    }
     const type1 = (0, exports.type)(val1);
     const type2 = (0, exports.type)(val2);
     if (type1 !== type2) {
-        if (strict && val1 != val2) {
-            // Difference in source and comparison types
-            paths[currentPath] = { val1, val2, type1, type2, difference: "type" };
+        // Difference in source and comparison types
+        const difference = _difference(val1, val2, type1, type2, strict);
+        if (difference) {
+            _setOwn(paths, currentPath, { val1, val2, type1, type2, difference });
         }
     }
-    else if (type1 === "array" && type2 === "array" && val1.length !== val2.length) {
+    else if (type1 === "array" && val1.length !== val2.length) {
         // Difference in source and comparison content
-        paths[currentPath] = { val1, val2, type1, type2, difference: "value" };
+        _setOwn(paths, currentPath, { val1, val2, type1, type2, difference: "value" });
     }
-    const pathParts = currentPath.split(".");
+    const pathParts = (0, exports.split)(currentPath);
     const hasParts = pathParts[0] !== "";
-    if ((!hasParts || pathParts.length < maxDepth) && typeof val1 === "object" && val1 !== null) {
-        // Check that we haven't visited this object or array before (avoid infinite recursion)
-        // @ts-ignore
+    if ((!hasParts || pathParts.length < maxDepth) && (_isObjectLike(val1) || _isObjectLike(val2))) {
+        // Check that neither object is one of its own ancestors (avoid infinite recursion)
         if (objCache.indexOf(val1) > -1 || objCache.indexOf(val2) > -1) {
             return paths;
         }
-        // @ts-ignore
-        objCache.push(val1);
-        // @ts-ignore
-        objCache.push(val2);
+        const ancestors = objCache.concat([val1, val2].filter(_isObjectLike));
         // Grab keys from val1 and val2
-        const val1Keys = Object.keys(val1);
-        const val2Keys = (typeof val2 === "object" && val2 !== null) ? Object.keys(val2) : [];
-        let compositeKeys;
-        if (exclusive) {
-            // Use only the keys from val2 for determining differences
-            compositeKeys = val2Keys;
-        }
-        else {
-            // Combine val1 keys and val2 keys so we diff both objects against each other
-            compositeKeys = (0, exports.keyDedup)(val1Keys.concat(val2Keys));
-        }
-        return compositeKeys.reduce((newPaths, key) => {
-            const result = (0, exports.diffValues)(val1, val2, { basePath: key, strict, maxDepth, exclusive }, currentPath, objCache);
-            if (result && Object.keys(result).length) {
-                newPaths = Object.assign(Object.assign({}, newPaths), result);
-            }
-            return newPaths;
-        }, paths);
+        const val1Keys = _isObjectLike(val1) ? Object.keys(val1) : [];
+        const val2Keys = _isObjectLike(val2) ? Object.keys(val2) : [];
+        // In exclusive mode use only the keys from val2, otherwise combine val1 keys
+        // and val2 keys so we diff both objects against each other
+        const compositeKeys = exclusive ? val2Keys : (0, exports.keyDedup)(val1Keys.concat(val2Keys));
+        compositeKeys.forEach((key) => {
+            _assignOwn(paths, (0, exports.diffValues)(val1, val2, { basePath: (0, exports.escape)(key), strict, maxDepth, exclusive }, currentPath, ancestors));
+        });
+        return paths;
     }
-    if ((strict && val1 !== val2) || (!strict && val1 != val2)) {
-        let difference = "value";
-        if (strict && type1 !== type2) {
-            if (val1 != val2) {
-                difference = "both";
-            }
-            else {
-                difference = "type";
-            }
-        }
-        paths[currentPath] = { val1, val2, type1, type2, difference };
+    const difference = _difference(val1, val2, type1, type2, strict);
+    if (difference) {
+        _setOwn(paths, currentPath, { val1, val2, type1, type2, difference });
     }
     return paths;
 };
@@ -1404,7 +1443,7 @@ exports.diffValues = diffValues;
  * useful if obj2 is a partial of obj1, and you only need to know what
  * parts of the partial have changed against obj1.
  * @param {string} parentPath="" Used internally only.
- * @param {never[]} [objCache=[]] Internal usage to check for cyclic structures.
+ * @param {any[]} [objCache=[]] Internal usage to check for cyclic structures.
  * @returns {Array} An array of strings, each string is a path to a
  * field that holds a different value between the two objects being
  * compared.
@@ -1414,6 +1453,51 @@ const diff = (obj1, obj2, options = {}, parentPath = "", objCache = []) => {
 };
 exports.diff = diff;
 /**
+ * Compares two values with strict or non-strict equality.
+ * @private
+ */
+const _isValueEqual = (val1, val2, strict) => {
+    return strict ? val1 === val2 : val1 == val2;
+};
+/**
+ * Compares two values structurally, recursing into objects and arrays.
+ * @param {*} val1 The first value.
+ * @param {*} val2 The second value.
+ * @param {boolean} strict If true, leaf values must be strict-equal.
+ * @param {any[]} ancestors The objects currently being compared further
+ * up the tree, used to detect cycles.
+ * @returns {boolean} True if the values are deeply equal.
+ * @private
+ */
+const _isDeepEqual = (val1, val2, strict, ancestors) => {
+    if (!_isObjectLike(val1) || !_isObjectLike(val2)) {
+        // An object can never be deeply equal to a primitive
+        return _isObjectLike(val1) === _isObjectLike(val2) && _isValueEqual(val1, val2, strict);
+    }
+    if (val1 === val2) {
+        return true;
+    }
+    // Arrays, plain objects, Dates etc. are never equal to each other
+    if (Object.getPrototypeOf(val1) !== Object.getPrototypeOf(val2)) {
+        return false;
+    }
+    if (val1 instanceof Date) {
+        return val1.getTime() === val2.getTime();
+    }
+    if (val1 instanceof RegExp) {
+        return String(val1) === String(val2);
+    }
+    // These objects are already being compared further up the tree, the
+    // rest of that comparison decides if they are equal
+    if (ancestors.indexOf(val1) > -1 || ancestors.indexOf(val2) > -1) {
+        return true;
+    }
+    const nextAncestors = [...ancestors, val1, val2];
+    return (0, exports.keyDedup)(Object.keys(val1).concat(Object.keys(val2))).every((key) => {
+        return _isDeepEqual(val1[key], val2[key], strict, nextAncestors);
+    });
+};
+/**
  * A boolean check to see if the values at the given path or paths
  * are the same in both given objects.
  * @param {*} obj1 The first object to check values in.
@@ -1422,7 +1506,8 @@ exports.diff = diff;
  * values in. If this is an array, all values at the paths in the array
  * must be the same for the function to provide a true result.
  * @param {boolean} deep If true will traverse all objects and arrays
- * to check for equality. Defaults to false.
+ * to check for equality, keys from both objects are compared. Defaults
+ * to false.
  * @param {boolean} strict If true, values must be strict-equal.
  * Defaults to false.
  * @returns {boolean} True if path values match, false if not.
@@ -1441,15 +1526,9 @@ const isEqual = (obj1, obj2, path, deep = false, strict = false) => {
     const val1 = (0, exports.get)(obj1, path);
     const val2 = (0, exports.get)(obj2, path);
     if (deep) {
-        if (typeof val1 === "object" && val1 !== null) {
-            // TODO: This probably needs a composite key array of val1 and val2 keys
-            //  just as we do in the diff() function
-            return Object.keys(val1).findIndex((key) => {
-                return (0, exports.isNotEqual)(val1, val2, key, deep, strict);
-            }) === -1;
-        }
+        return _isDeepEqual(val1, val2, strict, []);
     }
-    return (strict && val1 === val2) || (!strict && val1 == val2);
+    return _isValueEqual(val1, val2, strict);
 };
 exports.isEqual = isEqual;
 /**
@@ -1532,8 +1611,7 @@ exports.unSetImmutable = unSetImmutable;
  */
 const distill = (obj, pathArr) => {
     return pathArr.reduce((newObj, path) => {
-        // @ts-ignore
-        newObj[path] = (0, exports.get)(obj, path);
+        _setOwn(newObj, path, (0, exports.get)(obj, path));
         return newObj;
     }, {});
 };
@@ -1558,24 +1636,35 @@ const chop = (path, level) => {
 exports.chop = chop;
 /**
  * Merges two objects like a "deep spread". If both obj1 and obj2 contain a leaf node
- * the value from obj2 will be used.
+ * the value from obj2 will be used. Plain objects and arrays are merged recursively,
+ * any other value (including Dates and class instances) from obj2 replaces the value
+ * in obj1. "__proto__" keys in obj2 are ignored.
  * @param obj1
  * @param obj2
  * @param options
  */
 const merge = (obj1, obj2, options = {}) => {
     const newObj = (0, exports.decouple)(obj1, options);
+    if (!_isObjectLike(obj2)) {
+        return newObj;
+    }
     Object.entries(obj2).forEach(([key, val]) => {
-        const valueType = (0, exports.type)(val);
-        if (valueType === "object" || valueType === "array") {
-            // Recursive type
-            // @ts-ignore
-            newObj[key] = (0, exports.merge)(obj1[key] || (valueType === "object" ? {} : []), val, options);
+        // Do not allow prototype pollution
+        if (_isUnsafeKey(key))
+            return;
+        if (options.ignoreUndefined && val === undefined)
+            return;
+        // Only merge into an own value, an inherited one (e.g. "constructor")
+        // must never be traversed
+        const existing = _hasOwn(newObj, key) ? newObj[key] : undefined;
+        if (Array.isArray(val)) {
+            newObj[key] = (0, exports.merge)(Array.isArray(existing) ? existing : [], val, options);
+        }
+        else if (_isPlainObject(val)) {
+            newObj[key] = (0, exports.merge)(_isPlainObject(existing) ? existing : {}, val, options);
         }
         else {
             // Non-recursive type
-            if (options.ignoreUndefined && val === undefined)
-                return;
             newObj[key] = val;
         }
     });
@@ -1617,9 +1706,10 @@ const $in = (value, criteria) => {
 const query = (obj, query) => {
     const queryResult = {};
     for (const queryKey in query) {
-        if (!query.hasOwnProperty(queryKey))
+        if (!_hasOwn(query, queryKey))
             continue;
-        queryResult[queryKey] = [];
+        const matchingPaths = [];
+        _setOwn(queryResult, queryKey, matchingPaths);
         const queryOperations = query[queryKey];
         Object.entries(queryOperations).forEach(([operationKey, operationCriteria]) => {
             if (operationKey === "$in") {
@@ -1628,7 +1718,7 @@ const query = (obj, query) => {
                         return true;
                     if (!$in(value, operationCriteria))
                         return true;
-                    queryResult[queryKey].push(purePath);
+                    matchingPaths.push(purePath);
                     return true;
                 });
             }
@@ -1638,62 +1728,64 @@ const query = (obj, query) => {
 };
 exports.query = query;
 /**
- * Calls `operation` on every part of `path`.
+ * Reads the key from the value, or returns undefined if the value can't
+ * have properties.
+ * @private
+ */
+const _readKey = (value, key) => {
+    return value === undefined || value === null ? undefined : value[key];
+};
+/**
+ * Calls `operation` on every part of `path`. Keys in the reported paths
+ * are escaped so each path can be passed to get() or set().
  * @param obj The object to operate on with the path.
  * @param path The path to iterate.
  * @param operation The function to call for each part of the path.
- * @param options Currently unused.
+ * @param options Supports `transformRead` and `transformKey`.
  * @param parentPaths Do not pass, used internally.
  */
 const traverse = (obj, path, operation, options = {}, parentPaths = { pure: "", flat: "" }) => {
-    let internalPath = path;
     if (path instanceof Array) {
         return path.forEach((individualPath) => {
-            (0, exports.traverse)(obj, individualPath, operation);
+            (0, exports.traverse)(obj, individualPath, operation, options);
         });
     }
-    options.transformRead = options.transformRead || exports.returnWhatWasGiven;
-    options.transformKey = options.transformKey || exports.returnWhatWasGiven;
-    options.transformWrite = options.transformWrite || exports.returnWhatWasGiven;
-    const transformedObj = options.transformRead(obj);
+    const transformRead = options.transformRead || exports.returnWhatWasGiven;
+    const transformKey = options.transformKey || exports.returnWhatWasGiven;
+    const transformedObj = transformRead(obj);
     // No path string, return the base obj
-    if (!internalPath) {
+    if (!path) {
         return;
     }
-    // @ts-ignore
-    internalPath = (0, exports.clean)(internalPath);
-    // Path is not a string, throw error
-    if (typeof internalPath !== "string") {
-        throw new Error("Path argument must be a string");
-    }
+    _assertPathIsString(path);
+    const internalPath = (0, exports.clean)(path);
+    const pathParts = (0, exports.split)(internalPath);
     const purePath = (key) => {
-        return parentPaths.pure ? (0, exports.join)(parentPaths.pure, key) : key;
+        return (0, exports.join)(parentPaths.pure, (0, exports.escape)(key));
     };
     const flatPath = (key) => {
-        return parentPaths.flat ? (0, exports.join)(parentPaths.flat, key) : key;
+        return (0, exports.join)(parentPaths.flat, (0, exports.escape)(key));
     };
     // Path has no dot-notation, return key/value
-    if ((0, exports.isNonCompositePath)(internalPath)) {
-        const transformedKey = options.transformKey((0, exports.unEscape)(internalPath), transformedObj);
+    if (pathParts.length === 1) {
+        const transformedKey = transformKey((0, exports.unEscape)(internalPath), transformedObj);
         operation({
             purePath: purePath(transformedKey),
             flatPath: flatPath(transformedKey),
             key: transformedKey,
-            value: (0, exports.get)(transformedObj, transformedKey)
+            value: _readKey(transformedObj, transformedKey)
         });
         return;
     }
-    const pathParts = (0, exports.split)(internalPath);
     let objPart = transformedObj;
     for (let i = 0; i < pathParts.length; i++) {
         const pathPart = pathParts[i];
-        const transformedKey = options.transformKey((0, exports.unEscape)(pathPart), objPart);
+        const transformedKey = transformKey((0, exports.unEscape)(pathPart), objPart);
         const purePathToChild = purePath(transformedKey);
         const flatPathToChild = flatPath(transformedKey);
-        objPart = (0, exports.get)(objPart, transformedKey);
+        objPart = _readKey(objPart, transformedKey);
         operation({ purePath: purePathToChild, flatPath: flatPathToChild, key: transformedKey, value: objPart });
-        const partValueType = (0, exports.type)(objPart);
-        if (partValueType === "array") {
+        if ((0, exports.type)(objPart) === "array") {
             for (let arrIndex = 0; arrIndex < objPart.length; arrIndex++) {
                 const key = arrIndex.toString();
                 operation({
@@ -1702,17 +1794,19 @@ const traverse = (obj, path, operation, options = {}, parentPaths = { pure: "", 
                     key,
                     value: objPart[arrIndex]
                 });
-                (0, exports.traverse)(objPart[arrIndex], (0, exports.down)(internalPath, i + 1), operation, {}, {
+                (0, exports.traverse)(objPart[arrIndex], (0, exports.down)(internalPath, i + 1), operation, options, {
                     pure: (0, exports.join)(purePathToChild, key),
                     flat: flatPathToChild
                 });
             }
             return;
         }
-        else if (partValueType === "object") {
-            parentPaths.pure = purePathToChild;
-            parentPaths.flat = flatPathToChild;
+        // The rest of the path can't exist inside a missing or primitive value
+        if (!_isObjectLike(objPart)) {
+            return;
         }
+        parentPaths.pure = purePathToChild;
+        parentPaths.flat = flatPathToChild;
     }
 };
 exports.traverse = traverse;

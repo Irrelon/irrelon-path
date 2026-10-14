@@ -108,7 +108,8 @@ export declare const pop: (path: string, levels?: number) => string;
 /**
  * Adds a leaf to the end of the path. E.g.
  * pushing "goo" to path "foo.bar.thing" returns
- * "foo.bar.thing.goo".
+ * "foo.bar.thing.goo". A blank path or leaf does
+ * not add a delimiter.
  * @param {string} path The path to operate on.
  * @param {string} val The string value to push
  * to the end of the path.
@@ -153,15 +154,16 @@ export declare const numberToWildcard: (key: string) => string;
 export declare const clean: (str: string) => any;
 /**
  * Splits a path by period character, taking into account
- * escaped period characters.
+ * escaped period characters. Escape sequences are kept intact
+ * in each part, use `unEscape()` to get the original key.
  * @param {string} path The path to split into an array.
  * @return {Array<string>} The component parts of the path, split
  * by period character.
  */
 export declare const split: (path: string) => Array<string>;
 /**
- * Escapes any periods in the passed string so they will
- * not be identified as part of a path. Useful if you have
+ * Escapes any periods (and backslashes) in the passed string so
+ * they will not be identified as part of a path. Useful if you have
  * a path like "domains.www.google.com.data" where the
  * "www.google.com" should not be considered part of the
  * traversal as it is actually in an object like:
@@ -178,7 +180,8 @@ export declare const split: (path: string) => Array<string>;
 export declare const escape: (str: string) => string;
 /**
  * Converts a string previously escaped with the `escape()`
- * function back to its original value.
+ * function back to its original value. A backslash followed
+ * by any other character is left as it is.
  * @param {string} str The string to unescape.
  * @returns {string} The unescaped string.
  */
@@ -186,10 +189,12 @@ export declare const unEscape: (str: string) => string;
 /**
  * Gets a single value from the passed object and given path.
  * @param {ObjectType} obj The object to operate on.
- * @param {string} path The path to retrieve data from.
+ * @param {string|string[]} path The path to retrieve data from. If
+ * an array of paths is passed, an array of values is returned.
  * @param {*=} defaultVal Optional default to return if the
  * value retrieved from the given object and path equals undefined.
- * @param {OptionsType} [options] Optional options object.
+ * @param {OptionsType} [options] Optional options object. It is
+ * not modified, so it is safe to reuse between calls.
  * @returns {*} The value retrieved from the passed object at
  * the passed path.
  */
@@ -200,7 +205,8 @@ export declare const get: (obj: ObjectType | undefined | null, path: string | an
  * @param {string} path The path to retrieve data from.
  * @param {*=} defaultVal Optional default to return if the
  * value retrieved from the given object and path equals undefined.
- * @param {OptionsType} [options] Optional options object.
+ * @param {OptionsType} [options] Optional options object. It is
+ * not modified, so it is safe to reuse between calls.
  * @returns {Array}
  */
 export declare const getMany: (data: ObjectType, path: string, defaultVal?: any | undefined, options?: GetOptionsType | undefined) => any[];
@@ -212,7 +218,8 @@ export declare const getMany: (data: ObjectType, path: string, defaultVal?: any 
  * @param {string} path The path to set data on.
  * @param {*} val The value to assign to the obj at the path.
  * @param {SetOptionsType} [options] The options object.
- * @returns {*} Nothing.
+ * @returns {*} The object with the value set, or undefined if the
+ * object or path is missing.
  */
 export declare const set: (obj: ObjectType, path: string, val: any, options?: SetOptionsType) => any;
 /**
@@ -258,7 +265,9 @@ export declare const updateImmutable: (obj: ObjectType, basePath: string | undef
 /**
  * If `options.immutable` === true then return a new de-referenced
  * instance of the passed object/array. If immutable is false
- * then simply return the same `obj` that was passed.
+ * then simply return the same `obj` that was passed. Class instances
+ * keep their prototype and Dates, RegExps, Maps and Sets are copied
+ * with their data. Primitives and functions are returned as they are.
  * @param {*} obj The object or array to decouple.
  * @param {OptionsType} [options] The options object.
  * @param {boolean} options.immutable
@@ -278,17 +287,21 @@ export declare const decouple: (obj: any, options?: SetOptionsType) => any;
 export declare const pushVal: (obj: ObjectType, path: string, val: any, options?: SetOptionsType) => ObjectType;
 /**
  * Pull a value to from an array at the specified path. Removes the first
- * matching value, not every matching value.
+ * matching value, not every matching value. If the path does not exist
+ * nothing is changed.
  * @param {ObjectType} obj The object to update.
  * @param {string} path The path to the array to pull from.
  * @param {*} val The value to pull from the array.
- * @param {OptionsType} [options] An options object.
+ * @param {OptionsType} [options] An options object. Values are matched
+ * with strict equality unless `options.strict` is false, in which case
+ * the first item matching the structure of `val` is removed.
  * @returns {ObjectType} The original object passed in "obj" but with
  * the array at the path specified having removed the newly pulled value.
  */
 export declare const pullVal: (obj: ObjectType, path: string, val: any, options?: SetOptionsType) => ObjectType;
 /**
- * Inserts or deletes from/into the array at the specified path.
+ * Inserts or deletes from/into the array at the specified path. If the
+ * path does not exist nothing is changed.
  * @param {ObjectType} obj The object to update.
  * @param {string} path The path to the array to operate on.
  * @param {number} start The index to operate from.
@@ -323,7 +336,8 @@ export declare const furthest: (obj: ObjectType, path: string, options?: Options
 export declare const values: (obj: ObjectType, path: string, options?: OptionsType) => ObjectType;
 /**
  * Takes an object and finds all paths, then returns the paths as an
- * array of strings.
+ * array of strings. Keys are escaped so each path can be passed to
+ * get() or set().
  * @param obj The object to scan.
  * @param finalArr An object used to collect the path keys.
  * (Do not pass this in directly - use undefined).
@@ -333,10 +347,11 @@ export declare const values: (obj: ObjectType, path: string, options?: OptionsTy
  * @param [objCache] Internal, do not use.
  * @returns An array containing path strings.
  */
-export declare const flatten: (obj: ObjectType, finalArr?: any[] | undefined, parentPath?: string, options?: SetOptionsType, objCache?: never[]) => string[];
+export declare const flatten: (obj: ObjectType, finalArr?: any[] | undefined, parentPath?: string, options?: SetOptionsType, objCache?: any[]) => string[];
 /**
  * Takes an object and finds all paths, then returns the paths as keys
- * and the values of each path as the values.
+ * and the values of each path as the values. Keys are escaped so each
+ * path can be passed to get() or set().
  * @param {ObjectType} obj The object to scan.
  * @param {Object=} finalObj An object used to collect the path keys.
  * (Do not pass this in directly).
@@ -346,7 +361,7 @@ export declare const flatten: (obj: ObjectType, finalArr?: any[] | undefined, pa
  * @param {any[]} [objCache] Internal, do not use.
  * @returns {ObjectType} An object containing path keys and their values.
  */
-export declare const flattenValues: (obj: ObjectType, finalObj?: object | undefined, parentPath?: string | undefined, options?: OptionsType, objCache?: never[]) => ObjectType;
+export declare const flattenValues: (obj: ObjectType, finalObj?: object | undefined, parentPath?: string | undefined, options?: OptionsType, objCache?: any[]) => ObjectType;
 /**
  * Joins multiple string arguments into a path string.
  * Ignores blank or undefined path parts and also ensures
@@ -377,7 +392,7 @@ export declare const countLeafNodes: (obj: ObjectType, objCache?: Array<any> | u
  * Finds all the leaf nodes for a given object and returns an array of paths
  * to them. This is different from `flatten()` in that it only includes leaf
  * nodes and will not include every intermediary path traversed to get to a
- * leaf node.
+ * leaf node. Keys are escaped so each path can be passed to get() or set().
  * @param {ObjectType} obj The object to traverse.
  * @param {string} [parentPath=""] The path to use as a root/base path to
  * start scanning for leaf nodes under.
@@ -387,7 +402,8 @@ export declare const countLeafNodes: (obj: ObjectType, objCache?: Array<any> | u
 export declare const leafNodes: (obj: ObjectType, parentPath?: string, objCache?: any[]) => any[];
 /**
  * Tests if the passed object has the paths that are specified and that
- * a value exists in those paths. MAY NOT BE INFINITE RECURSION SAFE.
+ * a value exists in those paths. Only own properties are considered.
+ * MAY NOT BE INFINITE RECURSION SAFE.
  * @param {ObjectType} testKeys The object describing the paths to test for.
  * @param {ObjectType} testObj The object to test paths against.
  * @returns {boolean} True if the object paths exist.
@@ -396,6 +412,7 @@ export declare const hasMatchingPathsInObject: (testKeys: ObjectType, testObj: O
 /**
  * Tests if the passed object has the paths that are specified and that
  * a value exists in those paths and if so returns the number matched.
+ * Only own properties are considered.
  * MAY NOT BE INFINITE RECURSION SAFE.
  * @param {ObjectType} testKeys The object describing the paths to test for.
  * @param {ObjectType} testObj The object to test paths against.
@@ -429,15 +446,18 @@ export interface FindPathReturn {
 }
 /**
  * Finds all items in `source` that match the structure of `query` and
- * returns the path to them as an array of strings.
+ * returns the path to them as an array of strings. Keys are escaped so
+ * each path can be passed to get() or set().
  * @param {*} source The source to test.
  * @param {*} query The query to match.
  * @param {FindOptionsType} [options] Options object.
  * @param {string=""} parentPath Do not use. The aggregated
  * path to the current structure in source.
+ * @param {any[]} [objCache=[]] Do not use. Internal usage to check for
+ * cyclic structures.
  * @returns {Object} Contains match<Boolean> and path<Array>.
  */
-export declare const findPath: (source: any, query: any, options?: FindOptionsType, parentPath?: string) => FindPathReturn;
+export declare const findPath: (source: any, query: any, options?: FindOptionsType, parentPath?: string, objCache?: any[]) => FindPathReturn;
 export interface FindOnePathNoMatchFoundReturn {
     match: false;
 }
@@ -448,15 +468,18 @@ export interface FindOnePathMatchFoundReturn {
 export type FindOnePathReturn = FindOnePathNoMatchFoundReturn | FindOnePathMatchFoundReturn;
 /**
  * Finds the first item that matches the structure of `query`
- * and returns the path to it.
+ * and returns the path to it. Keys are escaped so the path can be
+ * passed to get() or set().
  * @param {*} source The source to test.
  * @param {*} query The query to match.
  * @param {FindOptionsType} [options] Options object.
  * @param {string=""} parentPath Do not use. The aggregated
  * path to the current structure in source.
+ * @param {any[]} [objCache=[]] Do not use. Internal usage to check for
+ * cyclic structures.
  * @returns {Object} Contains match<boolean> and path<string>.
  */
-export declare const findOnePath: (source: any, query: any, options?: FindOptionsType, parentPath?: string) => FindOnePathReturn;
+export declare const findOnePath: (source: any, query: any, options?: FindOptionsType, parentPath?: string, objCache?: any[]) => FindOnePathReturn;
 /**
  * Returns a deduplicated array of strings.
  * @param {string[]} keys An array of strings to deduplicate.
@@ -478,6 +501,11 @@ export declare const keyDedup: (keys: string[]) => string[];
  *        "difference": "value" // (see DifferenceType for supported values)
  *    }
  * }
+ *
+ * If a field changes between an object / array and another type, the
+ * field itself is reported as well as any leaf paths inside it. The
+ * same paths are reported whichever object is passed first. Keys in
+ * the returned paths are escaped so each path can be passed to get().
  *
  * If you only want an array of paths to values that have changed
  * see the `diff()` function instead.
@@ -503,13 +531,13 @@ export declare const keyDedup: (keys: string[]) => string[];
  * useful if obj2 is a partial of obj1, and you only need to know what
  * parts of the partial have changed against obj1.
  * @param {string} parentPath="" Used internally only.
- * @param {never[]} objCache=[] Used internally only.
+ * @param {any[]} objCache=[] Used internally only.
  * @returns {Record<string, DiffValue>} An object where each key is a path to a
  * field that holds a different value between the two objects being
  * compared and the value of each key is an object holding details of
  * the difference.
  */
-export declare const diffValues: (obj1: ObjectType, obj2: ObjectType, options?: DiffOptionsType, parentPath?: string, objCache?: never[]) => Record<string, DiffValue>;
+export declare const diffValues: (obj1: ObjectType, obj2: ObjectType, options?: DiffOptionsType, parentPath?: string, objCache?: any[]) => Record<string, DiffValue>;
 /**
  * Compares two provided objects / arrays and returns an array of
  * dot-notation paths to the fields that hold different values.
@@ -535,12 +563,12 @@ export declare const diffValues: (obj1: ObjectType, obj2: ObjectType, options?: 
  * useful if obj2 is a partial of obj1, and you only need to know what
  * parts of the partial have changed against obj1.
  * @param {string} parentPath="" Used internally only.
- * @param {never[]} [objCache=[]] Internal usage to check for cyclic structures.
+ * @param {any[]} [objCache=[]] Internal usage to check for cyclic structures.
  * @returns {Array} An array of strings, each string is a path to a
  * field that holds a different value between the two objects being
  * compared.
  */
-export declare const diff: (obj1: ObjectType, obj2: ObjectType, options?: DiffOptionsType, parentPath?: string, objCache?: never[]) => Array<string>;
+export declare const diff: (obj1: ObjectType, obj2: ObjectType, options?: DiffOptionsType, parentPath?: string, objCache?: any[]) => Array<string>;
 /**
  * A boolean check to see if the values at the given path or paths
  * are the same in both given objects.
@@ -550,7 +578,8 @@ export declare const diff: (obj1: ObjectType, obj2: ObjectType, options?: DiffOp
  * values in. If this is an array, all values at the paths in the array
  * must be the same for the function to provide a true result.
  * @param {boolean} deep If true will traverse all objects and arrays
- * to check for equality. Defaults to false.
+ * to check for equality, keys from both objects are compared. Defaults
+ * to false.
  * @param {boolean} strict If true, values must be strict-equal.
  * Defaults to false.
  * @returns {boolean} True if path values match, false if not.
@@ -591,7 +620,7 @@ export declare const setImmutable: (obj: ObjectType, path: string, val: any, opt
  * @param {OptionsType} [options] The options object.
  * @returns {*} The new object with the modified data.
  */
-export declare const pushValImmutable: (obj: ObjectType, path: string, val: any, options?: OptionsType) => any;
+export declare const pushValImmutable: (obj: ObjectType, path: string, val: any, options?: SetOptionsType) => any;
 /**
  * Same as pullVal() but will not change or modify the existing `obj`.
  * References to objects that were not modified remain the same.
@@ -601,7 +630,7 @@ export declare const pushValImmutable: (obj: ObjectType, path: string, val: any,
  * @param {OptionsType} [options] The options object.
  * @returns {*} The new object with the modified data.
  */
-export declare const pullValImmutable: (obj: ObjectType, path: string, val: any, options?: OptionsType) => any;
+export declare const pullValImmutable: (obj: ObjectType, path: string, val: any, options?: SetOptionsType) => any;
 /**
  * Same as unSet() but will not change or modify the existing `obj`.
  * References to objects that were not modified remain the same.
@@ -633,7 +662,9 @@ export declare const distill: (obj: object, pathArr: string[]) => any;
 export declare const chop: (path: string, level: number) => string;
 /**
  * Merges two objects like a "deep spread". If both obj1 and obj2 contain a leaf node
- * the value from obj2 will be used.
+ * the value from obj2 will be used. Plain objects and arrays are merged recursively,
+ * any other value (including Dates and class instances) from obj2 replaces the value
+ * in obj1. "__proto__" keys in obj2 are ignored.
  * @param obj1
  * @param obj2
  * @param options
@@ -670,11 +701,12 @@ export interface OperationFunctionProps {
     key: string;
 }
 /**
- * Calls `operation` on every part of `path`.
+ * Calls `operation` on every part of `path`. Keys in the reported paths
+ * are escaped so each path can be passed to get() or set().
  * @param obj The object to operate on with the path.
  * @param path The path to iterate.
  * @param operation The function to call for each part of the path.
- * @param options Currently unused.
+ * @param options Supports `transformRead` and `transformKey`.
  * @param parentPaths Do not pass, used internally.
  */
 export declare const traverse: (obj: ObjectType | undefined | null, path: string | any[], operation: (props: OperationFunctionProps) => boolean, options?: GetOptionsType, parentPaths?: {
