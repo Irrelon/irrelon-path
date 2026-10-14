@@ -17,6 +17,24 @@ remove data from an object at locations specified via a path string.
 npm i @irrelon/path
 ```
 
+## Security
+
+Version 7.0.3 fixes a prototype pollution vulnerability in `merge()` and
+`mergeImmutable()`, which affected versions 6.2.2 to 7.0.2. Merging
+untrusted data containing a `__proto__` or `constructor.prototype` key
+could modify `Object.prototype`. Related hardening was also applied to
+`pushVal()`, `pullVal()`, `splicePath()`, the immutable functions and the
+functions that build result objects. Thanks to Vishal Suwalka for
+reporting it.
+
+Version 8.0.0 contains the same security fixes along with many bug fixes
+and much more thorough documentation. It includes some breaking changes,
+see its README for upgrade notes.
+
+Please report security issues privately through GitHub's
+[private vulnerability reporting](https://github.com/irrelon/irrelon-path/security/advisories/new)
+rather than opening a public issue.
+
 # Quick Reference
 
 * [Simple Usage](#simple-usage)

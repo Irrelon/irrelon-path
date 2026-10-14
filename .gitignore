@@ -220,3 +220,5 @@ cache
 node_modules*
 
 data/
+# Jest coverage reports
+coverage/

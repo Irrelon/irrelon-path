@@ -91,6 +91,52 @@ export interface MergeOptionsType {
  */
 
 /**
+ * Arrays longer than this are copied by their existing indexes only, so
+ * a sparse array with a huge length (e.g. one created by setting
+ * "arr.4000000000") cannot exhaust memory when it is copied.
+ * @private
+ */
+const SPARSE_COPY_LENGTH = 1000000;
+
+/**
+ * Checks if the object has its own property with the given key without
+ * relying on the object's own hasOwnProperty() which may have been
+ * overridden by data or may not exist at all (Object.create(null)).
+ * @private
+ */
+const _hasOwn = (obj: object, key: PropertyKey): boolean => Object.prototype.hasOwnProperty.call(obj, key);
+
+/**
+ * Determines if the value is an object or array that can be traversed.
+ * @private
+ */
+const _isObjectLike = (val: unknown): val is ObjectType => typeof val === "object" && val !== null;
+
+/**
+ * Sets a value as an own property of the object. Plain assignment of a
+ * "__proto__" key would change the prototype of the object instead, so
+ * that key is defined explicitly.
+ * @private
+ */
+const _setOwn = (obj: ObjectType, key: string, val: any): void => {
+	if (key === "__proto__") {
+		Object.defineProperty(obj, key, {value: val, writable: true, enumerable: true, configurable: true});
+		return;
+	}
+
+	obj[key] = val;
+};
+
+/**
+ * Copies every own key / value of the source object onto the target
+ * object as own properties.
+ * @private
+ */
+const _assignOwn = (target: ObjectType, source: ObjectType): void => {
+	Object.keys(source).forEach((key) => _setOwn(target, key, source[key]));
+};
+
+/**
  * Scans an object for all keys that are either objects or arrays
  * and returns an array of those keys only.
  * @param {ObjectType} obj The object to scan.
@@ -125,14 +171,25 @@ const _newInstance = (item: ObjectType, key?: string, val?: any): any => {
 	let newObj;
 
 	if (objType === "object") {
-		newObj = {
+		// Object spread compiles to Object.assign() which would turn an own
+		// "__proto__" key (e.g. from JSON.parse()) into a prototype change
+		newObj = _hasOwn(item, "__proto__") ? Object.defineProperties({}, Object.getOwnPropertyDescriptors(item)) : {
 			...item
 		};
 	}
 
 	if (objType === "array") {
-		// @ts-ignore
-		newObj = [...item];
+		if (item.length <= SPARSE_COPY_LENGTH) {
+			// @ts-ignore
+			newObj = [...item];
+		} else {
+			newObj = new Array(item.length);
+
+			Object.keys(item).forEach((arrKey: any) => {
+				// @ts-ignore
+				newObj[arrKey] = item[arrKey];
+			});
+		}
 	}
 
 	if (key !== undefined) {
@@ -585,7 +642,7 @@ export const set = (obj: ObjectType, path: string, val: any, options: SetOptions
 		const unescapedPath = unEscape(internalPath);
 
 		// Do not allow prototype pollution
-		if (unescapedPath === "__proto__") {
+		if (unescapedPath === "__proto__" || options.transformKey(unescapedPath) === "__proto__") {
 			return obj;
 		}
 
@@ -671,7 +728,7 @@ export const unSet = (obj: ObjectType, path: string, options: SetOptionsType = {
 		// Do not allow prototype pollution
 		if (unescapedPath === "__proto__") return obj;
 
-		if (newObj.hasOwnProperty(unescapedPath)) {
+		if (_hasOwn(newObj, unescapedPath)) {
 			// @ts-ignore
 			delete newObj[options.transformKey(unescapedPath)];
 			return newObj;
@@ -691,8 +748,8 @@ export const unSet = (obj: ObjectType, path: string, options: SetOptionsType = {
 
 	let childPart = newObj[transformedPathPart];
 
-	if (!childPart) {
-		// No child part available, nothing to unset!
+	if (!_isObjectLike(childPart)) {
+		// No child object available, nothing to unset!
 		tracking.returnOriginal = true;
 		return obj;
 	}
@@ -726,7 +783,7 @@ export const update = (obj: ObjectType, basePath: string = "", updateData: Objec
 	let newObj = obj;
 
 	for (let path in updateData) {
-		if (updateData.hasOwnProperty(path)) {
+		if (_hasOwn(updateData, path)) {
 			// @ts-ignore
 			const data = updateData[path];
 			newObj = set(newObj, join(basePath, path), data, options);
@@ -793,9 +850,10 @@ export const pushVal = (obj: ObjectType, path: string, val: any, options: SetOpt
 	if (part === "__proto__") return obj;
 
 	if (pathParts.length) {
-		// Generate the path part in the object if it does not already exist
+		// Generate the path part in the object if it does not already exist,
+		// never traverse into a function (e.g. "constructor") or primitive
 		// @ts-ignore
-		obj[part] = decouple(obj[part], options) || {};
+		obj[part] = _isObjectLike(obj[part]) ? decouple(obj[part], options) : {};
 
 		// Recurse
 		// @ts-ignore
@@ -848,6 +906,10 @@ export const pullVal = (obj: ObjectType, path: string, val: any, options: SetOpt
 	const part = pathParts.shift();
 
 	if (part === "__proto__") return obj;
+
+	// Never traverse into a missing, primitive or function (e.g. "constructor") value
+	if (pathParts.length && part !== undefined && !_isObjectLike(obj[part])) return obj;
+
 	obj = decouple(obj, options);
 
 	if (pathParts.length && part !== undefined) {
@@ -910,6 +972,10 @@ export const splicePath = (obj: ObjectType, path: string, start: number, deleteC
 	const part = pathParts.shift();
 
 	if (part === "__proto__") return obj;
+
+	// Never traverse into a missing, primitive or function (e.g. "constructor") value
+	if (pathParts.length && part !== undefined && !_isObjectLike(obj[part])) return obj;
+
 	obj = decouple(obj, options);
 
 	if (pathParts.length && part !== undefined) {
@@ -1027,7 +1093,7 @@ export const values = (obj: ObjectType, path: string, options: OptionsType = {})
 		const tmpPath = currentPath.join(".");
 
 		// @ts-ignore
-		valueData[tmpPath] = get(obj, tmpPath);
+		_setOwn(valueData, tmpPath, get(obj, tmpPath));
 	}
 
 	// @ts-ignore
@@ -1070,7 +1136,7 @@ export const flatten = (obj: ObjectType, finalArr: any[] | undefined = [], paren
 	};
 
 	for (const i in transformedObj) {
-		if (!transformedObj.hasOwnProperty(i)) continue;
+		if (!_hasOwn(transformedObj, i)) continue;
 
 		if (options.ignore && options.ignore.test(i)) {
 			continue;
@@ -1125,7 +1191,7 @@ export const flattenValues = (obj: ObjectType, finalObj: object | undefined = {}
 	};
 
 	for (const i in transformedObj) {
-		if (transformedObj.hasOwnProperty(i)) {
+		if (_hasOwn(transformedObj, i)) {
 			const type = typeof transformedObj[i];
 			const info = {
 				type,
@@ -1142,12 +1208,12 @@ export const flattenValues = (obj: ObjectType, finalObj: object | undefined = {}
 			} else if (options.leavesOnly) {
 				// Found leaf node!
 				// @ts-ignore
-				finalObj[pathKey] = options.transformWrite(transformedObj[i]);
+				_setOwn(finalObj, pathKey, options.transformWrite(transformedObj[i]));
 			}
 
 			if (!options.leavesOnly) {
 				// @ts-ignore
-				finalObj[pathKey] = options.transformWrite(transformedObj[i]);
+				_setOwn(finalObj, pathKey, options.transformWrite(transformedObj[i]));
 			}
 		}
 	}
@@ -1205,7 +1271,7 @@ export const countLeafNodes = (obj: ObjectType, objCache: Array<any> | undefined
 	objCache.push(obj);
 
 	for (const i in obj) {
-		if (obj.hasOwnProperty(i)) {
+		if (_hasOwn(obj, i)) {
 			if (obj[i] !== undefined) {
 				if (obj[i] === null || typeof obj[i] !== "object" || objCache.indexOf(obj[i]) > -1) {
 					totalKeys++;
@@ -1237,7 +1303,7 @@ export const leafNodes = (obj: ObjectType, parentPath: string = "", objCache: an
 	objCache.push(obj);
 
 	for (const i in obj) {
-		if (obj.hasOwnProperty(i)) {
+		if (_hasOwn(obj, i)) {
 			if (obj[i] !== undefined) {
 				const currentPath = join(parentPath, i);
 
@@ -1264,7 +1330,7 @@ export const hasMatchingPathsInObject = (testKeys: ObjectType, testObj: ObjectTy
 	let result = true;
 
 	for (const i in testKeys) {
-		if (testKeys.hasOwnProperty(i)) {
+		if (_hasOwn(testKeys, i)) {
 			if (testObj[i] === undefined) {
 				return false;
 			}
@@ -1304,13 +1370,12 @@ export const countMatchingPathsInObject = (testKeys: ObjectType, testObj: Object
 		totalKeyCount = 0;
 
 	for (const i in testObj) {
-		if (testObj.hasOwnProperty(i)) {
+		if (_hasOwn(testObj, i)) {
 			if (typeof testObj[i] === "object" && testObj[i] !== null) {
 				// The test / query object key is an object, recurse
 				matchData = countMatchingPathsInObject(testKeys[i], testObj[i]);
 
-				// @ts-ignore
-				matchedKeys[i] = matchData.matchedKeys;
+				_setOwn(matchedKeys, i, matchData.matchedKeys);
 				totalKeyCount += matchData.totalKeyCount;
 				matchedKeyCount += matchData.matchedKeyCount;
 			} else {
@@ -1319,12 +1384,10 @@ export const countMatchingPathsInObject = (testKeys: ObjectType, testObj: Object
 
 				// Check if the test keys also have this key and it is also not an object
 				if (testKeys && testKeys[i] && (typeof testKeys[i] !== "object" || testKeys[i] === null)) {
-					// @ts-ignore
-					matchedKeys[i] = true;
+					_setOwn(matchedKeys, i, true);
 					matchedKeyCount++;
 				} else {
-					// @ts-ignore
-					matchedKeys[i] = false;
+					_setOwn(matchedKeys, i, false);
 				}
 			}
 		}
@@ -1434,7 +1497,7 @@ export const findPath = (source: any, query: any, options: FindOptionsType = {
 	// @ts-ignore
 	if (options.currentDepth <= options.maxDepth && sourceType === "object") {
 		for (let key in source) {
-			if (source.hasOwnProperty(key)) {
+			if (_hasOwn(source, key)) {
 				const val = source[key];
 
 				// Recurse down object to find more instances
@@ -1502,7 +1565,7 @@ export const findOnePath = (source: any, query: any, options: FindOptionsType = 
 	// @ts-ignore
 	if (options.currentDepth <= options.maxDepth && sourceType === "object" && source !== null) {
 		for (let key in source) {
-			if (source.hasOwnProperty(key)) {
+			if (_hasOwn(source, key)) {
 				const val = source[key];
 
 				// Recurse down object to find more instances
@@ -1601,7 +1664,7 @@ export const diffValues = (obj1: ObjectType, obj2: ObjectType, options: DiffOpti
 			// were found
 			const result = diffValues(obj1, obj2, {basePath: individualPath, strict, maxDepth, exclusive}, parentPath, objCache);
 			if (result && Object.keys(result).length) {
-				diffVals = {...diffVals, ...result};
+				_assignOwn(diffVals, result);
 			}
 
 			return diffVals;
@@ -1617,11 +1680,11 @@ export const diffValues = (obj1: ObjectType, obj2: ObjectType, options: DiffOpti
 	if (type1 !== type2) {
 		if (strict && val1 != val2) {
 			// Difference in source and comparison types
-			paths[currentPath] = {val1, val2, type1, type2, difference: "type"};
+			_setOwn(paths, currentPath, {val1, val2, type1, type2, difference: "type"});
 		}
 	} else if (type1 === "array" && type2 === "array" && val1.length !== val2.length) {
 		// Difference in source and comparison content
-		paths[currentPath] = {val1, val2, type1, type2, difference: "value"};
+		_setOwn(paths, currentPath, {val1, val2, type1, type2, difference: "value"});
 	}
 
 	const pathParts = currentPath.split(".");
@@ -1656,7 +1719,7 @@ export const diffValues = (obj1: ObjectType, obj2: ObjectType, options: DiffOpti
 		return compositeKeys.reduce((newPaths, key) => {
 			const result = diffValues(val1, val2, {basePath: key, strict, maxDepth, exclusive}, currentPath, objCache);
 			if (result && Object.keys(result).length) {
-				newPaths = {...newPaths, ...result};
+				_assignOwn(newPaths, result);
 			}
 
 			return newPaths;
@@ -1674,7 +1737,7 @@ export const diffValues = (obj1: ObjectType, obj2: ObjectType, options: DiffOpti
 			}
 		}
 
-		paths[currentPath] = {val1, val2, type1, type2, difference};
+		_setOwn(paths, currentPath, {val1, val2, type1, type2, difference});
 	}
 
 	return paths;
@@ -1836,8 +1899,7 @@ export const unSetImmutable = (obj: ObjectType, path: string, options: SetOption
  */
 export const distill = (obj: object, pathArr: string[]): any => {
 	return pathArr.reduce((newObj, path) => {
-		// @ts-ignore
-		newObj[path] = get(obj, path);
+		_setOwn(newObj, path, get(obj, path));
 		return newObj;
 	}, {});
 };
@@ -1873,12 +1935,19 @@ export const merge = (obj1: object, obj2: object, options: MergeOptionsType = {}
 	const newObj = decouple(obj1, options);
 
 	Object.entries(obj2).forEach(([key, val]) => {
+		// Do not allow prototype pollution
+		if (key === "__proto__") return;
+
 		const valueType = type(val);
 
 		if (valueType === "object" || valueType === "array") {
-			// Recursive type
+			// Recursive type, only merge into an own object or array, an
+			// inherited value (e.g. "constructor") must never be traversed
 			// @ts-ignore
-			newObj[key] = merge(obj1[key] || (valueType === "object" ? {} : []), val, options);
+			const existing = _hasOwn(obj1, key) && _isObjectLike(obj1[key]) ? obj1[key] : undefined;
+
+			// @ts-ignore
+			newObj[key] = merge(existing || (valueType === "object" ? {} : []), val, options);
 		} else {
 			// Non-recursive type
 			if (options.ignoreUndefined && val === undefined) return;
@@ -1941,8 +2010,8 @@ export const query = (obj: ObjectType, query: QueryType): Record<string, string[
 	const queryResult: Record<string, string[]> = {};
 
 	for (const queryKey in query) {
-		if (!query.hasOwnProperty(queryKey)) continue;
-		queryResult[queryKey] = [];
+		if (!_hasOwn(query, queryKey)) continue;
+		_setOwn(queryResult, queryKey, []);
 
 		const queryOperations = query[queryKey];
 		Object.entries(queryOperations).forEach(([operationKey, operationCriteria]) => {
